@@ -84,16 +84,18 @@ export function TerminalView({ taskId, eventKey = null }: TerminalViewProps) {
 
   return (
     <div className="terminal">
-      {load.kind === "error" && (
+      {load.kind === "error" && load.last !== null && (
         <div className="banner" role="status">
           <WarningCircle size={16} />
           <span className="trunc grow" title={load.message}>
-            {load.message}
+            Showing the last capture. {load.message}
           </span>
         </div>
       )}
       {load.kind === "loading" ? (
         <TerminalZero icon={CircleDashed} title="Reading the terminal" text="Asking Firstmate for the latest output." />
+      ) : load.kind === "error" && tail === null ? (
+        <TerminalZero icon={WarningCircle} title="Terminal not available" text={load.message} />
       ) : tail === null ? (
         <TerminalZero icon={TerminalWindow} title="No terminal output" text="The terminal tail is shown here when it can be read." />
       ) : tail.lines.length === 0 ? (
@@ -101,6 +103,7 @@ export function TerminalView({ taskId, eventKey = null }: TerminalViewProps) {
       ) : (
         <TailPre tail={tail} taskId={taskId} />
       )}
+      {!(tail && tail.lines.length > 0) && <span className="grow" />}
       <div className="terminal-foot">
         <span className="mut row gap6">
           <Eye size={14} />

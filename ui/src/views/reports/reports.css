@@ -39,8 +39,9 @@
   overflow-wrap: anywhere;
 }
 
-.reports-zero {
-  flex: 1;
+.reports .zero,
+.reports .banner {
+  margin: 0;
 }
 
 .reports-history {
@@ -62,6 +63,26 @@
   max-height: 320px;
   overflow: auto;
   overscroll-behavior: contain;
+}
+
+.reports-h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.reports-evt-row {
+  display: flex;
+  gap: 8px;
+  font-size: 12.5px;
+  align-items: baseline;
+}
+
+.reports-tm {
+  width: 38px;
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .reports-evt {

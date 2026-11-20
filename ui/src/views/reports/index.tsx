@@ -49,17 +49,7 @@ export interface ReportViewProps {
 export function ReportView({ taskId, eventKey = null }: ReportViewProps) {
   const load = useLoad(reportRead, taskId, eventKey);
   if (load.kind === "loading") return <ReportsZero icon={CircleDashed} title="Reading the report" text="Opening the task's report." />;
-  if (load.kind === "error")
-    return (
-      <div className="reports">
-        <div className="banner" role="status">
-          <WarningCircle size={16} />
-          <span className="trunc grow" title={load.message}>
-            {load.message}
-          </span>
-        </div>
-      </div>
-    );
+  if (load.kind === "error") return <ReportsZero icon={WarningCircle} title="Report not available" text={load.message} />;
   if (load.value === null)
     return <ReportsZero icon={FileText} title="No report yet" text="The task writes its report when it finishes; it appears here." />;
   return <ReportBody doc={load.value} />;
@@ -109,7 +99,7 @@ export function StatusHistorySection({ taskId, eventKey = null }: StatusHistoryP
   const [all, setAll] = useState(false);
   return (
     <section className="reports-history" aria-label="Latest events">
-      <span className="h2">Latest events</span>
+      <span className="reports-h2">Latest events</span>
       {load.kind === "loading" ? (
         <span className="mut reports-note">Reading the status record.</span>
       ) : load.kind === "error" ? (
@@ -164,8 +154,8 @@ function EventRow({ event }: { event: StatusEvent }) {
   const word = event.word.toLowerCase();
   const tagged = word !== "working";
   return (
-    <li className="evt" title={event.at === null ? undefined : new Date(event.at * 1000).toLocaleString()}>
-      <span className="tm">{event.at === null ? "" : hhmm(event.at)}</span>
+    <li className="reports-evt-row" title={event.at === null ? undefined : new Date(event.at * 1000).toLocaleString()}>
+      <span className="reports-tm tn">{event.at === null ? "" : hhmm(event.at)}</span>
       <span className="reports-evt">
         {tagged && <span className={`reports-word ${wordTone(word)}`}>{word}</span>}
         {event.text || <span className="mut">(no text)</span>}
@@ -206,7 +196,8 @@ function size(bytes: number): string {
 
 function ReportsZero({ icon: I, title, text }: { icon: Icon; title: string; text: string }) {
   return (
-    <div className="zero reports-zero">
+    <div className="reports">
+      <div className="zero">
       <span className="zi">
         <I size={18} />
       </span>
@@ -214,6 +205,7 @@ function ReportsZero({ icon: I, title, text }: { icon: Icon; title: string; text
         <b>{title}</b>
         <span className="mut">{text}</span>
       </span>
+      </div>
     </div>
   );
 }

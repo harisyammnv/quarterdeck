@@ -94,6 +94,7 @@
   gap: 6px;
 }
 
-.terminal-zero {
-  flex: 1;
+.terminal .zero,
+.terminal .banner {
+  margin: 0;
 }
