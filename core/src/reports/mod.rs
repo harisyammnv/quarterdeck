@@ -118,10 +118,12 @@ pub async fn read_report(data: &Path, id: &TaskId) -> Result<Option<ReportDoc>, 
     }))
 }
 
-/// Opens the path `safe_read` proved to be inside the data directory, and reads from that
-/// handle only: the final component must not be a link (`O_NOFOLLOW`), the handle must be a
-/// regular file, and it must be the very file that was checked (same device and inode), so a
-/// file swapped in after the check is refused instead of read.
+/// Opens the path `safe_read` proved to be inside the data directory and reads from that
+/// handle: the final component must not be a link (`O_NOFOLLOW`), opening never blocks on a
+/// FIFO (`O_NONBLOCK`), and the handle must be a regular file and the same device and inode as
+/// a no-follow stat of that path just before. This refuses a final-component link, a FIFO and
+/// any non-regular file; it does not pin the parent directories between `safe_read`'s check
+/// and the open (the home's `data` directory belongs to the same user).
 fn read_handle(real: &Path) -> Result<(String, bool, Option<i64>), ReportError> {
     use std::io::Read;
     use std::os::unix::fs::{MetadataExt, OpenOptionsExt};

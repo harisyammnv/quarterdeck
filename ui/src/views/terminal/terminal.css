@@ -95,21 +95,19 @@
   color: var(--term-amber, #f2c35b);
 }
 
-.terminal-blue {
+.terminal-blue,
+.terminal-magenta,
+.terminal-cyan {
   color: var(--term-blue, #8ab4ff);
 }
 
+/* The design system has no terminal red yet; this is its dark-theme danger value, which
+   reads on the always-black terminal. Requested as --term-red in the PR. */
 .terminal-red {
   color: var(--term-red, #ff8591);
 }
 
-.terminal-magenta {
-  color: var(--term-magenta, #e0a3ff);
-}
 
-.terminal-cyan {
-  color: var(--term-cyan, #7fd8e0);
-}
 
 .terminal-bold {
   font-weight: 700;
