@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-refresh-fleet"
+description = "Enables the refresh_fleet command without any pre-configured scope."
+commands.allow = ["refresh_fleet"]
+
+[[permission]]
+identifier = "deny-refresh-fleet"
+description = "Denies the refresh_fleet command without any pre-configured scope."
+commands.deny = ["refresh_fleet"]

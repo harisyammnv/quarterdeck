@@ -1,0 +1,28 @@
+[package]
+name = "quarterdeck-core"
+description = "Read-only view of a Firstmate home: fleet snapshot, live status events, and the one inbox write. No window code."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Derives specta::Type on the wire types so the app crate can generate TypeScript bindings.
+specta = ["dep:specta"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+notify.workspace = true
+time.workspace = true
+specta = { workspace = true, optional = true }
+
+[dev-dependencies]
+tempfile.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

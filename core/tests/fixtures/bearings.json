@@ -1,0 +1,106 @@
+{
+  "schema": "fm-bearings.v1",
+  "home": "example/firstmate",
+  "generated": "2026-11-20T09:59:35Z",
+  "prs": "not_requested (run: /bearings include PRs)",
+  "contributions": {
+    "scope": "owned contributions per home",
+    "known": 12,
+    "checked": 10,
+    "counts": {
+      "captain": 1,
+      "fleet": 2,
+      "maintainer": 0,
+      "nobody": 9
+    },
+    "complete": false,
+    "captain": []
+  },
+  "in_flight": [
+    {
+      "id": "web-pin-update",
+      "kind": "ship",
+      "state": "done",
+      "repo": "example-web",
+      "name": "example-web platform pin to 4.14.4",
+      "doing": "PR https://forge.example.invalid/acme/example-web/pull/37"
+    },
+    {
+      "id": "app-login-fix",
+      "kind": "ship",
+      "state": "unknown",
+      "repo": "example-app",
+      "name": "Login fix: hide account lockout from sign-in answers",
+      "doing": "backend unreachable (orca endpoint state: unreadable)"
+    },
+    {
+      "id": "api-pin-update",
+      "kind": "ship",
+      "state": "done",
+      "repo": "example-api",
+      "name": "example-api platform pin to 4.14.4",
+      "doing": "PR https://forge.example.invalid/acme/example-api/pull/295"
+    },
+    {
+      "id": "qd-spike",
+      "kind": "ship",
+      "state": "working",
+      "repo": "quarterdeck",
+      "name": "Quarterdeck Phase 0 spike: Tauri window, live fleet list, one inbox no…",
+      "doing": "harness busy (claude-hook)"
+    },
+    {
+      "id": "app-dev-pin",
+      "kind": "ship",
+      "state": "done",
+      "repo": "example-app",
+      "name": "example-app dev web/bff platform pin",
+      "doing": "PR https://forge.example.invalid/acme/example-app/pull/509"
+    },
+    {
+      "id": "perf-scout",
+      "kind": "scout",
+      "state": "needs-decision",
+      "repo": "example-ops",
+      "name": "Find the slow dashboard query",
+      "doing": "report ready, awaiting a pick"
+    }
+  ],
+  "secondmates": [],
+  "secondmate_reconcile": [],
+  "decisions_open": [
+    {
+      "id": "pick-a",
+      "key": "pick-a",
+      "verb": "captain-hold",
+      "summary": "Pick A or B",
+      "question": "Pick A or B for the cache layer",
+      "owner": "(main)"
+    }
+  ],
+  "landed": [
+    {
+      "id": "x",
+      "what": "y",
+      "artifact": "z",
+      "owner": "(main)"
+    }
+  ],
+  "gates": [],
+  "reports": [],
+  "recorded_prs": [],
+  "omitted": [
+    {
+      "surface": "backlog item bodies",
+      "reveal": "--fields bodies"
+    },
+    {
+      "surface": "decisions_open showing 20 of 37",
+      "reveal": "--all-decisions"
+    },
+    {
+      "surface": "live PR discovery + checks",
+      "reveal": "--include-prs"
+    }
+  ]
+}

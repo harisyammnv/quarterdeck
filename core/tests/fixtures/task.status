@@ -1,0 +1,4 @@
+working [at=1795163364]: setup done, on fm/app-login-fix from dev; locating the lockout check
+needs-decision [key=lockout-copy] [at=1795163400]: reuse the generic error or add a new one?
+resolved [key=lockout-copy] [at=1795163460]: generic error
+done [at=1795163534]: PR https://forge.example.invalid/acme/example-app/pull/165

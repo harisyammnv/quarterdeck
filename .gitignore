@@ -1,0 +1,15 @@
+# Rust
+/target/
+
+# JavaScript
+/node_modules/
+/ui/dist/
+
+# Tauri generated schemas
+/app/gen/
+
+# Local and editor files
+.DS_Store
+*.log
+.env
+.env.*
