@@ -40,10 +40,12 @@ export const commands = {
 	 */
 	taskPrOpen: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("task_pr_open", { taskId }, options),
 	/**
-	 *  Opens an `https` link in the default browser. Used only for links inside rendered
-	 *  documents, after the window has shown the full address and the person confirmed it.
+	 *  Opens an `https` link from a rendered document in the default browser, after a native
+	 *  confirmation that shows the full address. The confirmation runs here, in the core, so
+	 *  script in the webview can never open a link the person did not approve. Resolves `true`
+	 *  when the link was opened and `false` when the person cancelled.
 	 */
-	urlOpen: (url: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("url_open", { url }, options),
+	urlOpen: (url: string, options?: InvokeOptions) => __TAURI_INVOKE<boolean>("url_open", { url }, options),
 	/**  Reads one skill's body by the id `skills_list` gave it (at most 1 MiB). */
 	skillRead: (id: string, options?: InvokeOptions) => __TAURI_INVOKE<SkillDoc_Serialize>("skill_read", { id }, options),
 	/**
@@ -142,6 +144,11 @@ export type FleetView_Deserialize = {
 	/**  Short label of the home, such as `orca/firstmate`. */
 	home: string,
 	rows: FleetRow_Deserialize[],
+	/**
+	 *  Decisions waiting on a person now: backlog records the snapshot marks
+	 *  `captain_actionable`. Uncapped; 0 until the first snapshot lands.
+	 */
+	decisions: number,
 	snapshot: SnapshotInfo_Deserialize,
 	cause?: UpdateCause | null,
 };
@@ -153,6 +160,11 @@ export type FleetView_Serialize = {
 	/**  Short label of the home, such as `orca/firstmate`. */
 	home: string,
 	rows: FleetRow_Serialize[],
+	/**
+	 *  Decisions waiting on a person now: backlog records the snapshot marks
+	 *  `captain_actionable`. Uncapped; 0 until the first snapshot lands.
+	 */
+	decisions: number,
 	snapshot: SnapshotInfo_Serialize,
 	cause: UpdateCause | null,
 };

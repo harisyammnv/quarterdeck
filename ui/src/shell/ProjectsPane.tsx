@@ -9,7 +9,7 @@ import { StateDot } from "../ui";
  */
 export function ProjectsPane() {
   return (
-    <aside className="side panel" aria-label="Projects">
+    <aside className="qd-panel ui-panel side" aria-label="Projects">
       <div className="side-h">
         <span>Projects</span>
       </div>
@@ -40,7 +40,7 @@ export function ProjectsPane() {
             Blocked
           </span>
           <span className="row">
-            <StateDot kind="invest" />
+            <StateDot kind="investigating" />
             Investigating
           </span>
         </div>
