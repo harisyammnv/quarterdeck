@@ -14,7 +14,7 @@ import { Button, Composer, Keycap, Panel, PanelHead, SegmentedTabs, Tag, Virtual
 import { inApp, urlOpen } from "../../bridge";
 import { useApp } from "../../state/app";
 import { age, firstLine, prNumber } from "../board/format";
-import { reportsArea, takeDecisionRequest } from "../board/nav";
+import { takeDecisionRequest, useReportOpener } from "../board/nav";
 import { CallPill, decisionTag, SnapshotBanner, Tile } from "../board/parts";
 import { useBoard } from "../board/useBoard";
 import { openPullRequest, type Decision } from "./bridge";
@@ -210,7 +210,8 @@ const Row = memo(function Row({ d, sel, onSelect, onOpen, now }: { d: Decision; 
 });
 
 function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRef: React.RefObject<HTMLElement | null> }) {
-  const { info, setArea, setSelectedTask } = useApp();
+  const { info } = useApp();
+  const reportOpener = useReportOpener();
   const [linkError, setLinkError] = useState<string | null>(null);
   const [prError, setPrError] = useState<string | null>(null);
   if (!d) {
@@ -225,7 +226,7 @@ function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRe
     );
   }
   const pr = prNumber(d.pr_url);
-  const reports = reportsArea;
+  const readReport = reportOpener(d.id, d.has_report);
   return (
     <aside className="qd-panel ui-panel decisions-detail" aria-labelledby="decisions-q" ref={panelRef}>
       <div className="phead">
@@ -301,7 +302,7 @@ function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRe
             </ul>
           </section>
         )}
-        {(d.pr_url || (d.has_report && reports)) && (
+        {(d.pr_url || readReport) && (
           <div className="row decisions-acts">
             {d.pr_url && (
               <Button
@@ -316,14 +317,8 @@ function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRe
                 Open pull request
               </Button>
             )}
-            {d.has_report && reports && (
-              <Button
-                icon={FileText}
-                onClick={() => {
-                  setSelectedTask(d.id);
-                  setArea(reports);
-                }}
-              >
+            {readReport && (
+              <Button icon={FileText} onClick={readReport}>
                 Read the report
               </Button>
             )}

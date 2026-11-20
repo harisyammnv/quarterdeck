@@ -10,7 +10,7 @@ import { Banner, Count, Panel, PanelHead, StateDot, Tag, VirtualList, ZeroState,
 import { useApp } from "../../state/app";
 import { openPullRequest } from "./bridge";
 import { age, firstLine, prNumber } from "./format";
-import { reportsArea, requestDecision } from "./nav";
+import { requestDecision, useReportOpener } from "./nav";
 import { CallPill, decisionTag, LiveChip, SnapshotBanner, Tile } from "./parts";
 import type { BoardCard, BoardView, Decision } from "./types";
 import { useBoard } from "./useBoard";
@@ -134,11 +134,10 @@ function Top({ project, since, now }: { project: string | null; since: number | 
 }
 
 const Card = memo(function Card({ card, now }: { card: BoardCard; now: number }) {
-  const { setArea, setSelectedTask } = useApp();
+  const readReport = useReportOpener()(card.id, card.has_report);
   const pr = prNumber(card.pr_url);
   const latest = card.live?.latest ?? null;
   const hold = card.hold;
-  const reports = reportsArea;
   return (
     <article className="board-card" aria-label={card.title}>
       <Top project={card.project} since={card.since} now={now} />
@@ -153,17 +152,8 @@ const Card = memo(function Card({ card, now }: { card: BoardCard; now: number })
         {(hold || card.blocked_by.length > 0) && <CallPill bucket={hold} until={card.until} blockedBy={card.blocked_by} ageDays={null} />}
         {card.kind && <Tag>{card.kind}</Tag>}
         <span className="grow" />
-        {card.has_report && reports && (
-          <button
-            type="button"
-            className="board-ib"
-            aria-label={`Read the report for ${card.title}`}
-            title="Read the report"
-            onClick={() => {
-              setSelectedTask(card.id);
-              setArea(reports);
-            }}
-          >
+        {readReport && (
+          <button type="button" className="board-ib" aria-label={`Read the report for ${card.title}`} title="Read the report" onClick={readReport}>
             <FileText size={14} />
           </button>
         )}

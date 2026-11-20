@@ -3,7 +3,7 @@ import { Button, Keycap, Tag, useHotkey } from "../../ui";
 import { useApp } from "../../state/app";
 import { openPullRequest } from "../board/bridge";
 import { firstLine, prNumber } from "../board/format";
-import { reportsArea, requestDecision } from "../board/nav";
+import { requestDecision, useReportOpener } from "../board/nav";
 import { decisionTag, Tile } from "../board/parts";
 import type { Decision } from "../board/types";
 import { useBoard } from "../board/useBoard";
@@ -76,19 +76,12 @@ export function DecisionsStrip() {
 }
 
 function CallCard({ d, open }: { d: Decision; open: (id: string | null, reply?: boolean) => void }) {
-  const { setArea, setSelectedTask } = useApp();
+  const readReport = useReportOpener()(d.id, d.has_report);
   const pr = prNumber(d.pr_url);
-  const reports = reportsArea;
   const primary = d.pr_url
     ? { label: "Open pull request", run: () => void openPullRequest(d.id).catch(() => undefined) }
-    : d.has_report && reports
-      ? {
-          label: "Read the report",
-          run: () => {
-            setSelectedTask(d.id);
-            setArea(reports);
-          },
-        }
+    : readReport
+      ? { label: "Read the report", run: readReport }
       : {
           label: "Read the options",
           run: () => {
