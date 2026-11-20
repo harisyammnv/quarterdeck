@@ -6,6 +6,7 @@ import {
   KanbanIcon as Kanban,
   SailboatIcon as Sailboat,
   SparkleIcon as Sparkle,
+  TerminalWindowIcon as TerminalWindow,
   type Icon,
 } from "@phosphor-icons/react";
 import type { FleetView } from "./bridge";
@@ -61,6 +62,7 @@ export const views: ViewDef[] = [
   { id: "board", label: "Board", crumb: "Board", icon: Kanban, rail: true, component: placeholder("Board", Kanban, "Columns for Queued, In flight, Waiting on you and Done, read from the backlog in the fleet snapshot."), layout: { projects: false, inspector: false } },
   { id: "containers", label: "Containers", crumb: "Containers", icon: Cube, rail: true, component: placeholder("Containers", Cube, "Containers, images, volumes and networks from the local Docker engine, grouped by worktree. Read-only."), layout: { projects: false, inspector: false } },
   { id: "memory", label: "Memory", crumb: "Memory and skills", icon: Brain, rail: true, component: placeholder("Memory", Brain, "Preferences, learnings, briefs and reports, readable and searchable. Firstmate keeps owning every edit."), layout: { projects: false, inspector: false } },
+  { id: "terminal", label: "Terminal and report", crumb: "Task", icon: TerminalWindow, rail: false, component: lazy(() => import("./views/terminal")), layout: { projects: true, inspector: true } },
   { id: "skills", label: "Skills", crumb: "Skills", icon: Sparkle, rail: true, component: placeholder("Skills", Sparkle, "Every skill in the known skill folders, with where it comes from and where the same name appears twice."), layout: { projects: false, inspector: false } },
 ];
 
@@ -70,6 +72,8 @@ export const settingsView: ViewDef = { id: "settings", label: "Settings", crumb:
 /** Inspector sections, one line per area, in `order`. */
 export const inspectorSections: SectionDef[] = [
   { id: "task", order: 10, component: lazy(() => import("./views/fleet/TaskSection")) },
+  { id: "terminal", order: 20, component: lazy(() => import("./views/terminal/OpenSection")) },
+  { id: "reports", order: 30, component: lazy(() => import("./views/reports/HistorySection")) },
 ];
 
 /** The project and worktree list inside the left frame. `null` shows the frame's placeholder. */

@@ -1,4 +1,4 @@
-/* Reports and status history. Measurements follow .evt and .insp section in a2.css. */
+/* Reports and status history. Measurements follow the A2 main mock and a2.css. */
 
 .reports {
   display: flex;
@@ -21,7 +21,7 @@
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: var(--r-inner);
-  padding: 18px 22px;
+  padding: 4px 22px 18px;
   overscroll-behavior: contain;
 }
 
@@ -30,24 +30,9 @@
   box-shadow: var(--focus);
 }
 
-.reports-src {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
 .reports .zero,
 .reports .banner {
   margin: 0;
-}
-
-.reports-history {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .reports-events {
@@ -63,26 +48,6 @@
   max-height: 320px;
   overflow: auto;
   overscroll-behavior: contain;
-}
-
-.reports-h2 {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.reports-evt-row {
-  display: flex;
-  gap: 8px;
-  font-size: 12.5px;
-  align-items: baseline;
-}
-
-.reports-tm {
-  width: 38px;
-  flex: none;
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .reports-evt {
@@ -106,8 +71,4 @@
 
 .reports-more {
   align-self: flex-start;
-}
-
-.reports-note {
-  font-size: 12px;
 }

@@ -2,7 +2,7 @@
  * Invented reports and status history for working on the views in a plain browser. Nothing
  * here is read from a Firstmate home.
  */
-import type { ReportDoc, StatusEvent, StatusHistory } from "./bridge";
+import type { ReportDoc, ReportHistory, StatusEvent } from "./bridge";
 
 const now = Math.floor(Date.now() / 1000);
 
@@ -44,16 +44,21 @@ function delay<T>(value: T): Promise<T> {
 export function previewReport(taskId: string): Promise<ReportDoc | null> {
   if (taskId === "auth-audit" || taskId === "infra-sync") return delay(null);
   if (taskId === "route-perf") return Promise.reject(new Error("the report is a link, which is not followed"));
-  return delay({ task_id: taskId, markdown: REPORT, bytes: REPORT.length, truncated: false, modified: now - 300 });
+  return delay({ task_id: taskId, markdown: REPORT, truncated: false, modified: now - 300 });
 }
 
 const ev = (word: string, ago: number, text: string, key: string | null = null): StatusEvent => ({ word, at: now - ago, key, text });
 
-export function previewHistory(taskId: string): Promise<StatusHistory> {
-  if (taskId === "infra-sync") return delay({ task_id: taskId, events: [], truncated: false });
+export function previewHistory(taskId: string): Promise<ReportHistory> {
+  if (taskId === "infra-sync") return delay({ task_id: taskId, events: [] });
+  if (taskId !== "login-flake") {
+    return delay({
+      task_id: taskId,
+      events: [ev("working", 900, "reading the code paths involved"), ev("working", 1800, "setup done")],
+    });
+  }
   return delay({
     task_id: taskId,
-    truncated: false,
     events: [
       ev("working", 40, "Suite green, 107 passed"),
       ev("resolved", 220, "use a per-test user", "user-scope"),

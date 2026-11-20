@@ -6,10 +6,10 @@ import {
   TerminalWindowIcon as TerminalWindow,
   WarningCircleIcon as WarningCircle,
 } from "@phosphor-icons/react";
+import { Banner, Button, Zero } from "../../ui";
 import { terminalTail, type Span, type TerminalTail } from "./bridge";
-import "./terminal.css";
 
-export interface TerminalViewProps {
+export interface TerminalTailProps {
   /** The task whose terminal is shown. */
   taskId: string;
   /**
@@ -30,7 +30,7 @@ type Load =
  * and a request made meanwhile runs once after it. Mount it with `key={taskId}`, so another
  * task starts from an empty buffer; the buffer is released when the view unmounts.
  */
-export function TerminalView({ taskId, eventKey = null }: TerminalViewProps) {
+export function TerminalTailView({ taskId, eventKey = null }: TerminalTailProps) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
@@ -84,22 +84,23 @@ export function TerminalView({ taskId, eventKey = null }: TerminalViewProps) {
 
   return (
     <div className="terminal">
-      {load.kind === "error" && load.last !== null && (
-        <div className="banner" role="status">
-          <WarningCircle size={16} />
-          <span className="trunc grow" title={load.message}>
-            Showing the last capture. {load.message}
-          </span>
-        </div>
-      )}
+      {load.kind === "error" && load.last !== null && <Banner title={load.message}>Showing the last capture. {load.message}</Banner>}
       {load.kind === "loading" ? (
-        <TerminalZero icon={CircleDashed} title="Reading the terminal" text="Asking Firstmate for the latest output." />
+        <Zero icon={CircleDashed} title="Reading the terminal" dashed={false}>
+          Asking Firstmate for the latest output.
+        </Zero>
       ) : load.kind === "error" && tail === null ? (
-        <TerminalZero icon={WarningCircle} title="Terminal not available" text={load.message} />
+        <Zero icon={WarningCircle} title="Terminal not available" dashed={false}>
+          {load.message}
+        </Zero>
       ) : tail === null ? (
-        <TerminalZero icon={TerminalWindow} title="No terminal output" text="The terminal tail is shown here when it can be read." />
+        <Zero icon={TerminalWindow} title="No terminal output" dashed={false}>
+          The terminal tail is shown here when it can be read.
+        </Zero>
       ) : tail.lines.length === 0 ? (
-        <TerminalZero icon={TerminalWindow} title="No output yet" text="The terminal is open but has not printed anything." />
+        <Zero icon={TerminalWindow} title="No output yet" dashed={false}>
+          The terminal is open but has not printed anything.
+        </Zero>
       ) : (
         <TailPre tail={tail} taskId={taskId} />
       )}
@@ -111,20 +112,13 @@ export function TerminalView({ taskId, eventKey = null }: TerminalViewProps) {
         </span>
         <span className="grow" />
         {tail && (
-          <span className="mut tn" title={`Captured at ${clock(tail.captured_at)}`}>
+          <span className="mut tn" title={tail.captured_at === null ? undefined : `Captured at ${clock(tail.captured_at)}`}>
             {tail.truncated ? `Last ${tail.lines.length} lines` : lineCount(tail.lines.length)}
           </span>
         )}
-        <button
-          type="button"
-          className="btn sm"
-          disabled={busy}
-          onClick={() => void read()}
-          aria-label="Read the terminal again"
-        >
-          <ArrowsClockwise size={14} />
+        <Button size="sm" icon={ArrowsClockwise} disabled={busy} onClick={() => void read()} title="Read the terminal again">
           {busy ? "Reading" : "Refresh"}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -188,16 +182,3 @@ const Line = memo(function Line({ spans }: { spans: Span[] }) {
   );
 });
 
-function TerminalZero({ icon: I, title, text }: { icon: typeof Eye; title: string; text: string }) {
-  return (
-    <div className="zero terminal-zero">
-      <span className="zi">
-        <I size={18} />
-      </span>
-      <span>
-        <b>{title}</b>
-        <span className="mut">{text}</span>
-      </span>
-    </div>
-  );
-}
