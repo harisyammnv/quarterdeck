@@ -1,0 +1,167 @@
+/* Skills list and skill pane (A2 memory mock, right column). Every class starts with skills-. */
+
+.skills-panel {
+  width: 412px;
+  flex: none;
+}
+
+.skills-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16) var(--space-8);
+  flex: none;
+}
+
+.skills-head .qd-count {
+  white-space: nowrap;
+}
+
+.skills-filters {
+  display: flex;
+  padding: 0 var(--space-16) var(--space-8);
+  flex: none;
+}
+
+.skills-h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.skills-find {
+  width: auto;
+  margin: 0 var(--space-16) var(--space-8);
+  flex: none;
+}
+
+.skills-list {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+.skills-panel:not(.compact) .skills-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.skills-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  padding: 9px var(--space-16);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  min-width: 0;
+}
+
+.skills-panel.compact .skills-list > [role="listitem"]:last-of-type .skills-row {
+  border-bottom: 0;
+}
+
+.skills-row:hover {
+  background: var(--hover);
+  --muted: var(--muted-strong);
+}
+
+.skills-row.sel {
+  background: var(--selected);
+  --muted: var(--muted-strong);
+}
+
+.skills-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.skills-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.skills-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.skills-desc {
+  font-size: 12px;
+}
+
+.skills-src {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.skills-src > svg {
+  flex: none;
+}
+
+.skills-more {
+  margin: var(--space-16) var(--space-16) 0;
+  font: inherit;
+  text-align: left;
+  background: none;
+  width: calc(100% - 32px);
+}
+
+.skills-more:not(:disabled):hover {
+  background: var(--hover);
+}
+
+.skills-more:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.skills-more .t12 {
+  display: block;
+  font-size: 12px;
+}
+
+.skills-title {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.skills-facts {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: var(--space-4) 22px var(--space-12);
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  flex: none;
+}
+
+.skills-facts > div {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: var(--space-8);
+}
+
+.skills-facts dt {
+  color: var(--muted);
+}
+
+.skills-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

@@ -9,9 +9,11 @@
 pub mod board;
 pub mod containers;
 pub mod fleet;
+pub mod memory;
 pub mod projects;
 pub mod reports;
 pub mod shell;
+pub mod skills;
 pub mod terminal;
 
 use std::sync::Arc;
