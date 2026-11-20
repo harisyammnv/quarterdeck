@@ -56,11 +56,11 @@
         "hold_reason": "Rollup PR green 13/13. Options: (1) merge now [rec]; (2) hold until the actions update is fixed too; (3) decide later.",
         "unresolved_blocker_ids": [],
         "links": [
-          "https://forge.example.invalid/acme/ledger-api/pull/494",
+          "https://forge.example.invalid/acme/ledger-api/pull/1207",
           "javascript:alert(1)",
           "https://forge.example.invalid/acme/ledger-api/actions/runs/1"
         ],
-        "pr_url": "https://forge.example.invalid/acme/ledger-api/pull/494",
+        "pr_url": "https://forge.example.invalid/acme/ledger-api/pull/1207",
         "report_path": null
       },
       {
@@ -187,7 +187,7 @@
         "captain_actionable": false,
         "unresolved_blocker_ids": [],
         "links": [],
-        "pr_url": "https://forge.example.invalid/acme/route-planner/pull/37",
+        "pr_url": "https://forge.example.invalid/acme/route-planner/pull/58",
         "report_path": null,
         "completion": {
           "verb": "merged",
@@ -256,7 +256,7 @@
         "source": "harness"
       },
       "pr": {
-        "url": "https://forge.example.invalid/acme/ledger-api/pull/501",
+        "url": "https://forge.example.invalid/acme/ledger-api/pull/1215",
         "source": "meta"
       },
       "backlog": {

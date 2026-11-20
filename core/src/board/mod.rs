@@ -313,6 +313,8 @@ pub fn view(state: &HomeState) -> BoardView {
         ..BoardView::default()
     };
     let mut done = Vec::new();
+    let tasks: std::collections::HashMap<&str, &Task> =
+        snap.tasks.iter().map(|t| (t.id.as_str(), t)).collect();
     for rec in &snap.backlog {
         let id = rec.id.trim();
         if id.is_empty() {
@@ -351,7 +353,7 @@ pub fn view(state: &HomeState) -> BoardView {
                 continue;
             }
         };
-        let task = snap.tasks.iter().find(|t| t.id == id);
+        let task = tasks.get(id).copied();
         // Same precedence as the shell's `task_pr_open`: the task row, else the record.
         let pr_url = task
             .and_then(|t| t.pr_url.as_deref())

@@ -45,20 +45,20 @@ const live: Decision[] = [
     id: "deps-rollup",
     question: "Merge the dependency rollup?",
     detail:
-      "Rollup PR #494 is green, 13 of 13 checks. It combines updates 469, 477 and 478 and supersedes 472.\n\nOptions:\n(1) merge now [recommended];\n(2) hold until the actions update is fixed too;\n(3) decide later.",
+      "Rollup PR #1207 is green, 13 of 13 checks. It combines updates 1189, 1193 and 1196 and supersedes 1180.\n\nOptions:\n(1) merge now [recommended];\n(2) hold until the actions update is fixed too;\n(3) decide later.",
     project: "ledger-api",
     raised_at: now - 22 * MIN,
-    pr_url: "https://forge.example.invalid/acme/ledger-api/pull/494",
+    pr_url: "https://forge.example.invalid/acme/ledger-api/pull/1207",
     links: ["https://forge.example.invalid/acme/ledger-api/actions/runs/1"],
   }),
   decision({
     id: "rebase-or-fresh",
-    question: "Rebase #286 or open a fresh PR?",
+    question: "Rebase #342 or open a fresh PR?",
     detail: "The repo rejects merge commits. Options: (1) rebase the branch and force-push; (2) open a fresh PR from main.",
     project: "route-planner",
     kind: "ship",
     raised_at: now - (H + 40 * MIN),
-    pr_url: "https://forge.example.invalid/acme/route-planner/pull/286",
+    pr_url: "https://forge.example.invalid/acme/route-planner/pull/342",
   }),
   decision({
     id: "visual-pick",
@@ -151,14 +151,14 @@ export function previewBoard(): BoardView {
     card({ id: "login-flake", title: "Fix the login test flake", column: "in-flight", project: "ledger-api", since: now - 18 * MIN, live: ev("working", 40, "suite green, committing the fix", "working") }),
     card({ id: "auth-audit", title: "Audit the auth middleware", column: "in-flight", project: "portal-web", kind: "scout", since: now - 3 * H, has_report: true, live: ev("working", 900, "reading the session code", "working", "snapshot") }),
     card({ id: "route-perf", title: "Speed up the route map", column: "in-flight", project: "portal-web", since: now - 5 * H, live: ev("blocked", 1500, "needs staging credentials", "blocked") }),
-    card({ id: "release-notes", title: "Release notes generator", column: "in-flight", project: "route-planner", since: now - 2 * H, pr_url: "https://forge.example.invalid/acme/route-planner/pull/286", live: ev("needs-decision", 6000, "which changelog format: A or B?", "needs-decision") }),
+    card({ id: "release-notes", title: "Release notes generator", column: "in-flight", project: "route-planner", since: now - 2 * H, pr_url: "https://forge.example.invalid/acme/route-planner/pull/342", live: ev("needs-decision", 6000, "which changelog format: A or B?", "needs-decision") }),
     card({ id: "cache-scout", title: "Find the slow dashboard query", column: "in-flight", project: "route-planner", kind: "scout", since: now - D, live: ev("paused", 7200, "waiting for CI", "paused", "snapshot") }),
     card({ id: "infra-sync", title: "Sync the deploy templates", column: "in-flight", project: "firstmate", since: now - 2 * D, live: { state: "unknown", word: "unknown", source: "snapshot", latest: null, latest_at: null } }),
   ];
   const done: BoardCard[] = [
-    card({ id: "pin-update", title: "Platform pin to 4.14.4", column: "done", project: "route-planner", since: now - D, pr_url: "https://forge.example.invalid/acme/route-planner/pull/37" }),
+    card({ id: "pin-update", title: "Platform pin to 4.14.4", column: "done", project: "route-planner", since: now - D, pr_url: "https://forge.example.invalid/acme/route-planner/pull/58" }),
     card({ id: "theme-switch", title: "Theme switch in the title bar", column: "done", project: "firstmate", since: now - 2 * D, has_report: true }),
-    card({ id: "deps-1117", title: "Daily dependency rollup", column: "done", project: "ledger-api", since: now - 3 * D, pr_url: "https://forge.example.invalid/acme/ledger-api/pull/488" }),
+    card({ id: "deps-1117", title: "Daily dependency rollup", column: "done", project: "ledger-api", since: now - 3 * D, pr_url: "https://forge.example.invalid/acme/ledger-api/pull/611" }),
   ];
   return {
     ready: true,

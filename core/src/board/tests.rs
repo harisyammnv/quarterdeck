@@ -94,7 +94,7 @@ fn live_calls_are_captain_actionable_holds_oldest_first() {
     assert_eq!(d.bucket, HoldBucket::Live);
     assert_eq!(
         d.pr_url.as_deref(),
-        Some("https://forge.example.invalid/acme/ledger-api/pull/494")
+        Some("https://forge.example.invalid/acme/ledger-api/pull/1207")
     );
     // The PR is not repeated among the links, and the javascript: link is dropped.
     assert_eq!(
@@ -190,7 +190,7 @@ fn ages_and_links_on_cards() {
     // The task's recorded PR fills in when the backlog has none.
     assert_eq!(
         inf.pr_url.as_deref(),
-        Some("https://forge.example.invalid/acme/ledger-api/pull/501")
+        Some("https://forge.example.invalid/acme/ledger-api/pull/1215")
     );
     assert_eq!(card(&v.done, "pin-update").since, day("2026-11-18"));
     // An http:// PR link is not passed on.

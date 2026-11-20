@@ -26,7 +26,7 @@ export function shortDate(ymd: string): string {
   return month ? `${String(Number(m[3]))} ${month}` : ymd;
 }
 
-/** "#494" from a pull request URL ending in a number, else null. */
+/** "#1207" from a pull request URL ending in a number, else null. */
 export function prNumber(url: string | null): string | null {
   if (!url) return null;
   const m = /\/(\d+)\/?$/.exec(url);

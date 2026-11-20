@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowSquareOutIcon as ArrowSquareOut,
   CaretRightIcon as CaretRight,
@@ -15,7 +15,7 @@ import { inApp } from "../../bridge";
 import { useApp } from "../../state/app";
 import { age, firstLine, prNumber } from "../board/format";
 import { reportsArea, takeDecisionRequest } from "../board/nav";
-import { CallPill, decisionTag, Tile } from "../board/parts";
+import { CallPill, decisionTag, SnapshotBanner, Tile } from "../board/parts";
 import { useBoard } from "../board/useBoard";
 import { openPullRequest, type Decision } from "./bridge";
 import "./decisions.css";
@@ -43,13 +43,28 @@ export default function DecisionsArea() {
   const selected = items.find((d) => d.id === sel) ?? items[0] ?? null;
 
   const focusReply = () => detailRef.current?.querySelector<HTMLInputElement>(".composer input")?.focus();
+  // "Reply" on a strip card opens this view with the reply box focused.
+  const ready = load.status === "ready";
+  useEffect(() => {
+    if (ready && request?.reply) focusReply();
+  }, [ready, request]);
   const move = (step: number) => {
     if (items.length === 0) return;
     const at = selected ? items.findIndex((d) => d.id === selected.id) : -1;
-    const next = items[Math.min(items.length - 1, Math.max(0, at + step))];
+    const to = Math.min(items.length - 1, Math.max(0, at + step));
+    const next = items[to];
     if (!next) return;
     setSel(next.id);
-    listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(next.id)}"]`)?.focus();
+    // The list is windowed: scroll the row into view first, then focus it once it is mounted.
+    const box = listRef.current?.querySelector<HTMLElement>(".decisions-vlist");
+    if (box) {
+      const top = to * ROW;
+      if (top < box.scrollTop) box.scrollTop = top;
+      else if (top + ROW > box.scrollTop + box.clientHeight) box.scrollTop = top + ROW - box.clientHeight;
+    }
+    requestAnimationFrame(() => {
+      listRef.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(next.id)}"]`)?.focus({ preventScroll: true });
+    });
   };
   useHotkey("j", () => {
     move(1);
@@ -90,6 +105,7 @@ export default function DecisionsArea() {
             <Kbd>K</Kbd> Open <Kbd>↵</Kbd> Reply <Kbd>R</Kbd>
           </span>
         </div>
+        <SnapshotBanner />
         <div className="decisions-tabs">
           <Tabs
             label="Decisions"

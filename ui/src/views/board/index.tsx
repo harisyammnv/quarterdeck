@@ -11,7 +11,7 @@ import { useApp } from "../../state/app";
 import { openPullRequest } from "./bridge";
 import { age, firstLine, prNumber } from "./format";
 import { reportsArea, requestDecision } from "./nav";
-import { CallPill, decisionTag, LiveChip, Tile } from "./parts";
+import { CallPill, decisionTag, LiveChip, SnapshotBanner, Tile } from "./parts";
 import type { BoardCard, BoardView, Decision } from "./types";
 import { useBoard } from "./useBoard";
 import "./board.css";
@@ -58,6 +58,7 @@ function Board({ v, now }: { v: BoardView; now: number }) {
         <PanelHead title="Board" meta={v.ready ? `${String(v.queued_total)} queued, ${String(v.in_flight.length)} in flight, ${String(live.length)} waiting on you` : undefined}>
           {v.generated_at !== null && <span className="meta tn">Snapshot {ago(v.generated_at * 1000, now)}</span>}
         </PanelHead>
+        <SnapshotBanner />
         {v.other.length > 0 && (
           <Banner title={v.other.map((o) => `${o.id}: ${o.why}`).join("\n")}>
             {v.other.length === 1 ? "One backlog record" : `${String(v.other.length)} backlog records`} could not be placed on the board: {v.other.map((o) => o.id).join(", ")}

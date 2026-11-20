@@ -1,5 +1,6 @@
 import { memo } from "react";
-import { ProjectTile, StatePill, StatusPill, Tag } from "../../ui";
+import { Banner, ProjectTile, StatePill, StatusPill, Tag } from "../../ui";
+import { useApp } from "../../state/app";
 import { shortDate } from "./format";
 import type { BoardCard, Decision, HoldBucket } from "./types";
 
@@ -56,4 +57,17 @@ export function decisionTag(d: Decision): string {
   if (d.pr_url) return "PR";
   if (d.has_report) return "Report";
   return d.kind === "decision" ? "Decision" : "Approval";
+}
+
+/** The fleet snapshot's own state: a failed run, or a saved snapshot shown while a fresh one is read. */
+export function SnapshotBanner() {
+  const snap = useApp().live.view?.snapshot;
+  if (!snap) return null;
+  if (snap.error) {
+    return <Banner title={snap.error}>Snapshot failed, showing the last known backlog: {snap.error}</Banner>;
+  }
+  if (snap.cached) {
+    return <Banner>{snap.running ? "Showing the saved snapshot while a fresh one is read." : "Showing the saved snapshot."}</Banner>;
+  }
+  return null;
 }
