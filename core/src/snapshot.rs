@@ -55,6 +55,8 @@ pub struct Task {
     pub pr_url: Option<String>,
     /// `backlog.title`, the task's name.
     pub title: Option<String>,
+    /// `spawn_gen`, the worker's spawn stamp, such as `s1795176247.90164.19766`.
+    pub spawn_gen: Option<String>,
 }
 
 impl Task {
@@ -244,6 +246,8 @@ mod raw {
         pub pr: Pr,
         #[serde(default)]
         pub backlog: TaskBacklog,
+        #[serde(default)]
+        pub spawn_gen: Option<String>,
     }
 
     #[derive(Default, Deserialize)]
@@ -324,6 +328,7 @@ impl From<raw::Snapshot> for Snapshot {
                     endpoint_target: non_empty(t.endpoint.target),
                     pr_url: non_empty(t.pr.url),
                     title: non_empty(t.backlog.title),
+                    spawn_gen: non_empty(t.spawn_gen),
                 })
                 .collect(),
             backlog: r.backlog.records,

@@ -7,6 +7,7 @@
 //! lists in step.
 
 pub mod fleet;
+pub mod projects;
 pub mod shell;
 
 use std::sync::Arc;

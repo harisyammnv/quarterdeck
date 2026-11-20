@@ -19,6 +19,8 @@ pub const MAX_URL_LEN: usize = 2048;
 pub enum External {
     /// `/usr/bin/open <url>`: opens an `https` link in the default browser.
     OpenUrl(String),
+    /// Orca's CLI, bringing a task's terminal or worktree forward (see [`crate::projects::orca`]).
+    OrcaFocus(crate::projects::OrcaTarget),
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -31,6 +33,8 @@ pub enum ExternalError {
     Credentials,
     #[error("the link is longer than {MAX_URL_LEN} characters")]
     TooLong,
+    #[error("the Orca terminal or worktree on record is not well formed")]
+    BadTarget,
     #[error("could not start {0}: {1}")]
     Spawn(&'static str, String),
     #[error("{0} did not finish in time")]
@@ -81,6 +85,7 @@ impl External {
     fn program(&self) -> &'static str {
         match self {
             Self::OpenUrl(_) => "/usr/bin/open",
+            Self::OrcaFocus(_) => crate::projects::orca::ORCA_BIN,
         }
     }
 
@@ -91,6 +96,7 @@ impl External {
                 validate_url(url)?;
                 Ok(vec![url.clone()])
             }
+            Self::OrcaFocus(target) => target.args().ok_or(ExternalError::BadTarget),
         }
     }
 
