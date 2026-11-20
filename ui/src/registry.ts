@@ -79,6 +79,7 @@ export const settingsView: ViewDef = { id: "settings", label: "Settings", descri
 
 /** Inspector sections, one line per area, in `order`. */
 export const inspectorSections: SectionDef[] = [
+  { id: "containers", order: 40, component: lazy(() => import("./views/containers/Section")) },
   { id: "task", order: 10, component: lazy(() => import("./views/fleet/TaskSection")) },
 ];
 

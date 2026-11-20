@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-containers-status"
+description = "Enables the containers_status command without any pre-configured scope."
+commands.allow = ["containers_status"]
+
+[[permission]]
+identifier = "deny-containers-status"
+description = "Denies the containers_status command without any pre-configured scope."
+commands.deny = ["containers_status"]

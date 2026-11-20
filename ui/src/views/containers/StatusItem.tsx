@@ -1,24 +1,15 @@
-import { useEffect, useSyncExternalStore } from "react";
-import { CubeIcon as Cube } from "@phosphor-icons/react";
-import { lastContainers, loadContainers, onContainers } from "./bridge";
+import { Suspense, lazy } from "react";
 
-let asked = false;
+const EngineStatus = lazy(() => import("./EngineStatus"));
 
-/** The status bar's Docker context, from the containers view's last listing. */
+/**
+ * The status bar's Docker context. The registry imports only this wrapper; the code that
+ * talks to the engine loads on its own, after the window is up.
+ */
 export default function ContainersStatus() {
-  const view = useSyncExternalStore(onContainers, lastContainers);
-  // One listing per session for the status bar; the view refreshes it from then on.
-  useEffect(() => {
-    if (asked) return;
-    asked = true;
-    loadContainers().catch(() => undefined);
-  }, []);
-  if (!view) return null;
-  const ctx = view.context ?? "default";
   return (
-    <span className="row">
-      <Cube size={14} />
-      {view.status === "ready" ? `Docker context ${ctx}` : "Docker not running"}
-    </span>
+    <Suspense fallback={null}>
+      <EngineStatus />
+    </Suspense>
   );
 }

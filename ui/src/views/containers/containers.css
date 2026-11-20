@@ -375,3 +375,25 @@ button.containers-grp:hover {
   color: var(--muted);
   flex: none;
 }
+
+/* ---------- inspector section (Fleet) ---------- */
+
+.containers-isect {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.containers-isect li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  border-bottom: 1px solid var(--line);
+}
+
+.containers-isect li:last-child {
+  border-bottom: 0;
+}

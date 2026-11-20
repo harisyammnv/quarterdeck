@@ -2,7 +2,7 @@
  * Invented containers data for working on the view in a plain browser. Nothing here is read
  * from a Docker engine; names follow the examples used elsewhere in the preview.
  */
-import type { ContainerLogs, ContainerRow, ContainerStats, ContainersView } from "./bridge";
+import type { ContainerDetail, ContainerLogs, ContainerRow, ContainerStats, ContainersView, EngineSummary } from "./bridge";
 
 const now = Math.floor(Date.now() / 1000);
 
@@ -19,12 +19,10 @@ function row(
     service: null,
     image,
     state,
-    status: state === "running" ? "Up" : "Exited (0)",
+    status: state === "running" ? "Up 18 minutes" : "Exited (0) 2 hours ago",
     exit_code: null,
     ports: [],
     created_at: now - 7200,
-    started_at: state === "running" ? now - 1080 : now - 9000,
-    finished_at: state === "running" ? null : now - 7200,
     compose: null,
     ...opts,
   };
@@ -115,15 +113,15 @@ function previewReady(): ContainersView {
         containers: [
           row("3d4e5f607182", "route-frontend", "node:22-slim", "running", {
             ports: [port(3000, 3000)],
-            started_at: now - 2460,
+            status: "Up 41 minutes",
           }),
           row("4e5f60718293", "route-api", "route-api:dev", "running", {
             ports: [port(8000, 8000)],
-            started_at: now - 2460,
+            status: "Up 41 minutes",
           }),
           row("5f60718293a4", "route-postgis", "postgis/postgis:16", "running", {
             ports: [port(5433, 5432)],
-            started_at: now - 2460,
+            status: "Up 41 minutes",
           }),
         ],
       },
@@ -135,11 +133,11 @@ function previewReady(): ContainersView {
         containers: [
           row("60718293a4b5", "portal-web", "node:22-slim", "running", {
             ports: [port(3100, 3000)],
-            started_at: now - 4320,
+            status: "Up About an hour",
           }),
           row("718293a4b5c6", "portal-mail", "axllent/mailpit", "running", {
             ports: [port(8025, 8025)],
-            started_at: now - 4320,
+            status: "Up About an hour",
           }),
         ],
       },
@@ -152,7 +150,7 @@ function previewReady(): ContainersView {
           row("8293a4b5c6d7", "dash", "example-dash:profile", "exited", {
             exit_code: 1,
             ports: [port(null, 8051)],
-            finished_at: now - 300,
+            status: "Exited (1) 5 minutes ago",
           }),
         ],
       },
@@ -211,5 +209,22 @@ export function previewLogs(id: string): ContainerLogs {
     id,
     lines: lines.map(([ago, stderr, text]) => ({ at: at(ago), stderr, text })),
     truncated: false,
+  };
+}
+
+export function previewSummary(): EngineSummary {
+  const v = previewContainers();
+  return { status: v.status, context: v.context, engine_version: v.engine_version, kiri_version: v.kiri_version };
+}
+
+export function previewDetail(id: string): ContainerDetail {
+  const row = [...previewContainers().groups.flatMap((g) => g.containers), ...previewContainers().other].find((r) => r.id === id);
+  const running = row?.state === "running";
+  return {
+    id,
+    started_at: now - (running ? 1080 : 9000),
+    finished_at: running ? null : now - 300,
+    exit_code: running ? null : (row?.exit_code ?? 0),
+    restart_count: 0,
   };
 }

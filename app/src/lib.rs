@@ -18,9 +18,11 @@ use tauri_specta::{collect_commands, collect_events};
 pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .commands(collect_commands![
+            containers::container_inspect,
             containers::container_logs,
             containers::container_stats,
             containers::containers_list,
+            containers::containers_status,
             containers::kiri_open,
             fleet::fleet_view,
             fleet::refresh_fleet,

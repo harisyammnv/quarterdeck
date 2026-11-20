@@ -5,12 +5,14 @@
  */
 import {
   commands,
+  type ContainerDetail_Serialize,
+  type EngineSummary_Serialize,
   type ContainerLogs_Serialize,
   type ContainerStats_Serialize,
   type ContainersView_Serialize,
 } from "../../bindings";
 import { inApp } from "../../bridge";
-import { previewContainers, previewLogs, previewStats } from "./preview";
+import { previewContainers, previewDetail, previewLogs, previewStats, previewSummary } from "./preview";
 
 export type ContainersView = ContainersView_Serialize;
 export type ContainerGroup = ContainersView["groups"][number];
@@ -21,6 +23,8 @@ export type NetworkRow = ContainersView["networks"][number];
 export type ContainerStats = ContainerStats_Serialize;
 export type ContainerLogs = ContainerLogs_Serialize;
 export type LogLine = ContainerLogs["lines"][number];
+export type ContainerDetail = ContainerDetail_Serialize;
+export type EngineSummary = EngineSummary_Serialize;
 
 let last: ContainersView | null = null;
 let pending: Promise<ContainersView> | null = null;
@@ -53,6 +57,16 @@ export function loadContainers(): Promise<ContainersView> {
       pending = null;
     });
   return pending;
+}
+
+/** The Docker context and engine state, from discovery and `/version` only. */
+export function containersStatus(): Promise<EngineSummary> {
+  return inApp ? commands.containersStatus() : Promise.resolve(previewSummary());
+}
+
+/** Start and finish times of one listed container, inspected alone. */
+export function containerInspect(id: string): Promise<ContainerDetail> {
+  return inApp ? commands.containerInspect(id) : Promise.resolve(previewDetail(id));
 }
 
 export function containerLogs(id: string): Promise<ContainerLogs> {

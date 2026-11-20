@@ -8,6 +8,11 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 
 /** Commands */
 export const commands = {
+	/**
+	 *  Start and finish times and exit code of one container from the last listing, by short
+	 *  id. The container is inspected alone; nothing else from the inspect response is sent.
+	 */
+	containerInspect: (id: string, options?: InvokeOptions) => __TAURI_INVOKE<ContainerDetail_Serialize>("container_inspect", { id }, options),
 	/**  The last lines of output of a container from the last listing, by short id. */
 	containerLogs: (id: string, options?: InvokeOptions) => __TAURI_INVOKE<ContainerLogs_Serialize>("container_logs", { id }, options),
 	/**  One CPU and memory sample of a container from the last listing, by short id. */
@@ -17,6 +22,8 @@ export const commands = {
 	 *  containers grouped under the worktrees of the tasks in the fleet snapshot.
 	 */
 	containersList: (options?: InvokeOptions) => __TAURI_INVOKE<ContainersView_Serialize>("containers_list", undefined, options),
+	/**  The Docker context and engine state for the status bar: discovery and `/version` only. */
+	containersStatus: (options?: InvokeOptions) => __TAURI_INVOKE<EngineSummary_Serialize>("containers_status", undefined, options),
 	/**  Opens Kiri's own window. Takes no argument: the launch is fixed. */
 	kiriOpen: (options?: InvokeOptions) => __TAURI_INVOKE<null>("kiri_open", undefined, options),
 	/**  The current fleet view, or `None` when no home is configured. */
@@ -86,6 +93,36 @@ export type AppInfo_Serialize = {
 	version: string,
 };
 
+/**
+ *  Times and exit code of one container, from inspecting it alone when it is selected.
+ *  Nothing else from the inspect response (environment, mounts, command) is kept.
+ */
+export type ContainerDetail = ContainerDetail_Serialize | ContainerDetail_Deserialize;
+
+/**
+ *  Times and exit code of one container, from inspecting it alone when it is selected.
+ *  Nothing else from the inspect response (environment, mounts, command) is kept.
+ */
+export type ContainerDetail_Deserialize = {
+	id: string,
+	started_at?: number | null,
+	finished_at?: number | null,
+	exit_code?: number | null,
+	restart_count?: number | null,
+};
+
+/**
+ *  Times and exit code of one container, from inspecting it alone when it is selected.
+ *  Nothing else from the inspect response (environment, mounts, command) is kept.
+ */
+export type ContainerDetail_Serialize = {
+	id: string,
+	started_at: number | null,
+	finished_at: number | null,
+	exit_code: number | null,
+	restart_count: number | null,
+};
+
 /**  The containers that belong to one task's worktree. */
 export type ContainerGroup = ContainerGroup_Serialize | ContainerGroup_Deserialize;
 
@@ -139,13 +176,11 @@ export type ContainerRow_Deserialize = {
 	service?: string | null,
 	image: string,
 	state: ContainerState,
-	/**  The engine's status text, such as "Up 5 minutes". */
+	/**  The engine's status text, such as "Up 5 minutes" or "Exited (1) 2 hours ago". */
 	status: string,
 	exit_code?: number | null,
 	ports: PortMap_Deserialize[],
 	created_at?: number | null,
-	started_at?: number | null,
-	finished_at?: number | null,
 	/**  The compose file, relative to its worktree folder. */
 	compose?: string | null,
 };
@@ -159,13 +194,11 @@ export type ContainerRow_Serialize = {
 	service: string | null,
 	image: string,
 	state: ContainerState,
-	/**  The engine's status text, such as "Up 5 minutes". */
+	/**  The engine's status text, such as "Up 5 minutes" or "Exited (1) 2 hours ago". */
 	status: string,
 	exit_code: number | null,
 	ports: PortMap_Serialize[],
 	created_at: number | null,
-	started_at: number | null,
-	finished_at: number | null,
 	/**  The compose file, relative to its worktree folder. */
 	compose: string | null,
 };
@@ -256,6 +289,25 @@ export type EngineStatus =
 "not-running" | 
 /**  The active context is not a local Unix socket. */
 "unsupported";
+
+/**  The engine as the status bar needs it: discovery and `/version` only, no listing. */
+export type EngineSummary = EngineSummary_Serialize | EngineSummary_Deserialize;
+
+/**  The engine as the status bar needs it: discovery and `/version` only, no listing. */
+export type EngineSummary_Deserialize = {
+	status: EngineStatus,
+	context?: string | null,
+	engine_version?: string | null,
+	kiri_version?: string | null,
+};
+
+/**  The engine as the status bar needs it: discovery and `/version` only, no listing. */
+export type EngineSummary_Serialize = {
+	status: EngineStatus,
+	context: string | null,
+	engine_version: string | null,
+	kiri_version: string | null,
+};
 
 export type FleetRow = FleetRow_Serialize | FleetRow_Deserialize;
 

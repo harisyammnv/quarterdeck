@@ -16,18 +16,15 @@ pub mod view;
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-use futures_util::stream::{self, StreamExt};
-
 use crate::engine::HomeState;
-use crate::status::TaskState;
 
 pub use api::{ApiError, DockerApi};
 pub use context::{DiscoveryEnv, Endpoint};
 pub use logs::{ContainerLogs, LogLine};
 pub use stats::ContainerStats;
 pub use view::{
-    ContainerGroup, ContainerRow, ContainerState, ContainersView, Counts, EngineStatus, ImageRow,
-    NetworkRow, PortMap, VolumeRow, WorktreeRef,
+    ContainerDetail, ContainerGroup, ContainerRow, ContainerState, ContainersView, Counts,
+    EngineStatus, EngineSummary, ImageRow, NetworkRow, PortMap, VolumeRow, WorktreeRef,
 };
 
 /// The task worktrees to group containers under, in snapshot order, with each task's state
@@ -42,29 +39,20 @@ pub fn worktrees(state: &HomeState) -> Vec<WorktreeRef> {
         .iter()
         .filter_map(|t| {
             let worktree = t.worktree.clone()?;
-            let word = t.state.as_deref().unwrap_or("unknown");
-            let known = TaskState::from_word(word) != TaskState::Unknown;
-            let newer = |at: Option<i64>| match (snapshot.generated, at) {
-                (Some(generated), Some(at)) => at > generated,
-                (None, _) => true,
-                (Some(_), None) => false,
-            };
-            let state = match state.events.get(&t.id) {
-                Some(e) if newer(e.at) || !known => e.state(),
-                _ => TaskState::from_word(word),
-            };
+            let merged = crate::fleet::merged_state(
+                t.state.as_deref(),
+                state.events.get(&t.id),
+                snapshot.generated,
+            );
             Some(WorktreeRef {
                 task_id: t.id.clone(),
                 project: t.project_name(),
                 worktree,
-                state,
+                state: merged.state,
             })
         })
         .collect()
 }
-
-/// Containers inspected at once while listing.
-const INSPECT_CONCURRENCY: usize = 8;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContainersError {
@@ -215,12 +203,6 @@ impl Containers {
             .take(view::MAX_CONTAINERS)
             .filter_map(|c| c.id.clone())
             .collect();
-        let inspected: BTreeMap<_, _> = stream::iter(ids.iter().cloned())
-            .map(|id| async move { api.inspect(&id).await.ok().map(|r| (id, r)) })
-            .buffer_unordered(INSPECT_CONCURRENCY)
-            .filter_map(|r| async move { r })
-            .collect()
-            .await;
         {
             let mut known = self
                 .known
@@ -234,12 +216,62 @@ impl Containers {
         let listing = view::Listing {
             version,
             containers,
-            inspected,
             images: images.unwrap_or_default(),
             volumes: volumes.unwrap_or_default(),
             networks: networks.unwrap_or_default(),
         };
         view::build(context, &listing, worktrees)
+    }
+
+    /// Discovery and `/version` only, for the status bar. Never lists anything.
+    pub async fn summary(&self) -> EngineSummary {
+        let (context, engine) = match self.engine().await {
+            Ok(ok) => ok,
+            Err(view) => {
+                return EngineSummary {
+                    status: view.status,
+                    context: view.context,
+                    engine_version: None,
+                    kiri_version: None,
+                }
+            }
+        };
+        self.summary_with(&engine, &context).await
+    }
+
+    pub async fn summary_with(&self, api: &impl DockerApi, context: &str) -> EngineSummary {
+        match api.version().await {
+            Ok(v) => EngineSummary {
+                status: EngineStatus::Ready,
+                context: Some(context.to_string()),
+                engine_version: v.version.clone(),
+                kiri_version: view::kiri_version(&v),
+            },
+            Err(_) => EngineSummary {
+                status: EngineStatus::NotRunning,
+                context: Some(context.to_string()),
+                engine_version: None,
+                kiri_version: None,
+            },
+        }
+    }
+
+    /// Times and exit code of one listed container, from inspecting it alone.
+    pub async fn detail(&self, id: &str) -> Result<ContainerDetail, ContainersError> {
+        let full = self.resolve(id)?;
+        let engine = self.connected().await?;
+        self.detail_with(&engine, id, &full)
+            .await
+            .map_err(|e| Self::redact_err(&engine, e))
+    }
+
+    pub async fn detail_with(
+        &self,
+        api: &impl DockerApi,
+        id: &str,
+        full: &str,
+    ) -> Result<ContainerDetail, ContainersError> {
+        Ok(ContainerDetail::from_inspect(id, &api.inspect(full).await?))
     }
 
     /// The full id behind a short id from the last listing.

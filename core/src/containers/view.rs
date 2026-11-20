@@ -4,7 +4,6 @@
 //! What never crosses: environment variables, raw label maps, absolute host paths (mount
 //! sources, compose folders, socket paths), full command lines.
 
-use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use bollard::models::{
@@ -23,6 +22,46 @@ pub const MAX_VOLUMES: usize = 300;
 pub const MAX_NETWORKS: usize = 100;
 /// Longest name, image or tag text sent to the UI.
 const MAX_TEXT: usize = 200;
+
+/// Times and exit code of one container, from inspecting it alone when it is selected.
+/// Nothing else from the inspect response (environment, mounts, command) is kept.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct ContainerDetail {
+    pub id: String,
+    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
+    pub started_at: Option<i64>,
+    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
+    pub finished_at: Option<i64>,
+    pub exit_code: Option<i32>,
+    pub restart_count: Option<u32>,
+}
+
+impl ContainerDetail {
+    pub fn from_inspect(id: &str, i: &ContainerInspectResponse) -> Self {
+        let s = i.state.as_ref();
+        let time = |t: Option<&String>| t.and_then(|t| rfc3339_to_epoch(t)).filter(|t| *t > 0);
+        Self {
+            id: id.to_string(),
+            started_at: time(s.and_then(|s| s.started_at.as_ref())),
+            finished_at: time(s.and_then(|s| s.finished_at.as_ref())),
+            exit_code: s
+                .and_then(|s| s.exit_code)
+                .and_then(|c| i32::try_from(c).ok()),
+            restart_count: i.restart_count.and_then(|n| u32::try_from(n).ok()),
+        }
+    }
+}
+
+/// The engine as the status bar needs it: discovery and `/version` only, no listing.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct EngineSummary {
+    pub status: EngineStatus,
+    pub context: Option<String>,
+    pub engine_version: Option<String>,
+    pub kiri_version: Option<String>,
+}
 
 /// A task's worktree, as the grouping needs it. Built by the caller from the fleet snapshot.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -96,16 +135,12 @@ pub struct ContainerRow {
     pub service: Option<String>,
     pub image: String,
     pub state: ContainerState,
-    /// The engine's status text, such as "Up 5 minutes".
+    /// The engine's status text, such as "Up 5 minutes" or "Exited (1) 2 hours ago".
     pub status: String,
     pub exit_code: Option<i32>,
     pub ports: Vec<PortMap>,
     #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
     pub created_at: Option<i64>,
-    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
-    pub started_at: Option<i64>,
-    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
-    pub finished_at: Option<i64>,
     /// The compose file, relative to its worktree folder.
     pub compose: Option<String>,
 }
@@ -217,8 +252,6 @@ impl ContainersView {
 pub struct Listing {
     pub version: SystemVersion,
     pub containers: Vec<ContainerSummary>,
-    /// Inspect results by full container id; missing entries just lack times.
-    pub inspected: BTreeMap<String, ContainerInspectResponse>,
     pub images: Vec<ImageSummary>,
     pub volumes: Vec<Volume>,
     pub networks: Vec<Network>,
@@ -253,11 +286,13 @@ pub fn kiri_version(v: &SystemVersion) -> Option<String> {
     component.or_else(|| platform.then(|| "unknown".to_string()))
 }
 
-fn row(
-    c: &ContainerSummary,
-    inspect: Option<&ContainerInspectResponse>,
-    wt: Option<&Path>,
-) -> ContainerRow {
+/// The exit code in a status such as "Exited (137) 2 minutes ago", when there is one.
+fn exit_code(status: &str) -> Option<i32> {
+    let rest = status.trim().strip_prefix("Exited (")?;
+    rest.split_once(')')?.0.trim().parse().ok()
+}
+
+fn row(c: &ContainerSummary, wt: Option<&Path>) -> ContainerRow {
     let labels = c.labels.as_ref();
     let label = |k: &str| labels.and_then(|l| l.get(k)).filter(|v| !v.is_empty());
     let name = c.names.iter().flatten().next().map_or_else(
@@ -283,23 +318,18 @@ fn row(
     ports.sort_by_key(|p| (p.host.is_none(), p.host, p.container));
     ports.dedup();
     ports.truncate(16);
-    let istate = inspect.and_then(|i| i.state.as_ref());
-    let time = |s: Option<&String>| s.and_then(|t| rfc3339_to_epoch(t)).filter(|t| *t > 0);
+    let status = c.status.as_deref().unwrap_or("");
     ContainerRow {
         id: short_id(c.id.as_deref().unwrap_or("")),
         name,
         service: label(LABEL_SERVICE).map(|s| clip(s)),
         image: clip(c.image.as_deref().unwrap_or("")),
         state,
-        status: clip(c.status.as_deref().unwrap_or("")),
-        exit_code: istate
-            .and_then(|s| s.exit_code)
-            .filter(|_| matches!(state, ContainerState::Exited | ContainerState::Dead))
-            .and_then(|c| i32::try_from(c).ok()),
+        status: clip(status),
+        exit_code: exit_code(status)
+            .filter(|_| matches!(state, ContainerState::Exited | ContainerState::Dead)),
         ports,
         created_at: c.created,
-        started_at: time(istate.and_then(|s| s.started_at.as_ref())),
-        finished_at: time(istate.and_then(|s| s.finished_at.as_ref())),
         compose: label(LABEL_CONFIG_FILES).and_then(|f| group::compose_label(f, wt)),
     }
 }
@@ -354,13 +384,12 @@ pub fn build(context: &str, listing: &Listing, worktrees: &[WorktreeRef]) -> Con
     let mut other = Vec::new();
     let mut truncated = listing.containers.len() > MAX_CONTAINERS;
     for c in listing.containers.iter().take(MAX_CONTAINERS) {
-        let inspect = c.id.as_ref().and_then(|id| listing.inspected.get(id));
         let idx = group::owner(
             worktrees.iter().map(|w| w.worktree.as_path()),
             &anchor_paths(c),
         );
         let wt = idx.map(|i| worktrees[i].worktree.as_path());
-        let r = row(c, inspect, wt);
+        let r = row(c, wt);
         match idx {
             Some(i) => groups[i].containers.push(r),
             None => other.push(r),

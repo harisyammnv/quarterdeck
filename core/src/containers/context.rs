@@ -14,7 +14,8 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
-/// The socket of the `default` context.
+/// The socket of the `default` context: the Docker CLI's own default for that context, used
+/// only when no `DOCKER_HOST` and no named context are configured.
 pub const DEFAULT_SOCKET: &str = "/var/run/docker.sock";
 
 /// Cap on `config.json` and each `meta.json`.

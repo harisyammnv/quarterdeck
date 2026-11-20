@@ -3,7 +3,7 @@
 //! Lists, logs and stats only; nothing here starts, stops, removes or execs a container.
 
 use quarterdeck_core::containers::{
-    self, ContainerLogs, ContainerStats, Containers, ContainersView,
+    self, ContainerDetail, ContainerLogs, ContainerStats, Containers, ContainersView, EngineSummary,
 };
 use quarterdeck_core::external::{self, External};
 
@@ -31,6 +31,26 @@ pub async fn containers_list(
         .with_engine(|e| containers::worktrees(&e.state()))
         .unwrap_or_default();
     Ok(state.0.list(&worktrees).await)
+}
+
+/// The Docker context and engine state for the status bar: discovery and `/version` only.
+#[tauri::command]
+#[specta::specta]
+pub async fn containers_status(
+    state: tauri::State<'_, ContainersState>,
+) -> Result<EngineSummary, String> {
+    Ok(state.0.summary().await)
+}
+
+/// Start and finish times and exit code of one container from the last listing, by short
+/// id. The container is inspected alone; nothing else from the inspect response is sent.
+#[tauri::command]
+#[specta::specta]
+pub async fn container_inspect(
+    state: tauri::State<'_, ContainersState>,
+    id: String,
+) -> Result<ContainerDetail, String> {
+    state.0.detail(&id).await.map_err(|e| e.to_string())
 }
 
 /// The last lines of output of a container from the last listing, by short id.

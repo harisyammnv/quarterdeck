@@ -23,6 +23,7 @@ struct Fake {
     containers: Result<Vec<ContainerSummary>, String>,
     images_fail: bool,
     logs: Vec<logs::LogChunk>,
+    inspects: std::sync::atomic::AtomicUsize,
 }
 
 impl Fake {
@@ -32,6 +33,7 @@ impl Fake {
             containers: Ok(fixture("containers.json")),
             images_fail: false,
             logs: Vec::new(),
+            inspects: std::sync::atomic::AtomicUsize::new(0),
         }
     }
 }
@@ -44,6 +46,8 @@ impl DockerApi for Fake {
         self.containers.clone().map_err(ApiError)
     }
     async fn inspect(&self, id: &str) -> Result<ContainerInspectResponse, ApiError> {
+        self.inspects
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let mut all: BTreeMap<String, ContainerInspectResponse> = fixture("inspect.json");
         all.remove(id)
             .ok_or_else(|| ApiError("no such container".into()))
@@ -146,8 +150,6 @@ async fn groups_by_compose_folder_and_bind_mount() {
     assert_eq!(api.name, "login-api-1");
     assert_eq!(api.state, ContainerState::Running);
     assert_eq!(api.compose.as_deref(), Some("fm-login/compose.yaml"));
-    assert_eq!(api.started_at, Some(1_795_168_800));
-    assert_eq!(api.finished_at, None, "the zero time is not a finish time");
     assert_eq!(api.exit_code, None, "a running container has no exit code");
     assert_eq!(
         api.ports,
@@ -170,10 +172,6 @@ async fn groups_by_compose_folder_and_bind_mount() {
 
     let other: Vec<_> = v.other.iter().map(|c| c.name.as_str()).collect();
     assert_eq!(other, ["scratch-db", "route-cache"], "running first");
-    assert_eq!(
-        v.other[0].started_at, None,
-        "an uninspectable container still lists"
-    );
 
     assert_eq!(v.counts.containers, 6);
     assert_eq!(v.counts.running, 4);
@@ -457,4 +455,46 @@ fn engine_errors_do_not_name_the_socket_path() {
         ),
         "error trying to connect: the socket: refused"
     );
+}
+
+#[tokio::test]
+async fn detail_inspects_one_container_and_keeps_only_times() {
+    let svc = Containers::default();
+    let fake = Fake::kiri();
+    let full = "e5".repeat(32);
+    let d = svc.detail_with(&fake, "e5e5e5e5e5e5", &full).await.unwrap();
+    assert_eq!(fake.inspects.load(std::sync::atomic::Ordering::SeqCst), 1);
+    assert_eq!(d.exit_code, Some(1));
+    assert!(d.started_at.is_some() && d.finished_at.is_some());
+    let json = serde_json::to_string(&d).unwrap();
+    assert!(!json.contains("SECRET_TOKEN") && !json.contains("do-not-send"));
+    let running = svc.detail_with(&fake, API, &"a1".repeat(32)).await.unwrap();
+    assert_eq!(running.started_at, Some(1_795_168_800));
+    assert_eq!(
+        running.finished_at, None,
+        "the zero time is not a finish time"
+    );
+}
+
+#[tokio::test]
+async fn summary_reads_version_only() {
+    let svc = Containers::default();
+    let fake = Fake::kiri();
+    let s = svc.summary_with(&fake, "kiri").await;
+    assert_eq!(s.status, EngineStatus::Ready);
+    assert_eq!(s.kiri_version.as_deref(), Some("0.2.1"));
+    assert_eq!(fake.inspects.load(std::sync::atomic::Ordering::SeqCst), 0);
+    let down = Fake {
+        version: Err("refused".into()),
+        ..Fake::kiri()
+    };
+    assert_eq!(
+        svc.summary_with(&down, "kiri").await.status,
+        EngineStatus::NotRunning
+    );
+    let tcp = Containers::new(DiscoveryEnv {
+        docker_host: Some("tcp://engine.example.invalid:2375".into()),
+        ..DiscoveryEnv::default()
+    });
+    assert_eq!(tcp.summary().await.status, EngineStatus::Unsupported);
 }

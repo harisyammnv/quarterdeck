@@ -35,12 +35,14 @@ import {
 } from "../../ui";
 import { STATE_LOOK } from "../../states";
 import {
+  containerInspect,
   containerLogs,
   containerStats,
   kiriOpen,
   lastContainers,
   loadContainers,
   onContainers,
+  type ContainerDetail,
   type ContainerGroup,
   type ContainerLogs,
   type ContainerRow,
@@ -169,7 +171,7 @@ export default function ContainersScreen() {
           ) : view.status !== "ready" ? (
             <EngineZero view={view} />
           ) : tab === "containers" ? (
-            <ContainersTab view={view} rows={rows} selected={current?.id ?? null} onSelect={setSelected} now={now} />
+            <ContainersTab view={view} rows={rows} selected={current?.id ?? null} onSelect={setSelected} />
           ) : tab === "images" ? (
             <ImagesTab view={view} now={now} />
           ) : tab === "volumes" ? (
@@ -275,13 +277,11 @@ function ContainersTab({
   rows,
   selected,
   onSelect,
-  now,
 }: {
   view: ContainersView;
   rows: ContainerRow[];
   selected: string | null;
   onSelect: (id: string) => void;
-  now: number;
 }) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const boxRef = useRef<HTMLDivElement>(null);
@@ -332,7 +332,7 @@ function ContainersTab({
     it.kind === "group" ? (
       <GroupLine item={it} onToggle={toggle} />
     ) : it.kind === "row" ? (
-      <Row row={it.row} selected={it.row.id === selected} onSelect={onSelect} now={now} />
+      <Row row={it.row} selected={it.row.id === selected} onSelect={onSelect} />
     ) : (
       <div className="containers-zrow">
         <it.icon size={14} />
@@ -435,7 +435,7 @@ function GroupLine({ item, onToggle }: { item: Extract<Item, { kind: "group" }>;
   );
 }
 
-function Row({ row: r, selected, onSelect, now }: { row: ContainerRow; selected: boolean; onSelect: (id: string) => void; now: number }) {
+function Row({ row: r, selected, onSelect }: { row: ContainerRow; selected: boolean; onSelect: (id: string) => void }) {
   return (
     <button
       type="button"
@@ -457,7 +457,7 @@ function Row({ row: r, selected, onSelect, now }: { row: ContainerRow; selected:
         <ContainerPill row={r} />
       </span>
       <span className="mono t12">{hostPort(r)}</span>
-      <span className="mut trunc">{upText(r, now)}</span>
+      <span className="mut trunc">{upText(r)}</span>
     </button>
   );
 }
@@ -499,7 +499,21 @@ function Inspector({ row, group }: { row: ContainerRow; group: ContainerGroup | 
   const [logs, setLogs] = useState<ContainerLogs | null>(null);
   const [logsError, setLogsError] = useState<string | null>(null);
   const [search, setSearch] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ContainerDetail | null>(null);
   const now = useNow(30_000);
+
+  // Times come from inspecting this one container, once per selection.
+  useEffect(() => {
+    let alive = true;
+    containerInspect(row.id)
+      .then((d) => {
+        if (alive) setDetail(d);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [row.id]);
 
   // Stats for this container only, every 2 s while the window is visible; one call in flight.
   useEffect(() => {
@@ -555,8 +569,9 @@ function Inspector({ row, group }: { row: ContainerRow; group: ContainerGroup | 
   if (row.service) facts.push(["Container", <span className="mono t12">{row.name}</span>]);
   facts.push(["Port", <span className="mono t12">{portText(row) || "None published"}</span>]);
   if (row.compose) facts.push(["Compose", <span className="mono t12" title={row.compose}>{row.compose}</span>]);
-  facts.push([running ? "Started" : "Finished", <span className="tn">{clockAgo(running ? row.started_at : (row.finished_at ?? row.created_at), now)}</span>]);
+  facts.push([running ? "Started" : "Finished", <span className="tn">{detail ? clockAgo(running ? detail.started_at : (detail.finished_at ?? row.created_at), now) : "Reading"}</span>]);
   if (row.exit_code !== null) facts.push(["Exit code", <span className="tn">{row.exit_code}</span>]);
+  if (detail?.restart_count) facts.push(["Restarts", <span className="tn">{detail.restart_count}</span>]);
 
   return (
     <Panel as="aside" className="containers-insp" label={`Container ${row.name}`}>
@@ -807,16 +822,6 @@ function plural(n: number, word: string): string {
   return `${String(n)} ${word}${n === 1 ? "" : "s"}`;
 }
 
-/** "18 min", "1 h 12 min", "3 d". */
-function duration(secs: number): string {
-  const m = Math.floor(secs / 60);
-  if (m < 1) return "under a minute";
-  if (m < 60) return `${String(m)} min`;
-  const h = Math.floor(m / 60);
-  if (h < 48) return m % 60 ? `${String(h)} h ${String(m % 60)} min` : `${String(h)} h`;
-  return `${String(Math.floor(h / 24))} d`;
-}
-
 function shortDuration(secs: number): string {
   const m = Math.floor(secs / 60);
   if (m < 60) return `${String(Math.max(1, m))} min`;
@@ -824,18 +829,29 @@ function shortDuration(secs: number): string {
   return h < 48 ? `${String(h)} h` : `${String(Math.floor(h / 24))} d`;
 }
 
-function upText(r: ContainerRow, now: number): string {
-  const secs = (t: number | null) => (t === null ? null : Math.max(0, now / 1000 - t));
-  if (r.state === "running") {
-    const s = secs(r.started_at);
-    return s === null ? r.status : duration(s);
-  }
+/** The engine's status text, shortened: "Up 18 minutes" to "18 min", "Exited (0) 2 hours ago" to "Stopped 2 h". */
+function upText(r: ContainerRow): string {
+  const s = r.status.trim();
+  if (r.state === "running" || r.state === "paused" || r.state === "restarting") return shortStatus(s.replace(/^Up\s+/i, ""));
   if (r.state === "exited" && r.exit_code !== null && r.exit_code !== 0) return `Exit code ${String(r.exit_code)}`;
   if (r.state === "exited") {
-    const s = secs(r.finished_at);
-    return s === null ? "Stopped" : `Stopped ${shortDuration(s)}`;
+    const m = /^Exited \(\d+\)\s+(.*?)\s+ago$/i.exec(s);
+    return m?.[1] ? `Stopped ${shortStatus(m[1])}` : "Stopped";
   }
-  return r.status;
+  return s;
+}
+
+function shortStatus(t: string): string {
+  return t
+    .replace(/\s*\((healthy|unhealthy|health: starting|paused)\)\s*/i, "")
+    .replace(/^about an? /i, "1 ")
+    .replace(/^less than a second/i, "under a second")
+    .replace(/\bseconds?\b/i, "s")
+    .replace(/\bminutes?\b/i, "min")
+    .replace(/\bhours?\b/i, "h")
+    .replace(/\bdays?\b/i, "d")
+    .replace(/\bweeks?\b/i, "w")
+    .replace(/\bmonths?\b/i, "mo");
 }
 
 function portText(r: ContainerRow): string {
