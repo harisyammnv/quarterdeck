@@ -11,7 +11,7 @@
 pub mod commands;
 mod state;
 
-use commands::{board, containers, fleet, reports, shell, terminal, Projection};
+use commands::{board, containers, fleet, projects, reports, shell, terminal, Projection};
 use tauri_specta::{collect_commands, collect_events};
 
 /// The typed IPC surface, shared by the app and the bindings export.
@@ -29,6 +29,9 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             fleet::refresh_fleet,
             fleet::send_note,
             fleet::view_rendered,
+            projects::orca_focus,
+            projects::project_icon,
+            projects::projects_view,
             reports::report_history,
             reports::report_read,
             reports::reports_list,
@@ -42,6 +45,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             // one line per event
             board::BoardUpdated,
             fleet::FleetUpdated,
+            projects::ProjectsUpdated,
             shell::HomeChanged,
         ])
 }
@@ -49,10 +53,10 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
 /// Snapshot-driven area views, one line per area:
 /// `commands::projection(quarterdeck_core::<area>::view, <area>::<Area>Updated),`.
 fn projections() -> Vec<Projection> {
-    vec![commands::projection(
-        quarterdeck_core::board::view,
-        board::BoardUpdated,
-    )]
+    vec![
+        commands::projection(quarterdeck_core::board::view, board::BoardUpdated),
+        commands::projection(quarterdeck_core::projects::view, projects::ProjectsUpdated),
+    ]
 }
 
 /// Writes the TypeScript bindings the UI imports.
@@ -76,6 +80,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(state)
         .manage(containers::ContainersState::default())
+        .manage(projects::ProjectsState::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);

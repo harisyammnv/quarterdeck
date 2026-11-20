@@ -21,6 +21,9 @@ pub enum External {
     OpenUrl(String),
     /// `/usr/bin/open -b dev.kiri.app`: opens Kiri's own window. Takes no input at all.
     KiriUi,
+    /// `orca terminal switch --terminal <handle>`: brings a task's terminal forward in Orca
+    /// (see [`crate::projects::orca`]). The handle type can only hold a well-formed value.
+    OrcaFocus(crate::projects::orca::TerminalHandle),
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -83,6 +86,7 @@ impl External {
     fn program(&self) -> &'static str {
         match self {
             Self::OpenUrl(_) | Self::KiriUi => "/usr/bin/open",
+            Self::OrcaFocus(_) => crate::projects::orca::ORCA_BIN,
         }
     }
 
@@ -94,6 +98,7 @@ impl External {
                 Ok(vec![url.clone()])
             }
             Self::KiriUi => Ok(vec!["-b".into(), "dev.kiri.app".into()]),
+            Self::OrcaFocus(handle) => Ok(handle.args()),
         }
     }
 

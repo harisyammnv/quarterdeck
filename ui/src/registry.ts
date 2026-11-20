@@ -85,6 +85,9 @@ export const settingsView: ViewDef = { id: "settings", label: "Settings", descri
 export const inspectorSections: SectionDef[] = [
   { id: "containers", order: 40, component: lazy(() => import("./views/containers/Section")) },
   { id: "task", order: 10, component: lazy(() => import("./views/fleet/TaskSection")) },
+  { id: "projects-worktree", order: 15, component: lazy(() => import("./views/projects/WorktreeSection")) },
+  { id: "projects-security", order: 30, component: lazy(() => import("./views/projects/SecuritySection")) },
+  { id: "projects-council", order: 50, component: lazy(() => import("./views/projects/CouncilSection")) },
   { id: "terminal", order: 20, component: lazy(() => import("./views/terminal/OpenSection")) },
   { id: "reports", order: 30, component: lazy(() => import("./views/reports/HistorySection")) },
 ];
@@ -93,7 +96,7 @@ export const inspectorSections: SectionDef[] = [
 export const fleetTop: Lazy | null = lazy(() => import("./views/decisions/Strip"));
 
 /** The project and worktree list inside the left frame. `null` shows the frame's placeholder. */
-export const sidebar: Lazy | null = null;
+export const sidebar: Lazy | null = lazy(() => import("./views/projects"));
 
 export const railViews: ViewDef[] = views.filter((v) => v.rail);
 

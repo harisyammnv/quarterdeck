@@ -9,6 +9,7 @@
 pub mod board;
 pub mod containers;
 pub mod fleet;
+pub mod projects;
 pub mod reports;
 pub mod shell;
 pub mod terminal;
