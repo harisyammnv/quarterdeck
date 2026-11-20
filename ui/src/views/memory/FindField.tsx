@@ -6,7 +6,7 @@ import { Kbd } from "../../ui";
 export const FindField = forwardRef<HTMLInputElement, { value: string; onChange: (v: string) => void; placeholder: string; className?: string }>(
   function FindField({ value, onChange, placeholder, className }, ref) {
     return (
-      <label className={`memory-find${className ? ` ${className}` : ""}`}>
+      <label className={`qd-cmd memory-find${className ? ` ${className}` : ""}`}>
         <MagnifyingGlass size={16} aria-hidden="true" />
         <span className="sr-only">{placeholder}</span>
         <input

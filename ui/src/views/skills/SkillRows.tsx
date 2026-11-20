@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { FolderSimpleIcon as FolderSimple } from "@phosphor-icons/react";
-import { StatusPill, Tag } from "../../ui";
+import { StatusChip, Tag } from "../../ui";
 import type { SkillItem, SkillScope } from "./bridge";
 
 export const SCOPE_LABEL: Record<SkillScope, string> = {
@@ -41,12 +41,12 @@ export const SkillRow = memo(function SkillRow({
       <span className="skills-line">
         <span className="skills-name trunc">{skill.name}</span>
         {skill.also_in > 0 && (
-          <StatusPill tone="warning" title={`Installed in ${skill.also_in + 1} places: ${skill.locations.join(", ")}`}>
+          <StatusChip tone="warning" title={`Installed in ${skill.also_in + 1} places: ${skill.locations.join(", ")}`}>
             Also in {skill.also_in} {skill.also_in === 1 ? "place" : "places"}
-          </StatusPill>
+          </StatusChip>
         )}
         <span className="grow" />
-        {skill.malformed && <StatusPill tone="danger">Unreadable header</StatusPill>}
+        {skill.malformed && <StatusChip tone="danger">Unreadable header</StatusChip>}
         <Tag>{SCOPE_LABEL[skill.scope]}</Tag>
       </span>
       <span className="skills-desc trunc">{skill.description || "No trigger description."}</span>

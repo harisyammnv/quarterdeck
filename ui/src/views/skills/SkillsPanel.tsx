@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { ArrowsClockwiseIcon as ArrowsClockwise, InfoIcon as Info, MagnifyingGlassIcon as MagnifyingGlass, SparkleIcon as Sparkle, WarningCircleIcon as WarningCircle } from "@phosphor-icons/react";
-import { Banner, IconButton, QuietPill, Tabs, VirtualList, Zero, type Segment } from "../../ui";
+import { Banner, IconButton, SegmentedTabs, VirtualList, ZeroState, type Segment } from "../../ui";
 import type { Loaded } from "../memory/useRefreshing";
 import type { SkillsView } from "./bridge";
 import { SkillRow, matchesSkill, type ScopeFilter } from "./SkillRows";
@@ -55,31 +55,36 @@ export function SkillsPanel({
   const more = rows.length - shown.length;
 
   return (
-    <section className={`panel skills-panel${compact ? " compact" : ""}`} aria-label="Skills">
+    <section className={`qd-panel ui-panel skills-panel${compact ? " compact" : ""}`} aria-label="Skills">
       <div className="skills-head">
         <h2 className="skills-h2">Skills</h2>
-        {all && <QuietPill>{all.length} installed</QuietPill>}
+        {all && <span className="qd-count">{all.length} installed</span>}
         <span className="grow" />
-        <Tabs items={compact ? FILTERS : FULL_FILTERS} value={scope} onChange={setScope} label="Show skills from" />
+        {compact && <SegmentedTabs items={FILTERS} value={scope} onChange={setScope} label="Show skills from" />}
         {onRefresh && <IconButton icon={ArrowsClockwise} label="Read the skill folders again" onClick={onRefresh} disabled={skills.loading} />}
       </div>
       {search}
+      {!compact && (
+        <div className="skills-filters">
+          <SegmentedTabs items={FULL_FILTERS} value={scope} onChange={setScope} label="Show skills from" />
+        </div>
+      )}
       {skills.error && <Banner title={skills.error}>Skills could not be listed: {skills.error}</Banner>}
       {skills.data?.capped && <Banner>Some skill folders hold more skills than are listed.</Banner>}
       {!all ? (
         skills.error ? (
-          <Zero icon={WarningCircle} title="No skills to show" dashed={false}>
+          <ZeroState icon={WarningCircle} title="No skills to show">
             The skill folders could not be read.
-          </Zero>
+          </ZeroState>
         ) : (
-          <Zero icon={Sparkle} title="Finding skills" dashed={false}>
+          <ZeroState icon={Sparkle} title="Finding skills">
             Reading the skill folders.
-          </Zero>
+          </ZeroState>
         )
       ) : rows.length === 0 ? (
-        <Zero icon={MagnifyingGlass} title="No skills match" dashed={false}>
+        <ZeroState icon={MagnifyingGlass} title="No skills match">
           {query ? "Try another word, or show all scopes." : "Nothing is installed in this scope."}
-        </Zero>
+        </ZeroState>
       ) : compact ? (
         <div className="skills-list" role="list" aria-label="Installed skills">
           {shown.map((s) => (
@@ -88,8 +93,8 @@ export function SkillsPanel({
             </div>
           ))}
           {more > 0 && (
-            <button type="button" className="endnote skills-more" onClick={onMore} disabled={!onMore}>
-              <span className="zi">
+            <button type="button" className="qd-endnote ui-endnote skills-more" onClick={onMore} disabled={!onMore}>
+              <span className="ui-endnote__i">
                 <MagnifyingGlass size={18} />
               </span>
               <span>

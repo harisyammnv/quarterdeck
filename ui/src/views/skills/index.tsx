@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { SparkleIcon as Sparkle } from "@phosphor-icons/react";
-import { Zero, useHotkey } from "../../ui";
+import { ZeroState, useHotkey } from "../../ui";
 import { FindField } from "../memory/FindField";
 import { useHomeKey } from "../memory/useHomeKey";
 import { useRefreshing } from "../memory/useRefreshing";
@@ -30,13 +30,13 @@ export default function SkillsView() {
         query={query}
         search={<FindField ref={find} value={query} onChange={setQuery} placeholder="Find a skill" className="skills-find" />}
       />
-      <section className="panel memory-main" aria-label="Skill">
+      <section className="qd-panel ui-panel memory-main" aria-label="Skill">
         {open ? (
           <SkillDocPane id={open} find={query} />
         ) : (
-          <Zero icon={Sparkle} title="No skill selected" dashed={false}>
+          <ZeroState icon={Sparkle} title="No skill selected">
             Choose a skill to read what it does.
-          </Zero>
+          </ZeroState>
         )}
       </section>
     </div>

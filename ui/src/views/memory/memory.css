@@ -5,14 +5,11 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  gap: 8px;
+  gap: var(--space-8);
 }
 
-.memory-cols > .panel {
-  display: flex;
-  flex-direction: column;
+.memory-cols > .ui-panel {
   min-height: 0;
-  overflow: hidden;
 }
 
 .memory-nav {
@@ -29,8 +26,8 @@
 /* The find field sits over the right end of whichever pane header is showing. */
 .memory-findslot {
   position: absolute;
-  top: 10px;
-  right: 16px;
+  top: var(--space-10);
+  right: var(--space-16);
 }
 
 .memory-main .memory-phead {
@@ -40,13 +37,13 @@
 .memory-sh {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px 8px;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16) var(--space-8);
   flex: none;
 }
 
 .memory-sect {
-  padding-top: 14px;
+  padding-top: var(--space-14);
 }
 
 .memory-sect .sect {
@@ -73,9 +70,9 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
   width: 100%;
-  padding: 9px 14px;
+  padding: 9px var(--space-14);
   border: 0;
   border-bottom: 1px solid var(--line);
   background: none;
@@ -87,7 +84,7 @@
 }
 
 .memory-li.recent {
-  padding: 8px 14px;
+  padding: var(--space-8) var(--space-14);
 }
 
 .memory-list > [role="listitem"]:last-child > .memory-li {
@@ -96,26 +93,26 @@
 
 .memory-li:hover {
   background: var(--hover);
-  --muted: var(--muted2);
+  --muted: var(--muted-strong);
 }
 
 .memory-li:focus-visible {
   outline: none;
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
   z-index: 1;
 }
 
 .memory-li.sel {
-  background: var(--selected, var(--sunken));
-  --muted: var(--muted2);
+  background: var(--selected);
+  --muted: var(--muted-strong);
 }
 
 .memory-li.sel::before {
   content: "";
   position: absolute;
   left: 5px;
-  top: 12px;
-  bottom: 12px;
+  top: var(--space-12);
+  bottom: var(--space-12);
   width: 3px;
   border-radius: 3px;
   background: var(--ink);
@@ -140,8 +137,8 @@
 .memory-foot {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
+  gap: var(--space-8);
+  padding: 9px var(--space-14);
   border-top: 1px solid var(--line);
   font-size: 12px;
   color: var(--muted);
@@ -151,9 +148,9 @@
 .memory-phead {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
   height: 48px;
-  padding: 0 16px;
+  padding: 0 var(--space-16);
   flex: none;
 }
 
@@ -166,24 +163,10 @@
   flex: none;
 }
 
+/* The design system's search field (qd-cmd), at the mock's width for a panel header. */
 .memory-find {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   width: 190px;
-  height: 28px;
-  padding: 0 6px 0 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
-  background: var(--panel);
-  color: var(--muted2);
-  font-size: 12.5px;
   flex: none;
-}
-
-.memory-find:focus-within {
-  border-color: var(--ink);
-  box-shadow: var(--focus-soft, var(--focus));
 }
 
 .memory-find input {
@@ -209,7 +192,7 @@
 }
 
 .memory-find input::placeholder {
-  color: var(--muted2);
+  color: var(--muted-strong);
 }
 
 .memory-find-clear {
@@ -226,7 +209,7 @@
 
 .memory-find-clear:focus-visible {
   outline: none;
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 .memory-body {
@@ -237,7 +220,7 @@
 }
 
 .memory-trunc {
-  margin: 16px 0 0;
+  margin: var(--space-16) 0 0;
   font-size: 12px;
   color: var(--muted);
 }
@@ -254,7 +237,7 @@
 
 .memory-doc h3,
 .memory-doc h4 {
-  margin: 14px 0 4px;
+  margin: var(--space-14) 0 var(--space-4);
 }
 
 .memory-doc ul,
@@ -286,7 +269,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 4px 0 16px;
+  padding: var(--space-4) 0 var(--space-16);
 }
 
 .memory-hits[aria-busy="true"] {
@@ -294,14 +277,14 @@
 }
 
 .memory-hitgroup + .memory-hitgroup {
-  margin-top: 8px;
+  margin-top: var(--space-8);
 }
 
 .memory-hit-doc {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px 4px;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16) var(--space-4);
 }
 
 .memory-hit-doc .b7 {
@@ -311,9 +294,9 @@
 .memory-hit {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: var(--space-10);
   width: 100%;
-  padding: 5px 16px 5px 40px;
+  padding: 5px var(--space-16) 5px 40px;
   border: 0;
   background: none;
   color: var(--ink);
@@ -329,7 +312,7 @@
 
 .memory-hit:focus-visible {
   outline: none;
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-ring);
 }
 
 .memory-hit-line {

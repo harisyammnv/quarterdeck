@@ -14,7 +14,7 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { useApp } from "../../state/app";
-import { Banner, IconButton, ProjectTile, VirtualList, Zero, useHotkey, useNow } from "../../ui";
+import { Banner, IconButton, ProjectTile, VirtualList, ZeroState, useHotkey, useNow } from "../../ui";
 import { SkillDocPane } from "../skills/SkillDocPane";
 import { SkillsPanel } from "../skills/SkillsPanel";
 import { skillsList } from "../skills/bridge";
@@ -109,17 +109,17 @@ export default function MemoryView() {
       <>
         <MainHead icon={BookOpen} title="Memory" />
         {list.error ? (
-          <Zero icon={WarningCircle} title="Memory could not be read" dashed={false}>
+          <ZeroState icon={WarningCircle} title="Memory could not be read">
             {list.error}
-          </Zero>
+          </ZeroState>
         ) : list.loading || !items ? (
-          <Zero icon={CircleDashed} title="Reading memory" dashed={false}>
+          <ZeroState icon={CircleDashed} title="Reading memory">
             Looking at the home's documents.
-          </Zero>
+          </ZeroState>
         ) : (
-          <Zero icon={BookOpen} title="Nothing written yet" dashed={false}>
+          <ZeroState icon={BookOpen} title="Nothing written yet">
             Preferences and learnings appear here once Firstmate records them.
-          </Zero>
+          </ZeroState>
         )}
       </>
     );
@@ -150,7 +150,7 @@ export default function MemoryView() {
           reloadSkills();
         }}
       />
-      <section className="panel memory-main" aria-label="Document">
+      <section className="qd-panel ui-panel memory-main" aria-label="Document">
         {main}
         {/* One find field for every pane, outside them so switching panes never remounts it. */}
         <div className="memory-findslot">{findField}</div>
@@ -212,7 +212,7 @@ const MemoryNav = memo(function MemoryNav({
     (docId !== null && groups[k].some((i) => i.id === docId) && !recent.has(docId));
   const guides = groups["project-guide"];
   return (
-    <section className="panel memory-nav" aria-label="Memory">
+    <section className="qd-panel ui-panel memory-nav" aria-label="Memory">
       <div className="memory-sh">
         <h2 className="memory-h2">Memory</h2>
         <span className="grow" />
@@ -333,13 +333,13 @@ function DocPane({ id, back, query }: { id: string; back: ReactNode; query: stri
     <>
       <MainHead icon={item ? KIND_ICON[item.kind] : BookOpen} title={item?.title ?? "Reading"} meta={meta} back={back} />
       {error ? (
-        <Zero icon={WarningCircle} title="This document could not be read" dashed={false}>
+        <ZeroState icon={WarningCircle} title="This document could not be read">
           {error}
-        </Zero>
+        </ZeroState>
       ) : !doc ? (
-        <Zero icon={CircleDashed} title="Reading the document" dashed={false} />
+        <ZeroState icon={CircleDashed} title="Reading the document" />
       ) : doc.text.trim() === "" ? (
-        <Zero icon={BookOpen} title="This document is empty" dashed={false} />
+        <ZeroState icon={BookOpen} title="This document is empty" />
       ) : (
         <DocBody text={doc.text} truncated={doc.truncated} find={query} />
       )}
@@ -355,7 +355,7 @@ function GroupPane({ kind, items, capped, now, onOpen }: { kind: GroupKind; item
       <MainHead icon={I} title={GROUP_TITLE[kind]} meta={meta} />
       {capped && <Banner>Only the newest {items.length} sets are listed; older ones stay in the home.</Banner>}
       {items.length === 0 ? (
-        <Zero icon={I} title={`No ${GROUP_TITLE[kind].toLowerCase()} yet`} dashed={false} />
+        <ZeroState icon={I} title={`No ${GROUP_TITLE[kind].toLowerCase()} yet`} />
       ) : (
         <VirtualList
           className="memory-group"
@@ -422,15 +422,15 @@ function SearchPane({ query, onOpen }: { query: string; onOpen: (id: string) => 
     <>
       <MainHead icon={MagnifyingGlass} title={`Matches for “${q}”`} meta={stale ? "Searching" : meta} />
       {load.error ? (
-        <Zero icon={WarningCircle} title="The search failed" dashed={false}>
+        <ZeroState icon={WarningCircle} title="The search failed">
           {load.error}
-        </Zero>
+        </ZeroState>
       ) : !r ? (
-        <Zero icon={CircleDashed} title="Searching memory" dashed={false} />
+        <ZeroState icon={CircleDashed} title="Searching memory" />
       ) : r.hits.length === 0 ? (
-        <Zero icon={MagnifyingGlass} title="No matches" dashed={false}>
+        <ZeroState icon={MagnifyingGlass} title="No matches">
           Nothing in preferences, learnings, instructions or project guides mentions “{r.query}”.
-        </Zero>
+        </ZeroState>
       ) : (
         <div className="memory-hits" aria-busy={stale}>
           {r.truncated && <Banner>{SEARCH_LIMIT_NOTE}</Banner>}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CircleDashedIcon as CircleDashed, SparkleIcon as Sparkle, WarningCircleIcon as WarningCircle } from "@phosphor-icons/react";
-import { StatusPill, Tag, Zero } from "../../ui";
+import { StatusChip, Tag, ZeroState } from "../../ui";
 import { DocBody } from "../memory/DocBody";
 import { skillRead, type SkillDoc } from "./bridge";
 import { SCOPE_LABEL } from "./SkillRows";
@@ -33,18 +33,18 @@ export function SkillDocPane({ id, find }: { id: string; find: string }) {
         <h1 className="ptitle skills-title trunc">{item?.name ?? "Skill"}</h1>
         {item && <Tag>{SCOPE_LABEL[item.scope]}</Tag>}
         {item && item.also_in > 0 && (
-          <StatusPill tone="warning">
+          <StatusChip tone="warning">
             Also in {item.also_in} {item.also_in === 1 ? "place" : "places"}
-          </StatusPill>
+          </StatusChip>
         )}
         <span className="grow" />
       </div>
       {error ? (
-        <Zero icon={WarningCircle} title="This skill could not be read" dashed={false}>
+        <ZeroState icon={WarningCircle} title="This skill could not be read">
           {error}
-        </Zero>
+        </ZeroState>
       ) : !doc ? (
-        <Zero icon={CircleDashed} title="Reading the skill" dashed={false} />
+        <ZeroState icon={CircleDashed} title="Reading the skill" />
       ) : (
         <>
           <dl className="skills-facts">
