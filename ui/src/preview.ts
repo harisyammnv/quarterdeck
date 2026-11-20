@@ -30,6 +30,7 @@ export function previewView(): FleetView_Serialize | null {
   return {
     seq: 1,
     home: "example/firstmate",
+    decisions: 3,
     snapshot: { generated_at: now - 14, running: false, error: null, cached: false },
     cause: null,
     rows: [

@@ -68,9 +68,11 @@ impl Task {
     }
 }
 
-/// One record from `backlog.records[]`.
+/// One record from `backlog.records[]`. Free-form backlog lines arrive with `id: null`; they
+/// are read as an empty id and dropped, so one such line never costs the whole snapshot.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
 pub struct BacklogRecord {
+    #[serde(default, deserialize_with = "null_as_empty")]
     pub id: String,
     #[serde(default)]
     pub title: Option<String>,
@@ -303,6 +305,11 @@ mod raw {
     }
 }
 
+/// Reads a string that may be `null`, as an empty string.
+fn null_as_empty<'de, D: serde::Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+    Ok(Option::<String>::deserialize(d)?.unwrap_or_default())
+}
+
 fn non_empty(s: Option<String>) -> Option<String> {
     s.filter(|v| !v.trim().is_empty())
 }
@@ -338,7 +345,12 @@ impl From<raw::Snapshot> for Snapshot {
                     title: non_empty(t.backlog.title),
                 })
                 .collect(),
-            backlog: r.backlog.records,
+            backlog: r
+                .backlog
+                .records
+                .into_iter()
+                .filter(|b| !b.id.trim().is_empty())
+                .collect(),
             scout_reports: r.scout_reports,
             secondmates: r.secondmate_current.records,
         }
@@ -410,6 +422,17 @@ mod tests {
         assert!(!s.backlog[0].captain_actionable);
         assert_eq!(s.generated, None);
         assert!(s.scout_reports.is_empty() && s.secondmates.is_empty());
+    }
+
+    #[test]
+    fn free_form_backlog_lines_with_null_ids_are_dropped_not_fatal() {
+        let s = Snapshot::parse(
+            r#"{"schema":"fm-fleet-snapshot.v1","backlog":{"records":[{"id":null,"structured":false,"state":"queued"},{"state":"queued"},{"id":"a","captain_actionable":true}]}}"#,
+        )
+        .unwrap();
+        assert_eq!(s.backlog.len(), 1);
+        assert_eq!(s.backlog[0].id, "a");
+        assert_eq!(s.actionable_count(), 1);
     }
 
     #[test]

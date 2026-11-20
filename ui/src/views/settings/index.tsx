@@ -1,6 +1,6 @@
 import { DesktopIcon as Desktop, FolderOpenIcon as FolderOpen, LockSimpleIcon as LockSimple, MoonIcon as Moon, SunIcon as Sun } from "@phosphor-icons/react";
 import { inApp } from "../../bridge";
-import { Button, Panel, PanelHead, Tabs, StatusPill } from "../../ui";
+import { Button, Panel, PanelHead, SegmentedTabs, StatusChip } from "../../ui";
 import { useApp, type ThemePref } from "../../state/app";
 
 function sourceText(source: string | null | undefined): string {
@@ -10,7 +10,7 @@ function sourceText(source: string | null | undefined): string {
     case "fm-home":
       return "Set by FM_HOME in the environment, which wins over a home chosen here.";
     case "chosen":
-      return "Chosen in this window and remembered in the app's own settings.";
+      return "Chosen in this window and remembered in the app's own settings. Quarterdeck runs this home's own read-only scripts.";
     default:
       return "No home is chosen yet.";
   }
@@ -32,7 +32,7 @@ export default function SettingsView() {
             <span className="grow">
               <span className="row">
                 <b className="mono trunc">{home ?? "Not chosen"}</b>
-                {home ? <StatusPill tone="success">Watching</StatusPill> : <StatusPill tone="warning">Needed</StatusPill>}
+                {home ? <StatusChip tone="success">Watching</StatusChip> : <StatusChip tone="warning">Needed</StatusChip>}
               </span>
               <span className="mut">{sourceText(info?.home_source)}</span>
             </span>
@@ -51,7 +51,7 @@ export default function SettingsView() {
           <h2 className="h2">Appearance</h2>
           <div className="set-row">
             <span className="grow">Theme</span>
-            <Tabs<ThemePref>
+            <SegmentedTabs<ThemePref>
               label="Theme"
               value={theme}
               onChange={setTheme}

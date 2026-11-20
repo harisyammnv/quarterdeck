@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { ArrowsClockwiseIcon as ArrowsClockwise, BinocularsIcon as Binoculars, CircleDashedIcon as CircleDashed, SailboatIcon as Sailboat } from "@phosphor-icons/react";
 import { inApp, refreshFleet, type FleetRow, type FleetView } from "../../bridge";
 import { Banner, Button, DataTable, Zero, Composer, Panel, PanelHead, ProjectTile, StatePill, Tag, ago, useNow, type Column } from "../../ui";
+import { fleetTop as FleetTop } from "../../registry";
 import { useApp } from "../../state/app";
 
 function taskCount(n: number): string {
@@ -32,7 +34,7 @@ export default function FleetViewArea() {
     {
       key: "task",
       header: "Task",
-      width: "36%",
+      width: "34%",
       cell: (r) => (
         <span className="row">
           <span className="task trunc" title={r.name}>
@@ -45,7 +47,7 @@ export default function FleetViewArea() {
     {
       key: "project",
       header: "Project",
-      width: "19%",
+      width: "22%",
       cell: (r) => (
         <span className="row">
           <ProjectTile name={r.project ?? r.id} />
@@ -53,11 +55,11 @@ export default function FleetViewArea() {
         </span>
       ),
     },
-    { key: "kind", header: "Kind", width: "10%", cell: (r) => <Tag icon={r.kind === "scout" ? Binoculars : r.kind === "ship" ? Sailboat : CircleDashed}>{r.kind ?? "task"}</Tag> },
+    { key: "kind", header: "Kind", width: "92px", cell: (r) => <Tag icon={r.kind === "scout" ? Binoculars : r.kind === "ship" ? Sailboat : CircleDashed}>{r.kind ?? "task"}</Tag> },
     {
       key: "state",
       header: "State",
-      width: "13%",
+      width: "120px",
       cell: (r) => <StatePill state={r.state} word={r.state === "unknown" && r.state_word !== "unknown" ? r.state_word : undefined} title={sourceTitle(r)} />,
     },
     {
@@ -78,7 +80,13 @@ export default function FleetViewArea() {
   ];
 
   return (
-    <Panel as="main" className="fill fleet-panel" label="Fleet">
+    <>
+      {FleetTop && (
+        <Suspense fallback={null}>
+          <FleetTop />
+        </Suspense>
+      )}
+      <Panel as="main" className="fill fleet-panel" label="Fleet">
       <PanelHead title="Fleet" meta={view ? taskCount(rows.length) : undefined}>
         {view && <span className="meta tn">{snapshotText(view, now)}</span>}
         <Button size="sm" icon={ArrowsClockwise} disabled={!view || view.snapshot.running} onClick={() => void refreshFleet()}>
@@ -108,12 +116,14 @@ export default function FleetViewArea() {
             onSelect={(r) => {
               setSelectedTask(r.id);
             }}
-            rowClass={(r) => (changed.has(r.id) ? `changed c${String(changed.get(r.id))}` : undefined)}
+            rowClass={(r) => (changed.has(r.id) ? "changed" : undefined)}
+            rowVersion={(r) => changed.get(r.id) ?? 0}
           />
         )}
       </div>
 
       <Composer enabled={inApp && !info?.home_error && view !== null} />
-    </Panel>
+      </Panel>
+    </>
   );
 }

@@ -55,8 +55,28 @@ impl AppConfig {
     pub fn save(&self, dir: &Path) -> Result<(), ConfigError> {
         std::fs::create_dir_all(dir).map_err(ConfigError::Write)?;
         let json = serde_json::to_string_pretty(self).map_err(|e| ConfigError::Write(e.into()))?;
-        let tmp = dir.join(format!(".{CONFIG_FILE}.{}.tmp", std::process::id()));
-        std::fs::write(&tmp, format!("{json}\n")).map_err(ConfigError::Write)?;
+        static WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let tmp = dir.join(format!(".{CONFIG_FILE}.{}.{n}.tmp", std::process::id()));
+        match std::fs::remove_file(&tmp) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+                return Err(ConfigError::Write(e))
+            }
+            _ => {}
+        }
+        {
+            use std::io::Write as _;
+            use std::os::unix::fs::OpenOptionsExt as _;
+            // Created exclusively, so a planted link at the temporary name is never followed.
+            let mut f = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .mode(0o600)
+                .open(&tmp)
+                .map_err(ConfigError::Write)?;
+            f.write_all(format!("{json}\n").as_bytes())
+                .map_err(ConfigError::Write)?;
+        }
         std::fs::rename(&tmp, dir.join(CONFIG_FILE)).map_err(|e| {
             let _ = std::fs::remove_file(&tmp);
             ConfigError::Write(e)

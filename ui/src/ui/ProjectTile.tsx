@@ -8,10 +8,10 @@ import { monogram, tileFill } from "../states";
 export function ProjectTile({ name, src, size = 20 }: { name: string; src?: string | null; size?: number }) {
   const style = { width: size, height: size };
   if (src) {
-    return <img className="pic" src={src} alt="" aria-hidden="true" style={style} draggable={false} />;
+    return <img className="qd-tile ui-tile-img" src={src} alt="" aria-hidden="true" style={style} draggable={false} />;
   }
   return (
-    <span className="mono-ic" aria-hidden="true" style={{ ...style, background: tileFill(name), fontSize: Math.round(size / 2) }}>
+    <span className="qd-tile" aria-hidden="true" style={{ ...style, background: tileFill(name), fontSize: Math.round(size / 2) }}>
       {monogram(name)}
     </span>
   );

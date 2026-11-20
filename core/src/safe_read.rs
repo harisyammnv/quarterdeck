@@ -4,7 +4,13 @@
 //! root, both are canonicalized (so symlinks are followed before the check, not after), and
 //! anything that does not stay under the root, or is not a regular file, is refused. Reads
 //! stop at `max_bytes`.
+//!
+//! The check and the read cannot be split by a swap: the file is opened without following a
+//! final symlink and without blocking (so a FIFO cannot hang the read), the open handle itself
+//! must be a regular file, it must be the same file (device and inode) the checked path names
+//! after the open, and that path must still resolve under the root.
 
+use std::os::unix::fs::MetadataExt as _;
 use std::path::{Path, PathBuf};
 
 use tokio::io::AsyncReadExt;
@@ -17,6 +23,8 @@ pub enum ReadError {
     Escapes,
     #[error("not a regular file")]
     NotAFile,
+    #[error("the file changed while it was being read")]
+    Changed,
     #[error("could not read: {0}")]
     Io(std::io::Error),
 }
@@ -31,11 +39,13 @@ impl From<std::io::Error> for ReadError {
     }
 }
 
-/// Text read from a file, and whether it was cut at the size cap.
+/// What was read, whether it was cut at the size cap, and the real path it came from.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Capped<T> {
     pub content: T,
     pub truncated: bool,
+    /// The canonical path read, under the canonical root. Never send it to the UI.
+    pub real: PathBuf,
 }
 
 /// Resolves `target` (relative to `root`, or absolute) and proves it is a regular file under
@@ -64,7 +74,14 @@ pub async fn read_bytes_capped(
     max_bytes: u64,
 ) -> Result<Capped<Vec<u8>>, ReadError> {
     let real = resolve_under(root, target).await?;
-    let file = tokio::fs::File::open(&real).await?;
+    let file = open_checked(&real).await?;
+    // The path may have been re-pointed between the check and the open; prove it still
+    // resolves under the root to the file that is open.
+    let root_real = tokio::fs::canonicalize(root).await?;
+    let again = tokio::fs::canonicalize(&real).await?;
+    if again != real || !again.starts_with(&root_real) {
+        return Err(ReadError::Changed);
+    }
     let mut bytes = Vec::new();
     // One byte past the cap tells a file of exactly max_bytes from a longer one.
     file.take(max_bytes.saturating_add(1))
@@ -75,7 +92,35 @@ pub async fn read_bytes_capped(
     Ok(Capped {
         content: bytes,
         truncated,
+        real,
     })
+}
+
+/// Opens `real` for reading without following a final symlink and without blocking, and
+/// proves the handle is a regular file that is still the file `real` names.
+async fn open_checked(real: &Path) -> Result<tokio::fs::File, ReadError> {
+    let file = tokio::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(real)
+        .await
+        .map_err(|e| {
+            // ELOOP: the final component became a symlink after the check.
+            if e.raw_os_error() == Some(libc::ELOOP) {
+                ReadError::Escapes
+            } else {
+                e.into()
+            }
+        })?;
+    let held = file.metadata().await?;
+    if !held.is_file() {
+        return Err(ReadError::NotAFile);
+    }
+    let named = tokio::fs::metadata(real).await?;
+    if (held.dev(), held.ino()) != (named.dev(), named.ino()) {
+        return Err(ReadError::Changed);
+    }
+    Ok(file)
 }
 
 /// Reads at most `max_bytes` of a text file under `root`, cut back to a whole character,
@@ -88,6 +133,7 @@ pub async fn read_text_capped(
     let Capped {
         mut content,
         truncated,
+        real,
     } = read_bytes_capped(root, target, max_bytes).await?;
     if truncated {
         drop_partial_char(&mut content);
@@ -95,6 +141,7 @@ pub async fn read_text_capped(
     Ok(Capped {
         content: String::from_utf8_lossy(&content).into_owned(),
         truncated,
+        real,
     })
 }
 
@@ -205,6 +252,38 @@ mod tests {
             read_text_under(&root, Path::new("nope.md"), 1024).await,
             Err(ReadError::NotFound)
         ));
+    }
+
+    #[tokio::test]
+    async fn fifos_are_refused_without_hanging() {
+        let d = tree();
+        let root = d.path().join("root");
+        let made = std::process::Command::new("/usr/bin/mkfifo")
+            .arg(root.join("pipe.md"))
+            .status()
+            .unwrap();
+        assert!(made.success());
+        let r = tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            read_text_under(&root, Path::new("pipe.md"), 1024),
+        )
+        .await
+        .expect("a FIFO must not block the read");
+        assert!(matches!(r, Err(ReadError::NotAFile)));
+    }
+
+    #[tokio::test]
+    async fn open_refuses_a_final_symlink_and_reports_the_real_path() {
+        let d = tree();
+        let root = d.path().join("root");
+        std::os::unix::fs::symlink(root.join("sub/a.md"), root.join("inner-link.md")).unwrap();
+        // A link checked by path would pass resolve_under; the open itself refuses it.
+        let real = root.canonicalize().unwrap().join("inner-link.md");
+        assert!(matches!(open_checked(&real).await, Err(ReadError::Escapes)));
+        let c = read_text_capped(&root, Path::new("sub/a.md"), 1024)
+            .await
+            .unwrap();
+        assert!(c.real.is_absolute() && c.real.ends_with("root/sub/a.md"));
     }
 
     #[tokio::test]

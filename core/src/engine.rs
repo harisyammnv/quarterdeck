@@ -320,13 +320,23 @@ fn read_cache(path: &Path) -> Option<Snapshot> {
 fn write_cache(path: &Path, json: &str) -> std::io::Result<()> {
     use std::io::Write as _;
     use std::os::unix::fs::OpenOptionsExt as _;
+    use std::os::unix::fs::PermissionsExt as _;
     let dir = path.parent().unwrap_or(Path::new("."));
     std::fs::create_dir_all(dir)?;
-    let tmp = dir.join(format!(".snapshot.{}.tmp", std::process::id()));
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
+    // A unique name per write, so two overlapping writes never share a temporary file.
+    static WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let tmp = dir.join(format!(".snapshot.{}.{n}.tmp", std::process::id()));
+    // A leftover from a crashed write is removed, then the file is created exclusively, so a
+    // planted link at that name is never followed.
+    match std::fs::remove_file(&tmp) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e),
+        _ => {}
+    }
     let mut f = std::fs::OpenOptions::new()
         .write(true)
-        .create(true)
-        .truncate(true)
+        .create_new(true)
         .mode(0o600)
         .open(&tmp)?;
     f.write_all(json.as_bytes())?;
@@ -575,6 +585,12 @@ mod tests {
         write_cache(&path, json).unwrap();
         let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o600);
+        let dir_mode = std::fs::metadata(path.parent().unwrap())
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777;
+        assert_eq!(dir_mode, 0o700);
         assert_eq!(read_cache(&path).unwrap().tasks.len(), 6);
         std::fs::write(&path, "{").unwrap();
         assert!(read_cache(&path).is_none(), "a damaged cache is ignored");

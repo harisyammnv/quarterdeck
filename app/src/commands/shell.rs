@@ -51,7 +51,7 @@ pub async fn home_pick(
         dialog_app
             .dialog()
             .file()
-            .set_title("Choose the Firstmate home folder")
+            .set_title("Choose the Firstmate home folder. Quarterdeck runs that home's own read-only scripts.")
             .blocking_pick_folder()
     })
     .await
@@ -73,14 +73,38 @@ pub async fn home_pick(
     Ok(info)
 }
 
-/// Opens an `https` link in the default browser. Used only for links inside rendered
-/// documents, after the window has shown the full address and the person confirmed it.
+/// Opens an `https` link from a rendered document in the default browser, after a native
+/// confirmation that shows the full address. The confirmation runs here, in the core, so
+/// script in the webview can never open a link the person did not approve. Resolves `true`
+/// when the link was opened and `false` when the person cancelled.
 #[tauri::command]
 #[specta::specta]
-pub async fn url_open(url: String) -> Result<(), String> {
+pub async fn url_open(app: AppHandle, url: String) -> Result<bool, String> {
+    external::validate_url(&url).map_err(|e| sentence(&e.to_string()))?;
+    let shown = url.clone();
+    let approved = tauri::async_runtime::spawn_blocking(move || {
+        use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+        app.dialog()
+            .message(format!(
+                "This link comes from a document or a worker, not from Quarterdeck. Check the address before you open it.\n\n{shown}"
+            ))
+            .title("Open this link in your browser?")
+            .kind(MessageDialogKind::Warning)
+            .buttons(MessageDialogButtons::OkCancelCustom(
+                "Open in browser".into(),
+                "Cancel".into(),
+            ))
+            .blocking_show()
+    })
+    .await
+    .map_err(|e| format!("the confirmation failed: {e}"))?;
+    if !approved {
+        return Ok(false);
+    }
     external::run(&External::OpenUrl(url))
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| sentence(&e.to_string()))?;
+    Ok(true)
 }
 
 /// Opens a task's recorded pull request in the default browser. The address comes from the
