@@ -1,0 +1,258 @@
+/* The window frame (ui/src/shell): layout around the design system's qd-titlebar, qd-rail
+   and qd-status. Every value is a token. */
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--frame);
+}
+
+/* ---------- title bar ---------- */
+
+.ui-titlebar {
+  flex: none;
+  position: relative;
+  z-index: 10;
+  /* Room for the macOS traffic lights drawn over the overlay title bar. */
+  padding-left: 84px;
+}
+
+.ui-wtitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  flex: none;
+}
+
+.ui-crumb {
+  color: var(--muted-strong);
+  max-width: calc(50vw - 230px - min(210px, 18vw));
+}
+
+.ui-tb-spacer {
+  flex: 1;
+}
+
+/* The search sits at the centre of the window, whatever the crumb's width. */
+.ui-tb-mid {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, 36vw);
+}
+
+.ui-tb-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex: none;
+}
+
+.ui-theme__tab {
+  height: 22px;
+  padding: 0 9px;
+}
+
+.ui-theme__tab[aria-pressed="true"] {
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.cmdwrap {
+  position: relative;
+  width: 100%;
+}
+
+.cmdwrap .qd-cmd {
+  width: 100%;
+}
+
+.qd-cmd input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: var(--ink);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.qd-cmd input:focus-visible {
+  box-shadow: none;
+}
+
+.qd-cmd input::placeholder {
+  color: var(--muted-strong);
+}
+
+.cmdlist {
+  position: absolute;
+  top: 34px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: var(--space-6);
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-inner);
+  box-shadow: var(--tooltip);
+  z-index: 30;
+}
+
+.cmdlist li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  height: 32px;
+  padding: 0 var(--space-10);
+  border-radius: var(--radius-row);
+  font-size: 13px;
+  --muted: var(--muted-panel);
+}
+
+.cmdlist li.on {
+  background: var(--selected);
+  --muted: var(--muted-strong);
+}
+
+.cmdlist .cmd-ic {
+  width: 16px;
+  color: var(--muted-strong);
+  flex: none;
+}
+
+.cmdlist .cmd-hint {
+  font-size: 12px;
+  max-width: 45%;
+  flex: none;
+}
+
+.cmdlist .cmd-empty {
+  color: var(--muted);
+}
+
+/* ---------- body ---------- */
+
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: var(--space-8);
+  padding: 0 var(--space-8);
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* ---------- rail ---------- */
+
+.ui-rail {
+  flex: none;
+  position: relative;
+  z-index: 5;
+}
+
+.ui-rail .ui-tipwrap {
+  display: flex;
+}
+
+.ui-rail__item {
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: default;
+}
+
+.ui-rail__item .qd-rail__icon {
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+
+/* ---------- project list and inspector frames ---------- */
+
+.side {
+  width: var(--size-sidebar);
+  flex: none;
+}
+
+.side-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-14) var(--space-12) var(--space-8) var(--space-16);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  flex: none;
+}
+
+.side .tree {
+  padding: 0 var(--space-8);
+}
+
+.side-empty {
+  display: flex;
+  gap: var(--space-10);
+  align-items: flex-start;
+  padding: var(--space-8);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.side-foot {
+  flex: none;
+  padding: var(--space-12) var(--space-16) var(--space-14);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  font-size: 12px;
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4) var(--space-8);
+  color: var(--muted);
+}
+
+.legend .row {
+  gap: var(--space-6);
+}
+
+.insp {
+  width: var(--size-inspector);
+  flex: none;
+  overflow: auto;
+}
+
+/* ---------- status bar ---------- */
+
+.ui-status {
+  flex: none;
+  white-space: nowrap;
+  color: var(--muted-strong);
+}
+
+.ui-status .row {
+  gap: var(--space-6);
+}
+
+/* Below 1280px the inspector gives its width to the main column; the task's facts stay
+   reachable from the row itself. */
+@media (max-width: 1279px) {
+  .insp {
+    display: none;
+  }
+}

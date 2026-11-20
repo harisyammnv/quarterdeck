@@ -1,0 +1,412 @@
+/* App-level additions to the design system's qd- components (ui/src/design-system/components.css).
+   Only layout and pieces the system does not define live here; every value is a token. */
+
+/* ---------- panels ---------- */
+
+.ui-panel {
+  --muted: var(--muted-panel);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ui-panel.fill {
+  flex: 1;
+}
+
+.phead {
+  height: 48px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  padding: 0 var(--space-12) 0 var(--space-16);
+  white-space: nowrap;
+}
+
+.ptitle {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ui-kvrow {
+  display: contents;
+}
+
+.ui-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  flex: 1;
+}
+
+.ui-insp-aside {
+  flex: none;
+}
+
+/* Inspector sections: divided by line rules. */
+.ui-insp-sect {
+  padding: var(--space-14) var(--space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Inside a section the zero state shares the section's 16px inset rather than adding its own. */
+.ui-insp-sect .qd-zero {
+  padding: var(--space-4) 0;
+}
+
+.ui-insp-sect:last-child {
+  border-bottom: 0;
+}
+
+.ui-evt {
+  display: flex;
+  gap: var(--space-8);
+  font-size: 12.5px;
+  align-items: baseline;
+}
+
+.ui-evt__tm {
+  min-width: 52px;
+  white-space: nowrap;
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+/* ---------- chips with a glyph, tiles ---------- */
+
+.ui-tag-icon {
+  gap: 5px;
+}
+
+.ui-tile-img {
+  object-fit: contain;
+  background: #ffffff;
+}
+
+/* ---------- tooltips: placement and timing for qd-tip ---------- */
+
+.ui-tipwrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.ui-tip {
+  position: absolute;
+  z-index: 40;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.ui-tipwrap--right > .ui-tip {
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ui-tipwrap--bottom > .ui-tip {
+  top: calc(100% + 6px);
+  right: 0;
+}
+
+/* Shown after a 500 ms hover, or at once on keyboard focus. */
+.ui-tipwrap:hover > .ui-tip {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity var(--t-fast) var(--ease-out) 500ms, visibility 0s linear 500ms;
+}
+
+.ui-tipwrap:has(:focus-visible) > .ui-tip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ---------- tables ---------- */
+
+.ui-table {
+  table-layout: fixed;
+}
+
+.ui-table th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+
+.ui-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-table th:first-child,
+.ui-table td:first-child {
+  padding-left: var(--space-16);
+}
+
+.ui-table tbody tr {
+  --muted: var(--muted-panel);
+}
+
+.ui-table tbody tr:hover,
+.ui-table tbody tr[aria-selected="true"] {
+  --muted: var(--muted-strong);
+}
+
+.ui-table tbody tr[aria-selected="true"] {
+  font-weight: 500;
+}
+
+.ui-table tbody tr td:first-child {
+  border-radius: var(--radius-row) 0 0 var(--radius-row);
+}
+
+.ui-table tbody tr td:last-child {
+  border-radius: 0 var(--radius-row) var(--radius-row) 0;
+}
+
+.ui-table tbody tr:focus-visible {
+  outline: none;
+}
+
+.ui-table tbody tr:focus-visible td {
+  background: var(--hover);
+}
+
+.ui-table tbody tr:focus-visible td:first-child {
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+
+/* A row whose state just changed draws one soft pulse, then rests. */
+@keyframes ui-changed {
+  from {
+    background: var(--selected);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+.ui-table tr.changed td {
+  animation: ui-changed 900ms var(--ease-out);
+}
+
+/* ---------- zero states and end notes ---------- */
+
+.ui-zero__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-endnote__i {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sunken);
+  color: var(--ink);
+  flex: none;
+}
+
+.ui-endnote b {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---------- banner (system lacks one: built from the warning tokens) ---------- */
+
+.banner {
+  margin: 0 var(--space-16) var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-inner);
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: 12.5px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  flex: none;
+}
+
+/* ---------- note composer ---------- */
+
+.composer {
+  flex: none;
+  padding: var(--space-10) var(--space-16) var(--space-14);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  border-top: 1px solid var(--line);
+}
+
+.composer .hint {
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 17px;
+}
+
+.composer .hint.ok {
+  color: var(--success);
+}
+
+.composer .hint.err {
+  color: var(--danger);
+}
+
+.qd-input input {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+/* The pill draws the focus; the field inside it draws none of its own. */
+.qd-input input:focus-visible {
+  box-shadow: none;
+}
+
+/* ---------- link errors in rendered documents ---------- */
+
+.ui-doc-err {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  color: var(--danger);
+  font-size: 12.5px;
+  margin: 0 0 var(--space-8);
+}
+
+/* ---------- virtual list ---------- */
+
+.vlist {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* ---------- rendered documents ---------- */
+
+.doc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  max-width: 72ch;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: auto;
+}
+
+.doc h1,
+.doc h2,
+.doc h3,
+.doc h4 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 18px 0 6px;
+}
+
+.doc h1 {
+  font-size: 18px;
+}
+
+.doc h2 {
+  font-size: 15px;
+}
+
+.doc h3,
+.doc h4 {
+  font-size: 14px;
+}
+
+.doc > :first-child {
+  margin-top: 0;
+}
+
+.doc p {
+  margin: 6px 0;
+}
+
+.doc ul,
+.doc ol {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.doc li {
+  margin: 2px 0;
+}
+
+.doc a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.doc code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-kbd);
+  padding: 0 4px;
+}
+
+.doc pre {
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-inner);
+  padding: var(--space-10) var(--space-12);
+  overflow: auto;
+}
+
+.doc pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.doc blockquote {
+  margin: 8px 0;
+  padding-left: var(--space-12);
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+.doc table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12.5px;
+}
+
+.doc th,
+.doc td {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.doc img {
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-table tr.changed td {
+    animation: none;
+  }
+}

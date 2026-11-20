@@ -10,6 +10,7 @@
 
 # Local and editor files
 .DS_Store
+.impeccable/
 *.log
 .env
 .env.*

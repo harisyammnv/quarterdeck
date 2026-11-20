@@ -2,6 +2,8 @@
  * The UI's only door to the core. Inside the app window it calls the generated bindings;
  * in a plain browser (`pnpm dev` without Tauri) it serves the preview data instead, so the
  * layout can be worked on and screenshotted headlessly. The preview is labelled in the UI.
+ *
+ * Areas add their own calls here, next to the command they wrap, and a preview fallback.
  */
 import { isTauri } from "@tauri-apps/api/core";
 import {
@@ -24,6 +26,30 @@ export function appInfo(): Promise<AppInfo> {
   return inApp ? commands.appInfo() : Promise.resolve(previewInfo());
 }
 
+/**
+ * Opens the system folder picker in the core and switches to the picked home. Resolves with
+ * the new facts, or the unchanged ones when the picker was cancelled.
+ */
+export async function homePick(): Promise<AppInfo> {
+  if (!inApp) throw new Error("Preview mode: the home is chosen from the app window.");
+  return commands.homePick();
+}
+
+/**
+ * Asks the core to open an https link. The core shows a native confirmation with the full
+ * address first; resolves true when the link was opened, false when the person cancelled.
+ */
+export async function urlOpen(url: string): Promise<boolean> {
+  if (!inApp) throw new Error("Preview mode: links open from the app window.");
+  return commands.urlOpen(url);
+}
+
+/** Opens a task's recorded pull request; the core takes the address from the snapshot. */
+export async function taskPrOpen(taskId: string): Promise<void> {
+  if (!inApp) throw new Error("Preview mode: pull requests open from the app window.");
+  await commands.taskPrOpen(taskId);
+}
+
 export function fleetView(): Promise<FleetView | null> {
   return inApp ? commands.fleetView() : Promise.resolve(previewView());
 }
@@ -32,19 +58,18 @@ export function refreshFleet(): Promise<void> {
   return inApp ? commands.refreshFleet().then(() => undefined) : Promise.resolve();
 }
 
-export function sendNote(text: string, requestId: string): Promise<NoteReceipt> {
-  if (inApp) return commands.sendNote(text, requestId);
-  return Promise.reject(new Error("Preview mode: notes are only sent from the app window."));
+export async function sendNote(text: string, requestId: string): Promise<NoteReceipt> {
+  if (!inApp) throw new Error("Preview mode: notes are only sent from the app window.");
+  return commands.sendNote(text, requestId);
 }
 
 export function viewRendered(seq: number, renderedMs: number): void {
   if (inApp) void commands.viewRendered(seq, renderedMs);
 }
 
-/** Subscribes to fleet updates; returns an unsubscribe function. */
-export function onFleetUpdated(cb: (view: FleetView) => void): () => void {
+function listen<T>(event: { listen: (cb: (e: { payload: T }) => void) => Promise<() => void> }, cb: (payload: T) => void): () => void {
   if (!inApp) return () => undefined;
-  const pending = events.fleetUpdated.listen((e) => {
+  const pending = event.listen((e) => {
     cb(e.payload);
   });
   return () => {
@@ -52,4 +77,14 @@ export function onFleetUpdated(cb: (view: FleetView) => void): () => void {
       unlisten();
     });
   };
+}
+
+/** Subscribes to fleet updates; returns an unsubscribe function. */
+export function onFleetUpdated(cb: (view: FleetView) => void): () => void {
+  return listen(events.fleetUpdated, cb);
+}
+
+/** Subscribes to home changes (a new home chosen); returns an unsubscribe function. */
+export function onHomeChanged(cb: (info: AppInfo) => void): () => void {
+  return listen(events.homeChanged, cb);
 }

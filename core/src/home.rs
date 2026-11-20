@@ -14,7 +14,7 @@ pub struct FmHome {
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum HomeError {
-    #[error("no Firstmate home configured: set QD_FM_HOME or FM_HOME to the home directory")]
+    #[error("no Firstmate home chosen yet")]
     NotConfigured,
     #[error("{0} is not a Firstmate home: {1} is missing")]
     Invalid(PathBuf, &'static str),
@@ -22,7 +22,7 @@ pub enum HomeError {
 
 impl FmHome {
     /// Required entries, relative to the home root.
-    const REQUIRED: [&'static str; 3] = ["state", "bin/fm-bearings-snapshot.sh", "bin/fm-inbox.sh"];
+    const REQUIRED: [&'static str; 3] = ["state", "bin/fm-fleet-snapshot.sh", "bin/fm-inbox.sh"];
 
     /// Validates `root` as a Firstmate home.
     pub fn at(root: impl Into<PathBuf>) -> Result<Self, HomeError> {
@@ -33,6 +33,12 @@ impl FmHome {
             }
         }
         Ok(Self { root })
+    }
+
+    /// A home without validation, for tests that never touch the file system.
+    #[cfg(test)]
+    pub(crate) fn at_unchecked(root: PathBuf) -> Self {
+        Self { root }
     }
 
     /// Finds the home from the environment.
@@ -88,7 +94,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         std::fs::create_dir_all(dir.path().join("state")).unwrap();
         std::fs::create_dir_all(dir.path().join("bin")).unwrap();
-        std::fs::write(dir.path().join("bin/fm-bearings-snapshot.sh"), "").unwrap();
+        std::fs::write(dir.path().join("bin/fm-fleet-snapshot.sh"), "").unwrap();
         std::fs::write(dir.path().join("bin/fm-inbox.sh"), "").unwrap();
         dir
     }

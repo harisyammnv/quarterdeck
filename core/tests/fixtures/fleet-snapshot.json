@@ -1,0 +1,882 @@
+{
+  "schema": "fm-fleet-snapshot.v1",
+  "generated": "2026-11-20T09:59:35Z",
+  "fm_home": "/p/home",
+  "roots": {
+    "fm_root": "/p/home",
+    "state": "/p/home/state",
+    "data": "/p/home/data",
+    "config": "/p/home/config",
+    "projects": "/p/home/projects"
+  },
+  "backlog": {
+    "path": "/p/home/data/backlog.md",
+    "present": true,
+    "records": [
+      {
+        "current_role": "worker",
+        "done": null,
+        "kind": null,
+        "blocked_by": null,
+        "hold_until": null,
+        "links": [],
+        "hold_bucket": null,
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": false,
+        "hold_age_days": 0,
+        "hold_reason": null,
+        "blocked_reason": null,
+        "report_path": null,
+        "captain_actionable": false,
+        "hold_kind": null,
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": "example-app",
+        "since": "2026-11-18",
+        "hold_set": null,
+        "body_lines": [],
+        "pr_url": null,
+        "priority": null,
+        "order": 1,
+        "title": "Login fix: hide account lockout from sign-in answers",
+        "reported": null,
+        "merged": null,
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "app-login-fix",
+        "state": "in_flight"
+      },
+      {
+        "current_role": "worker",
+        "done": null,
+        "kind": null,
+        "blocked_by": null,
+        "hold_until": null,
+        "links": [],
+        "hold_bucket": null,
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": false,
+        "hold_age_days": 0,
+        "hold_reason": null,
+        "blocked_reason": null,
+        "report_path": null,
+        "captain_actionable": false,
+        "hold_kind": null,
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": "quarterdeck",
+        "since": "2026-11-18",
+        "hold_set": null,
+        "body_lines": [],
+        "pr_url": null,
+        "priority": null,
+        "order": 2,
+        "title": "Quarterdeck Phase 0 spike",
+        "reported": null,
+        "merged": null,
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "qd-spike",
+        "state": "in_flight"
+      },
+      {
+        "current_role": "worker",
+        "done": null,
+        "kind": null,
+        "blocked_by": null,
+        "hold_until": null,
+        "links": [],
+        "hold_bucket": null,
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": false,
+        "hold_age_days": 0,
+        "hold_reason": null,
+        "blocked_reason": null,
+        "report_path": null,
+        "captain_actionable": false,
+        "hold_kind": null,
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": "example-ops",
+        "since": "2026-11-18",
+        "hold_set": null,
+        "body_lines": [],
+        "pr_url": null,
+        "priority": null,
+        "order": 3,
+        "title": "Find the slow dashboard query",
+        "reported": null,
+        "merged": null,
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "perf-scout",
+        "state": "in_flight"
+      },
+      {
+        "current_role": "queued",
+        "done": null,
+        "kind": "captain",
+        "blocked_by": null,
+        "hold_until": null,
+        "links": [],
+        "hold_bucket": "live",
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": false,
+        "hold_age_days": 0,
+        "hold_reason": "13 of 13 checks green, one update left out",
+        "blocked_reason": null,
+        "report_path": null,
+        "captain_actionable": true,
+        "hold_kind": "captain",
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": "ledger-api",
+        "since": "2026-11-18",
+        "hold_set": "2026-11-20T08:00:00Z",
+        "body_lines": [],
+        "pr_url": "https://forge.example.invalid/acme/ledger-api/pull/494",
+        "priority": null,
+        "order": 4,
+        "title": "Merge the dependency rollup",
+        "reported": null,
+        "merged": null,
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "deps-rollup-merge",
+        "state": "queued"
+      },
+      {
+        "current_role": "queued",
+        "done": null,
+        "kind": "captain",
+        "blocked_by": null,
+        "hold_until": "2026-12-02",
+        "links": [],
+        "hold_bucket": "dated",
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": false,
+        "hold_age_days": 0,
+        "hold_reason": "Deferred until the load test lands",
+        "blocked_reason": null,
+        "report_path": "data/cache-plan/report.md",
+        "captain_actionable": false,
+        "hold_kind": "captain",
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": "route-planner",
+        "since": "2026-11-18",
+        "hold_set": null,
+        "body_lines": [],
+        "pr_url": null,
+        "priority": null,
+        "order": 5,
+        "title": "Approve the caching plan",
+        "reported": null,
+        "merged": null,
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "cache-plan",
+        "state": "queued"
+      },
+      {
+        "current_role": "queued",
+        "done": null,
+        "kind": "captain",
+        "blocked_by": null,
+        "hold_until": null,
+        "links": [],
+        "hold_bucket": "aged",
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": false,
+        "hold_age_days": 20,
+        "hold_reason": "No answer for 20 days",
+        "blocked_reason": null,
+        "report_path": null,
+        "captain_actionable": false,
+        "hold_kind": "captain",
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": null,
+        "since": "2026-11-18",
+        "hold_set": null,
+        "body_lines": [],
+        "pr_url": null,
+        "priority": null,
+        "order": 6,
+        "title": "Keep the legacy export?",
+        "reported": null,
+        "merged": null,
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "old-question",
+        "state": "queued"
+      },
+      {
+        "current_role": "queued",
+        "done": null,
+        "kind": "captain",
+        "blocked_by": "fake-clock-fix",
+        "hold_until": null,
+        "links": [],
+        "hold_bucket": "blocked",
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": false,
+        "hold_age_days": 0,
+        "hold_reason": null,
+        "blocked_reason": "waiting on fake-clock-fix",
+        "report_path": null,
+        "captain_actionable": false,
+        "hold_kind": "captain",
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": "portal-web",
+        "since": "2026-11-18",
+        "hold_set": null,
+        "body_lines": [],
+        "pr_url": null,
+        "priority": null,
+        "order": 7,
+        "title": "Allow the browser test tool update",
+        "reported": null,
+        "merged": null,
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "browser-bump",
+        "state": "queued"
+      },
+      {
+        "current_role": "queued",
+        "done": null,
+        "kind": null,
+        "blocked_by": null,
+        "hold_until": null,
+        "links": [],
+        "hold_bucket": null,
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": false,
+        "hold_age_days": 0,
+        "hold_reason": null,
+        "blocked_reason": null,
+        "report_path": null,
+        "captain_actionable": false,
+        "hold_kind": null,
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": "portal-web",
+        "since": "2026-11-18",
+        "hold_set": null,
+        "body_lines": [],
+        "pr_url": null,
+        "priority": null,
+        "order": 8,
+        "title": "Refresh the setup docs",
+        "reported": null,
+        "merged": null,
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "docs-refresh",
+        "state": "queued"
+      },
+      {
+        "current_role": "done",
+        "done": null,
+        "kind": null,
+        "blocked_by": null,
+        "hold_until": null,
+        "links": [],
+        "hold_bucket": null,
+        "raw": "- [ ] invented",
+        "requires_child_metadata": false,
+        "blocked_by_ids": [],
+        "unresolved_blocker_ids": [],
+        "structured": true,
+        "checked": true,
+        "hold_age_days": 0,
+        "hold_reason": null,
+        "blocked_reason": null,
+        "report_path": null,
+        "captain_actionable": false,
+        "hold_kind": null,
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "repo": "example-web",
+        "since": "2026-11-18",
+        "hold_set": null,
+        "body_lines": [],
+        "pr_url": "https://forge.example.invalid/acme/example-web/pull/37",
+        "priority": null,
+        "order": 9,
+        "title": "example-web platform pin to 4.14.4",
+        "reported": null,
+        "merged": "2026-11-19",
+        "local_note": null,
+        "body_excerpt": "",
+        "id": "web-pin-update",
+        "state": "done"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "web-pin-update",
+      "kind": "ship",
+      "harness": "claude",
+      "mode": "direct-PR",
+      "yolo": "off",
+      "branch": "fm/web-pin-update",
+      "project": "/p/projects/example-web",
+      "spawn_gen": "s1795160000.1.1",
+      "backend": "orca",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/p/home/state/web-pin-update.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/p/home/state/web-pin-update.status",
+          "present": true,
+          "kind": "event_history"
+        },
+        "worktree": {
+          "path": "/p/worktrees/example-web/web-pin-update",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/p/home/data/web-pin-update/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "done",
+        "source": "pane",
+        "detail": "PR https://forge.example.invalid/acme/example-web/pull/37",
+        "raw": "state: done",
+        "observed_at": "2026-11-20T09:59:35Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "term_webpinupdate0001",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown"
+      },
+      "pr": {
+        "url": "https://forge.example.invalid/acme/example-web/pull/37",
+        "source": "status",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "PR https://forge.example.invalid/acme/example-web/pull/37"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh web-pin-update",
+        "steer": "-",
+        "return_channel_note": null
+      },
+      "backlog": {
+        "id": "web-pin-update",
+        "title": "example-web platform pin to 4.14.4",
+        "state": "in_flight",
+        "captain_actionable": false,
+        "hold_bucket": null
+      },
+      "future_field": {
+        "ignored": true
+      }
+    },
+    {
+      "id": "app-login-fix",
+      "kind": "ship",
+      "harness": "claude",
+      "mode": "direct-PR",
+      "yolo": "off",
+      "branch": "fm/app-login-fix",
+      "project": "/p/projects/example-app",
+      "spawn_gen": "s1795160000.1.1",
+      "backend": "orca",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/p/home/state/app-login-fix.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/p/home/state/app-login-fix.status",
+          "present": true,
+          "kind": "event_history"
+        },
+        "worktree": {
+          "path": "/p/worktrees/example-app/app-login-fix",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/p/home/data/app-login-fix/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "unknown",
+        "source": "pane",
+        "detail": "backend unreachable (orca endpoint state: unreadable)",
+        "raw": "state: unknown",
+        "observed_at": "2026-11-20T09:59:35Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "term_apploginfix0001",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "backend unreachable (orca endpoint state: unreadable)"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh app-login-fix",
+        "steer": "-",
+        "return_channel_note": null
+      },
+      "backlog": {
+        "id": "app-login-fix",
+        "title": "Login fix: hide account lockout from sign-in answers",
+        "state": "in_flight",
+        "captain_actionable": false,
+        "hold_bucket": null
+      },
+      "future_field": {
+        "ignored": true
+      }
+    },
+    {
+      "id": "api-pin-update",
+      "kind": "ship",
+      "harness": "claude",
+      "mode": "direct-PR",
+      "yolo": "off",
+      "branch": "fm/api-pin-update",
+      "project": "/p/projects/example-api",
+      "spawn_gen": "s1795160000.1.1",
+      "backend": "orca",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/p/home/state/api-pin-update.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/p/home/state/api-pin-update.status",
+          "present": true,
+          "kind": "event_history"
+        },
+        "worktree": {
+          "path": "/p/worktrees/example-api/api-pin-update",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/p/home/data/api-pin-update/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "done",
+        "source": "pane",
+        "detail": "PR https://forge.example.invalid/acme/example-api/pull/295",
+        "raw": "state: done",
+        "observed_at": "2026-11-20T09:59:35Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "term_apipinupdate0001",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown"
+      },
+      "pr": {
+        "url": "https://forge.example.invalid/acme/example-api/pull/295",
+        "source": "status",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "PR https://forge.example.invalid/acme/example-api/pull/295"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh api-pin-update",
+        "steer": "-",
+        "return_channel_note": null
+      },
+      "backlog": {
+        "id": "api-pin-update",
+        "title": "example-api platform pin to 4.14.4",
+        "state": "in_flight",
+        "captain_actionable": false,
+        "hold_bucket": null
+      },
+      "future_field": {
+        "ignored": true
+      }
+    },
+    {
+      "id": "qd-spike",
+      "kind": "ship",
+      "harness": "claude",
+      "mode": "direct-PR",
+      "yolo": "off",
+      "branch": "fm/qd-spike",
+      "project": "/p/projects/quarterdeck",
+      "spawn_gen": "s1795160000.1.1",
+      "backend": "orca",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/p/home/state/qd-spike.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/p/home/state/qd-spike.status",
+          "present": true,
+          "kind": "event_history"
+        },
+        "worktree": {
+          "path": "/p/worktrees/quarterdeck/qd-spike",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/p/home/data/qd-spike/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "working",
+        "source": "pane",
+        "detail": "harness busy (claude-hook)",
+        "raw": "state: working",
+        "observed_at": "2026-11-20T09:59:35Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "term_qdspike0001",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "harness busy (claude-hook)"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh qd-spike",
+        "steer": "-",
+        "return_channel_note": null
+      },
+      "backlog": {
+        "id": "qd-spike",
+        "title": "Quarterdeck Phase 0 spike",
+        "state": "in_flight",
+        "captain_actionable": false,
+        "hold_bucket": null
+      },
+      "future_field": {
+        "ignored": true
+      }
+    },
+    {
+      "id": "app-dev-pin",
+      "kind": "ship",
+      "harness": "claude",
+      "mode": "direct-PR",
+      "yolo": "off",
+      "branch": "fm/app-dev-pin",
+      "project": "/p/projects/example-app",
+      "spawn_gen": "s1795160000.1.1",
+      "backend": "orca",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/p/home/state/app-dev-pin.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/p/home/state/app-dev-pin.status",
+          "present": true,
+          "kind": "event_history"
+        },
+        "worktree": {
+          "path": "/p/worktrees/example-app/app-dev-pin",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/p/home/data/app-dev-pin/report.md",
+          "present": false
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "done",
+        "source": "pane",
+        "detail": "PR https://forge.example.invalid/acme/example-app/pull/509",
+        "raw": "state: done",
+        "observed_at": "2026-11-20T09:59:35Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "term_appdevpin0001",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown"
+      },
+      "pr": {
+        "url": "https://forge.example.invalid/acme/example-app/pull/509",
+        "source": "status",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": false,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": false,
+        "last_event_text": "PR https://forge.example.invalid/acme/example-app/pull/509"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh app-dev-pin",
+        "steer": "-",
+        "return_channel_note": null
+      },
+      "backlog": {
+        "id": "app-dev-pin",
+        "title": "example-app dev web/bff platform pin",
+        "state": "in_flight",
+        "captain_actionable": false,
+        "hold_bucket": null
+      },
+      "future_field": {
+        "ignored": true
+      }
+    },
+    {
+      "id": "perf-scout",
+      "kind": "scout",
+      "harness": "claude",
+      "mode": "direct-PR",
+      "yolo": "off",
+      "branch": "fm/perf-scout",
+      "project": "/p/projects/example-ops",
+      "spawn_gen": "s1795160000.1.1",
+      "backend": "orca",
+      "remote": null,
+      "paths": {
+        "meta": {
+          "path": "/p/home/state/perf-scout.meta",
+          "present": true
+        },
+        "status_log": {
+          "path": "/p/home/state/perf-scout.status",
+          "present": true,
+          "kind": "event_history"
+        },
+        "worktree": {
+          "path": "/p/worktrees/example-ops/perf-scout",
+          "present": true
+        },
+        "home": {
+          "path": null,
+          "present": false
+        },
+        "report": {
+          "path": "/p/home/data/perf-scout/report.md",
+          "present": true
+        }
+      },
+      "secondmate_projects": [],
+      "current_state": {
+        "state": "needs-decision",
+        "source": "pane",
+        "detail": "report ready, awaiting a pick",
+        "raw": "state: needs-decision",
+        "observed_at": "2026-11-20T09:59:35Z",
+        "freshness": "fresh"
+      },
+      "endpoint": {
+        "target": "term_perfscout0001",
+        "exists": true,
+        "agent_alive": "not_checked",
+        "status": "unknown"
+      },
+      "pr": {
+        "url": null,
+        "source": "absent",
+        "head": null
+      },
+      "hints": {
+        "pending_decision": true,
+        "blocked_event": false,
+        "open_decisions": [],
+        "scout_report_present": true,
+        "last_event_text": "report ready, awaiting a pick"
+      },
+      "actions": {
+        "watch": "bin/fm-peek.sh perf-scout",
+        "steer": "-",
+        "return_channel_note": null
+      },
+      "backlog": {
+        "id": "perf-scout",
+        "title": "Find the slow dashboard query",
+        "state": "in_flight",
+        "captain_actionable": false,
+        "hold_bucket": null
+      },
+      "future_field": {
+        "ignored": true
+      }
+    }
+  ],
+  "main_inventory": {
+    "valid": true,
+    "reason": null,
+    "orphan_in_flight": [],
+    "unstructured_current_count": 0
+  },
+  "contributions": {
+    "known": 3,
+    "checked": 3,
+    "counts": {
+      "fleet": 1,
+      "nobody": 2
+    }
+  },
+  "scout_reports": [
+    {
+      "id": "perf-scout",
+      "path": "/p/home/data/perf-scout/report.md",
+      "kind": "scout"
+    },
+    {
+      "id": "auth-audit",
+      "path": "/p/home/data/auth-audit/report.md",
+      "kind": "scout"
+    }
+  ],
+  "secondmate_current": {
+    "registry": {
+      "present": true,
+      "available": true
+    },
+    "records": [
+      {
+        "id": "mate-web",
+        "state": "working",
+        "doing": "triaging the web backlog",
+        "provenance": "registered-table"
+      }
+    ],
+    "total": 1,
+    "shown": 1,
+    "truncated": 0
+  },
+  "secondmate_landed": {
+    "records": [],
+    "truncated": [],
+    "unreadable": [],
+    "partial": []
+  }
+}

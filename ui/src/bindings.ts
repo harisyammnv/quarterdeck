@@ -8,7 +8,6 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 
 /** Commands */
 export const commands = {
-	appInfo: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo_Serialize>("app_info", undefined, options),
 	/**  The current fleet view, or `None` when no home is configured. */
 	fleetView: (options?: InvokeOptions) => __TAURI_INVOKE<FleetView_Serialize | null>("fleet_view", undefined, options),
 	/**  Asks for a fresh snapshot. */
@@ -17,21 +16,45 @@ export const commands = {
 	sendNote: (text: string, requestId: string, options?: InvokeOptions) => __TAURI_INVOKE<NoteReceipt>("send_note", { text, requestId }, options),
 	/**  The UI reports that it painted view `seq`; completes a status-change latency sample. */
 	viewRendered: (seq: number, renderedMs: number | null, options?: InvokeOptions) => __TAURI_INVOKE<void>("view_rendered", { seq, renderedMs }, options),
+	appInfo: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo_Serialize>("app_info", undefined, options),
+	/**
+	 *  Opens the system folder picker, and when a valid Firstmate home is picked, remembers it
+	 *  in the app's own configuration and switches the window to it.
+	 * 
+	 *  The path never comes from the webview: the picker runs here, in the core process.
+	 *  Cancelling the picker changes nothing and returns the current facts.
+	 */
+	homePick: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo_Serialize>("home_pick", undefined, options),
+	/**
+	 *  Opens a task's recorded pull request in the default browser. The address comes from the
+	 *  fleet snapshot (the task row, else its backlog record), never from the window.
+	 */
+	taskPrOpen: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("task_pr_open", { taskId }, options),
+	/**
+	 *  Opens an `https` link from a rendered document in the default browser, after a native
+	 *  confirmation that shows the full address. The confirmation runs here, in the core, so
+	 *  script in the webview can never open a link the person did not approve. Resolves `true`
+	 *  when the link was opened and `false` when the person cancelled.
+	 */
+	urlOpen: (url: string, options?: InvokeOptions) => __TAURI_INVOKE<boolean>("url_open", { url }, options),
 };
 
 /** Events */
 export const events = {
 	fleetUpdated: makeEvent<FleetUpdated_Serialize, FleetUpdated_Deserialize>("fleet-updated"),
+	homeChanged: makeEvent<HomeChanged_Serialize, HomeChanged_Deserialize>("home-changed"),
 };
 
 /* Types */
-/**  Facts the UI needs once at start. */
+/**  Facts the UI needs at start and after the home changes. */
 export type AppInfo = AppInfo_Serialize | AppInfo_Deserialize;
 
-/**  Facts the UI needs once at start. */
+/**  Facts the UI needs at start and after the home changes. */
 export type AppInfo_Deserialize = {
 	/**  Short label of the Firstmate home, when one was found. */
 	home?: string | null,
+	/**  Where the home came from, when one was found. */
+	home_source?: HomeSource | null,
 	/**  Why no home is shown, when none was found. */
 	home_error?: string | null,
 	/**  `light` or `dark` from `QD_THEME`, to pin the theme regardless of the system. */
@@ -39,10 +62,12 @@ export type AppInfo_Deserialize = {
 	version: string,
 };
 
-/**  Facts the UI needs once at start. */
+/**  Facts the UI needs at start and after the home changes. */
 export type AppInfo_Serialize = {
 	/**  Short label of the Firstmate home, when one was found. */
 	home: string | null,
+	/**  Where the home came from, when one was found. */
+	home_source: HomeSource | null,
 	/**  Why no home is shown, when none was found. */
 	home_error: string | null,
 	/**  `light` or `dark` from `QD_THEME`, to pin the theme regardless of the system. */
@@ -62,7 +87,7 @@ export type FleetRow_Deserialize = {
 	/**  The state word as written, so unknown words are still shown honestly. */
 	state_word: string,
 	source: StateSource,
-	/**  The snapshot's one-line "doing" summary. */
+	/**  The snapshot's one-line summary of what the task is doing. */
 	doing?: string | null,
 	/**  The last status event for this task, when there is one. */
 	latest_event?: StatusEvent_Deserialize | null,
@@ -78,7 +103,7 @@ export type FleetRow_Serialize = {
 	/**  The state word as written, so unknown words are still shown honestly. */
 	state_word: string,
 	source: StateSource,
-	/**  The snapshot's one-line "doing" summary. */
+	/**  The snapshot's one-line summary of what the task is doing. */
 	doing: string | null,
 	/**  The last status event for this task, when there is one. */
 	latest_event: StatusEvent_Serialize | null,
@@ -103,6 +128,11 @@ export type FleetView_Deserialize = {
 	/**  Short label of the home, such as `orca/firstmate`. */
 	home: string,
 	rows: FleetRow_Deserialize[],
+	/**
+	 *  Decisions waiting on a person now: backlog records the snapshot marks
+	 *  `captain_actionable`. Uncapped; 0 until the first snapshot lands.
+	 */
+	decisions: number,
 	snapshot: SnapshotInfo_Deserialize,
 	cause?: UpdateCause | null,
 };
@@ -114,9 +144,32 @@ export type FleetView_Serialize = {
 	/**  Short label of the home, such as `orca/firstmate`. */
 	home: string,
 	rows: FleetRow_Serialize[],
+	/**
+	 *  Decisions waiting on a person now: backlog records the snapshot marks
+	 *  `captain_actionable`. Uncapped; 0 until the first snapshot lands.
+	 */
+	decisions: number,
 	snapshot: SnapshotInfo_Serialize,
 	cause: UpdateCause | null,
 };
+
+/**  The home changed: a new home was chosen in the window. */
+export type HomeChanged = HomeChanged_Serialize | HomeChanged_Deserialize;
+
+/**  The home changed: a new home was chosen in the window. */
+export type HomeChanged_Deserialize = AppInfo_Deserialize;
+
+/**  The home changed: a new home was chosen in the window. */
+export type HomeChanged_Serialize = AppInfo_Serialize;
+
+/**  Where the active home came from. */
+export type HomeSource = 
+/**  `QD_FM_HOME` in the environment. */
+"qd-fm-home" | 
+/**  `FM_HOME` in the environment. */
+"fm-home" | 
+/**  The home chosen in the window, saved in the app configuration. */
+"chosen";
 
 export type NoteOutcome = 
 /**  A new note was saved. */
@@ -145,8 +198,8 @@ export type SnapshotInfo_Deserialize = {
 	running: boolean,
 	/**  The last run's error, cleared by the next good run. */
 	error?: string | null,
-	/**  Fleet surfaces the snapshot reported as omitted. */
-	omitted: string[],
+	/**  The snapshot shown came from the on-disk cache of an earlier run, not from this one. */
+	cached: boolean,
 };
 
 export type SnapshotInfo_Serialize = {
@@ -156,13 +209,13 @@ export type SnapshotInfo_Serialize = {
 	running: boolean,
 	/**  The last run's error, cleared by the next good run. */
 	error: string | null,
-	/**  Fleet surfaces the snapshot reported as omitted. */
-	omitted: string[],
+	/**  The snapshot shown came from the on-disk cache of an earlier run, not from this one. */
+	cached: boolean,
 };
 
 /**  Where a row's state came from. */
 export type StateSource = 
-/**  The bearings snapshot. */
+/**  The fleet snapshot. */
 "snapshot" | 
 /**  A status event newer than the snapshot. */
 "event" | 

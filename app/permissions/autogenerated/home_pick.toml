@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-home-pick"
+description = "Enables the home_pick command without any pre-configured scope."
+commands.allow = ["home_pick"]
+
+[[permission]]
+identifier = "deny-home-pick"
+description = "Denies the home_pick command without any pre-configured scope."
+commands.deny = ["home_pick"]

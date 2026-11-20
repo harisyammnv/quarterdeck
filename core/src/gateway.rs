@@ -16,8 +16,8 @@ use crate::home::FmHome;
 /// The allow-listed entry points.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Entry {
-    /// `bin/fm-bearings-snapshot.sh --json --all-in-flight`: read-only fleet projection.
-    BearingsSnapshot,
+    /// `bin/fm-fleet-snapshot.sh --json`: the read-only structured fleet snapshot.
+    FleetSnapshot,
     /// `bin/fm-inbox.sh note --request-id <id> --json -- <text>`: the one write path.
     InboxNote { request_id: String, text: String },
 }
@@ -25,14 +25,14 @@ pub enum Entry {
 impl Entry {
     fn script(&self) -> &'static str {
         match self {
-            Self::BearingsSnapshot => "fm-bearings-snapshot.sh",
+            Self::FleetSnapshot => "fm-fleet-snapshot.sh",
             Self::InboxNote { .. } => "fm-inbox.sh",
         }
     }
 
     fn args(&self) -> Vec<OsString> {
         match self {
-            Self::BearingsSnapshot => vec!["--json".into(), "--all-in-flight".into()],
+            Self::FleetSnapshot => vec!["--json".into()],
             Self::InboxNote { request_id, text } => vec![
                 "note".into(),
                 "--request-id".into(),
@@ -48,10 +48,19 @@ impl Entry {
     /// Default time budget for each entry point.
     pub fn default_timeout(&self) -> Duration {
         match self {
-            Self::BearingsSnapshot => Duration::from_secs(90),
+            Self::FleetSnapshot => Duration::from_secs(90),
             Self::InboxNote { .. } => Duration::from_secs(30),
         }
     }
+}
+
+/// A task id the app will pass on: `^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`. Callers also check
+/// that the id names a task in the current snapshot.
+pub fn valid_task_id(id: &str) -> bool {
+    let mut chars = id.chars();
+    chars.next().is_some_and(|c| c.is_ascii_alphanumeric())
+        && id.len() <= 128
+        && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
 }
 
 /// "exit 3", or "killed by a signal" when there is no exit code.
@@ -224,6 +233,34 @@ mod tests {
         let dd = args.iter().position(|a| a == "--").unwrap();
         assert_eq!(args[dd + 1], "--all is body text");
         assert_eq!(args.len(), dd + 2);
+    }
+
+    #[test]
+    fn task_ids() {
+        for ok in ["a", "qd-phase1", "A.b_c-9", &"x".repeat(128)] {
+            assert!(valid_task_id(ok), "{ok}");
+        }
+        for bad in [
+            "",
+            "-a",
+            ".a",
+            "_a",
+            "a/b",
+            "../a",
+            "a b",
+            "a;b",
+            &"x".repeat(129),
+            "é",
+        ] {
+            assert!(!valid_task_id(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn snapshot_argv_is_fixed() {
+        let e = Entry::FleetSnapshot;
+        assert_eq!(e.script(), "fm-fleet-snapshot.sh");
+        assert_eq!(e.args(), vec![OsString::from("--json")]);
     }
 
     #[test]
