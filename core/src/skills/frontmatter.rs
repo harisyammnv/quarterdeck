@@ -1,5 +1,6 @@
 //! `SKILL.md` front matter: a YAML block between `---` lines at the top of the file.
 
+use yaml_rust2::parser::{Event, EventReceiver, Parser};
 use yaml_rust2::{Yaml, YamlLoader};
 
 /// Front matter larger than this is not parsed.
@@ -53,6 +54,14 @@ fn parse(yaml: &str) -> FrontMatter {
             ..FrontMatter::default()
         };
     }
+    // The loader copies the node an alias points to, so nested aliases grow exponentially.
+    // Skill front matter has no use for them; refuse any before loading.
+    if has_alias(yaml) {
+        return FrontMatter {
+            malformed: true,
+            ..FrontMatter::default()
+        };
+    }
     let Ok(docs) = YamlLoader::load_from_str(yaml) else {
         return FrontMatter {
             malformed: true,
@@ -74,6 +83,21 @@ fn parse(yaml: &str) -> FrontMatter {
         internal: doc["metadata"]["internal"].as_bool().unwrap_or(false),
         malformed: false,
     }
+}
+
+/// True when the YAML uses an alias, or cannot be parsed at all.
+fn has_alias(yaml: &str) -> bool {
+    struct Aliases(bool);
+    impl EventReceiver for Aliases {
+        fn on_event(&mut self, ev: Event) {
+            if matches!(ev, Event::Alias(_)) {
+                self.0 = true;
+            }
+        }
+    }
+    let mut seen = Aliases(false);
+    let parsed = Parser::new_from_str(yaml).load(&mut seen, false);
+    parsed.is_err() || seen.0
 }
 
 /// A string, or a number or boolean written where a string was meant.
@@ -144,9 +168,20 @@ mod tests {
     }
 
     #[test]
-    fn aliases_do_not_expand() {
-        let yaml = "---\na: &a [x, x, x, x, x, x, x, x, x]\nb: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a]\nc: [*b, *b, *b, *b, *b, *b, *b, *b, *b]\nname: bomb\n---\n";
-        let (fm, _) = split(yaml);
-        assert_eq!(fm.name.as_deref(), Some("bomb"));
+    fn aliases_are_refused_before_loading() {
+        // Ten levels of nine aliases each would expand to 9^10 nodes if loaded.
+        let mut yaml = String::from("---\nname: bomb\nl0: &l0 [x, x, x, x, x, x, x, x, x]\n");
+        for i in 1..10 {
+            let p = i - 1;
+            yaml.push_str(&format!("l{i}: &l{i} [*l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}]\n"));
+        }
+        yaml.push_str("---\n");
+        let start = std::time::Instant::now();
+        let (fm, _) = split(&yaml);
+        assert!(fm.malformed);
+        assert_eq!(fm.name, None);
+        assert!(start.elapsed() < std::time::Duration::from_secs(2));
+        // Anchors alone are harmless.
+        assert!(!split("---\nname: &n ok\n---\n").0.malformed);
     }
 }
