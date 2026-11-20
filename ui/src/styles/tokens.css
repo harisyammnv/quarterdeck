@@ -1,0 +1,135 @@
+/*
+ * Direction A2 tokens (Sante palette), from the design's tokens.md and the A2 polish report.
+ * Light is the default; dark follows the system unless the window pins a theme with
+ * data-theme on <html>.
+ * Teal is the brand disc only in this build; it is never a state, button, link, icon or text.
+ */
+
+:root {
+  color-scheme: light;
+  --frame: #f3f3f3;
+  --panel: #ffffff;
+  --sunken: #f3f3f3;
+  --hover: #f3f3f3;
+  --line: #e2e2e2;
+  --edge: #8a8a8a;
+  --edge-soft: #d0d0d0;
+  --ink: #000000;
+  --muted-p: #757575;
+  --muted2: #5c5c5c;
+  --action: #000000;
+  --action-hover: #2a2a2a;
+  --on-action: #ffffff;
+  --rail: #000000;
+  --rail-active: #2a2a2a;
+  --rail-hover: #1a1a1a;
+  --on-rail: #ffffff;
+  --on-rail-muted: #a3a3a3;
+  --teal: #008375;
+  --info: #1d5fbf;
+  --info-soft: #e8f0fc;
+  --success: #1f7a3a;
+  --success-soft: #e6f5e9;
+  --warning: #8a5a00;
+  --warning-soft: #fff3d6;
+  --warning-dot: #c98a00;
+  --danger: #c4263a;
+  --danger-soft: #fde8ea;
+  --focus: 0 0 0 2px #ffffff, 0 0 0 4px #000000;
+  --tile-line: rgba(0, 0, 0, 0.1);
+  --panel-hi: none;
+  --muted: var(--muted2);
+
+  --font: "DM Sans Variable", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --r-card: 16px;
+  --r-inner: 12px;
+  --r-row: 10px;
+  --r-pill: 99px;
+
+  --rail-w: 68px;
+  --titlebar-h: 40px;
+  --statusbar-h: 28px;
+
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --t-fast: 120ms;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --frame: #121212;
+  --panel: #1a1a1a;
+  --sunken: #222222;
+  --hover: #222222;
+  --line: #2e2e2e;
+  --edge: #7a7a7a;
+  --edge-soft: #3a3a3a;
+  --ink: #ffffff;
+  --muted-p: #a3a3a3;
+  --muted2: #bdbdbd;
+  --action: #ffffff;
+  --action-hover: #e2e2e2;
+  --on-action: #000000;
+  --rail: #000000;
+  --rail-active: #262626;
+  --rail-hover: #1a1a1a;
+  --on-rail: #ffffff;
+  --on-rail-muted: #a3a3a3;
+  --teal: #008375;
+  --info: #8ab4ff;
+  --info-soft: #16233a;
+  --success: #7ad694;
+  --success-soft: #122a1a;
+  --warning: #f2c35b;
+  --warning-soft: #2e2410;
+  --warning-dot: #f2c35b;
+  --danger: #ff8591;
+  --danger-soft: #351519;
+  --focus: 0 0 0 2px #1a1a1a, 0 0 0 4px #ffffff;
+  --tile-line: rgba(255, 255, 255, 0.14);
+  --panel-hi: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --frame: #121212;
+    --panel: #1a1a1a;
+    --sunken: #222222;
+    --hover: #222222;
+    --line: #2e2e2e;
+    --edge: #7a7a7a;
+    --edge-soft: #3a3a3a;
+    --ink: #ffffff;
+    --muted-p: #a3a3a3;
+    --muted2: #bdbdbd;
+    --action: #ffffff;
+    --action-hover: #e2e2e2;
+    --on-action: #000000;
+    --rail: #000000;
+    --rail-active: #262626;
+    --rail-hover: #1a1a1a;
+    --on-rail: #ffffff;
+    --on-rail-muted: #a3a3a3;
+    --teal: #008375;
+    --info: #8ab4ff;
+    --info-soft: #16233a;
+    --success: #7ad694;
+    --success-soft: #122a1a;
+    --warning: #f2c35b;
+    --warning-soft: #2e2410;
+    --warning-dot: #f2c35b;
+    --danger: #ff8591;
+    --danger-soft: #351519;
+    --focus: 0 0 0 2px #1a1a1a, 0 0 0 4px #ffffff;
+    --tile-line: rgba(255, 255, 255, 0.14);
+    --panel-hi: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+  }
+}
