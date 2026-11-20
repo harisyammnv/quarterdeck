@@ -320,8 +320,10 @@ fn read_cache(path: &Path) -> Option<Snapshot> {
 fn write_cache(path: &Path, json: &str) -> std::io::Result<()> {
     use std::io::Write as _;
     use std::os::unix::fs::OpenOptionsExt as _;
+    use std::os::unix::fs::PermissionsExt as _;
     let dir = path.parent().unwrap_or(Path::new("."));
     std::fs::create_dir_all(dir)?;
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
     let tmp = dir.join(format!(".snapshot.{}.tmp", std::process::id()));
     // A leftover from a crashed write is removed, then the file is created exclusively, so a
     // planted link at that name is never followed.
@@ -580,6 +582,12 @@ mod tests {
         write_cache(&path, json).unwrap();
         let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o600);
+        let dir_mode = std::fs::metadata(path.parent().unwrap())
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777;
+        assert_eq!(dir_mode, 0o700);
         assert_eq!(read_cache(&path).unwrap().tasks.len(), 6);
         std::fs::write(&path, "{").unwrap();
         assert!(read_cache(&path).is_none(), "a damaged cache is ignored");
