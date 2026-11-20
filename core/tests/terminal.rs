@@ -6,6 +6,7 @@ mod common;
 use std::path::Path;
 use std::sync::Arc;
 
+use quarterdeck_core::gateway::TaskIdError;
 use quarterdeck_core::snapshot::Snapshot;
 use quarterdeck_core::terminal::ansi::Tone;
 use quarterdeck_core::terminal::{self, PeekTarget, TaskId, TerminalError, TerminalTail};
@@ -114,11 +115,11 @@ async fn tail_clamps_the_line_count() {
 #[test]
 fn ids_outside_the_fleet_or_unsafe_never_reach_peek() {
     let known = |id: &str| id == "app-login-fix";
-    assert_eq!(TaskId::known("--help", known), Err(TerminalError::BadId));
-    assert_eq!(TaskId::known("tmux:0.1", known), Err(TerminalError::BadId));
+    assert_eq!(TaskId::known("--help", known), Err(TaskIdError::BadId));
+    assert_eq!(TaskId::known("tmux:0.1", known), Err(TaskIdError::BadId));
     assert_eq!(
         TaskId::known("other-task", known),
-        Err(TerminalError::UnknownTask("other-task".into()))
+        Err(TaskIdError::Unknown("other-task".into()))
     );
 }
 

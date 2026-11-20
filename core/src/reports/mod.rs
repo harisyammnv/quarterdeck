@@ -10,10 +10,10 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 use crate::engine::HomeState;
+use crate::gateway::{TaskId, TaskIdError};
 use crate::home::FmHome;
 use crate::safe_read::{self, ReadError};
 use crate::status::{self, StatusEvent, HISTORY_MAX_EVENTS};
-use crate::terminal::TaskId;
 
 /// The most bytes of a report shown; a longer one is cut at a line and marked.
 pub const MAX_BYTES: u64 = 1024 * 1024;
@@ -67,8 +67,8 @@ fn known(state: &HomeState, id: &str) -> Result<TaskId, ReportError> {
         snapshot.is_some_and(|s| s.task(id).is_some() || s.record(id).is_some())
     })
     .map_err(|e| match e {
-        crate::terminal::TerminalError::UnknownTask(id) => ReportError::UnknownTask(id),
-        _ => ReportError::BadId,
+        TaskIdError::Unknown(id) => ReportError::UnknownTask(id),
+        TaskIdError::BadId => ReportError::BadId,
     })
 }
 
@@ -100,91 +100,36 @@ pub async fn read_report(data: &Path, id: &TaskId) -> Result<Option<ReportDoc>, 
             Err(e) => return Err(ReportError::Read(e.kind().to_string())),
         }
     }
-    let real = match safe_read::resolve_under(data, &rel).await {
-        Ok(p) => p,
+    // safe_read proves the file stays under `data`, then reads it from a no-follow handle it
+    // checks is the very file it resolved, so a swap after the check is refused.
+    let capped = match safe_read::read_text_capped(data, &rel, MAX_BYTES).await {
+        Ok(c) => c,
         Err(ReadError::NotFound) => return Ok(None),
         Err(ReadError::Escapes) => return Err(ReportError::Outside),
         Err(ReadError::NotAFile) => return Err(ReportError::NotFile),
-        Err(ReadError::Io(e)) => return Err(ReportError::Read(e.kind().to_string())),
+        Err(e) => return Err(ReportError::Read(e.to_string())),
     };
-    let (markdown, truncated, modified) = tokio::task::spawn_blocking(move || read_handle(&real))
+    let truncated = capped.truncated;
+    let mut markdown = capped.content;
+    if truncated {
+        // Cut on a line so a half-read table row or list item is not shown.
+        if let Some(nl) = markdown.rfind('\n') {
+            markdown.truncate(nl + 1);
+        }
+    }
+    // For the "Updated" label only; the content above came from the verified handle.
+    let modified = tokio::fs::metadata(data.join(&rel))
         .await
-        .map_err(|e| ReportError::Read(e.to_string()))??;
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .and_then(|d| i64::try_from(d.as_secs()).ok());
     Ok(Some(ReportDoc {
         task_id: id.to_string(),
         markdown,
         truncated,
         modified,
     }))
-}
-
-/// Opens the path `safe_read` proved to be inside the data directory and reads from that
-/// handle: the final component must not be a link (`O_NOFOLLOW`), opening never blocks on a
-/// FIFO (`O_NONBLOCK`), and the handle must be a regular file and the same device and inode as
-/// a no-follow stat of that path just before. This refuses a final-component link, a FIFO and
-/// any non-regular file; it does not pin the parent directories between `safe_read`'s check
-/// and the open (the home's `data` directory belongs to the same user).
-fn read_handle(real: &Path) -> Result<(String, bool, Option<i64>), ReportError> {
-    use std::io::Read;
-    use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
-
-    // Values from <fcntl.h> and <errno.h>; std exposes custom_flags but not the constants.
-    #[cfg(target_os = "macos")]
-    const O_NOFOLLOW: i32 = 0x0100;
-    #[cfg(target_os = "macos")]
-    const O_NONBLOCK: i32 = 0x0004;
-    #[cfg(target_os = "macos")]
-    const ELOOP: i32 = 62;
-    #[cfg(not(target_os = "macos"))]
-    const O_NOFOLLOW: i32 = 0o400_000;
-    #[cfg(not(target_os = "macos"))]
-    const O_NONBLOCK: i32 = 0o4000;
-    #[cfg(not(target_os = "macos"))]
-    const ELOOP: i32 = 40;
-
-    let io = |e: std::io::Error| ReportError::Read(e.kind().to_string());
-    let checked = std::fs::symlink_metadata(real).map_err(io)?;
-    let mut f = std::fs::OpenOptions::new()
-        .read(true)
-        .custom_flags(O_NOFOLLOW | O_NONBLOCK)
-        .open(real)
-        .map_err(|e| {
-            if e.raw_os_error() == Some(ELOOP) {
-                ReportError::Link
-            } else {
-                io(e)
-            }
-        })?;
-    let meta = f.metadata().map_err(io)?;
-    if !meta.is_file() {
-        return Err(ReportError::NotFile);
-    }
-    if (checked.dev(), checked.ino()) != (meta.dev(), meta.ino()) {
-        return Err(ReportError::Outside);
-    }
-    let mut buf = Vec::new();
-    (&mut f)
-        .take(MAX_BYTES + 1)
-        .read_to_end(&mut buf)
-        .map_err(io)?;
-    let truncated = buf.len() as u64 > MAX_BYTES;
-    if truncated {
-        // Cut on a line so a half-read character, table row or list item is not shown.
-        buf.truncate(usize::try_from(MAX_BYTES).unwrap_or(usize::MAX));
-        if let Some(nl) = buf.iter().rposition(|b| *b == b'\n') {
-            buf.truncate(nl + 1);
-        }
-    }
-    let modified = meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .and_then(|d| i64::try_from(d.as_secs()).ok());
-    Ok((
-        String::from_utf8_lossy(&buf).into_owned(),
-        truncated,
-        modified,
-    ))
 }
 
 /// The status history of task `id`, newest first.

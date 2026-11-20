@@ -7,7 +7,6 @@
 
 pub mod ansi;
 
-use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::time::Duration;
 
@@ -15,7 +14,8 @@ use serde::Serialize;
 use tokio::sync::Semaphore;
 
 use crate::engine::HomeState;
-use crate::gateway::{self, Entry};
+pub use crate::gateway::TaskId;
+use crate::gateway::{self, Entry, TaskIdError};
 use crate::home::FmHome;
 use ansi::{sanitize, spans, Span};
 
@@ -27,44 +27,6 @@ pub const MAX_BYTES: usize = 64 * 1024;
 pub const PEEK_TIMEOUT: Duration = Duration::from_secs(20);
 /// At most this many peeks run at once, whatever the UI asks for.
 const MAX_CONCURRENT: usize = 2;
-
-/// A validated task id: a safe name that the current fleet knows.
-///
-/// The name matches `^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$` with no `..`, so it can never be a
-/// path, an option or an explicit backend target.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct TaskId(String);
-
-impl TaskId {
-    /// Checks the shape of `raw` only. Use [`TaskId::known`] before reading anything.
-    pub fn parse(raw: &str) -> Result<Self, TerminalError> {
-        if gateway::valid_task_id(raw) && !raw.contains("..") {
-            Ok(Self(raw.to_string()))
-        } else {
-            Err(TerminalError::BadId)
-        }
-    }
-
-    /// Checks the shape of `raw` and that `is_known` (the current snapshot) has the task.
-    pub fn known(raw: &str, is_known: impl FnOnce(&str) -> bool) -> Result<Self, TerminalError> {
-        let id = Self::parse(raw)?;
-        if is_known(&id.0) {
-            Ok(id)
-        } else {
-            Err(TerminalError::UnknownTask(id.0))
-        }
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl fmt::Display for TaskId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
 
 /// What the core knows about the task whose terminal is read.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -127,6 +89,15 @@ pub async fn read(
     tail(home, &target, MAX_LINES).await
 }
 
+impl From<TaskIdError> for TerminalError {
+    fn from(e: TaskIdError) -> Self {
+        match e {
+            TaskIdError::BadId => Self::BadId,
+            TaskIdError::Unknown(id) => Self::UnknownTask(id),
+        }
+    }
+}
+
 /// Clamps a requested line count to `1..=MAX_LINES`, with 0 meaning the most.
 pub fn clamp_lines(lines: u16) -> u16 {
     match lines {
@@ -162,12 +133,21 @@ pub async fn tail(
     }
 }
 
-/// The first meaningful stderr line, sanitized and bounded, or the exit label.
+/// What to show when the peek failed: the last `error:` line of its stderr, else its last
+/// non-empty line, sanitized and bounded, else the exit label. `fm-peek.sh` runs Firstmate's
+/// guard first, which can print a supervision banner on stderr ahead of the real error.
 fn failure_message(stderr: &str, code: Option<i32>) -> String {
-    sanitize(stderr)
+    let clean = sanitize(stderr);
+    let lines: Vec<&str> = clean
         .lines()
         .map(str::trim)
-        .find(|l| !l.is_empty())
+        .filter(|l| !l.is_empty())
+        .collect();
+    lines
+        .iter()
+        .rev()
+        .find(|l| l.starts_with("error:"))
+        .or_else(|| lines.last())
         .map(|l| {
             l.replace('\u{1b}', "")
                 .chars()
@@ -283,7 +263,7 @@ mod tests {
             "tmux:main:1",
             "é",
         ] {
-            assert_eq!(TaskId::parse(bad), Err(TerminalError::BadId), "{bad:?}");
+            assert_eq!(TaskId::parse(bad), Err(TaskIdError::BadId), "{bad:?}");
         }
         assert!(TaskId::parse(&"a".repeat(129)).is_err());
     }
@@ -293,9 +273,9 @@ mod tests {
         assert!(TaskId::known("app-login-fix", |id| id == "app-login-fix").is_ok());
         assert_eq!(
             TaskId::known("other", |_| false),
-            Err(TerminalError::UnknownTask("other".into()))
+            Err(TaskIdError::Unknown("other".into()))
         );
-        assert_eq!(TaskId::known("../x", |_| true), Err(TerminalError::BadId));
+        assert_eq!(TaskId::known("../x", |_| true), Err(TaskIdError::BadId));
     }
 
     #[test]
@@ -355,6 +335,20 @@ mod tests {
         assert_eq!(t.requested, u32::from(MAX_LINES));
         let args = std::fs::read_to_string(dir.path().join("peek-args")).unwrap();
         assert_eq!(args, "app-login-fix\n200\n");
+    }
+
+    #[test]
+    fn failure_prefers_the_error_line_over_a_guard_banner() {
+        let stderr = "=== WARNING: supervision watcher is down ===\nrun fm-arm to restart it\nerror: no live endpoint for app-login-fix\n";
+        assert_eq!(
+            failure_message(stderr, Some(1)),
+            "error: no live endpoint for app-login-fix"
+        );
+        assert_eq!(
+            failure_message("banner\nlast words\n\n", Some(1)),
+            "last words"
+        );
+        assert_eq!(failure_message("", Some(2)), "fm-peek.sh ended with exit 2");
     }
 
     #[tokio::test]
