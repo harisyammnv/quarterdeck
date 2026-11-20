@@ -183,8 +183,10 @@ export type BoardView_Deserialize = {
 	ready: boolean,
 	/**  The snapshot's `generated` time, Unix seconds. */
 	generated_at?: number | null,
-	/**  Queued work in backlog order, deferred holds included. */
+	/**  Queued work in backlog order, deferred holds included, at most [`MAX_QUEUED`]. */
 	queued: BoardCard_Deserialize[],
+	/**  How many queued records there are in all. */
+	queued_total: number,
 	/**  In-flight work in backlog order. */
 	in_flight: BoardCard_Deserialize[],
 	/**  Finished work, newest first, at most [`MAX_DONE`]. */
@@ -202,8 +204,10 @@ export type BoardView_Serialize = {
 	ready: boolean,
 	/**  The snapshot's `generated` time, Unix seconds. */
 	generated_at: number | null,
-	/**  Queued work in backlog order, deferred holds included. */
+	/**  Queued work in backlog order, deferred holds included, at most [`MAX_QUEUED`]. */
 	queued: BoardCard_Serialize[],
+	/**  How many queued records there are in all. */
+	queued_total: number,
 	/**  In-flight work in backlog order. */
 	in_flight: BoardCard_Serialize[],
 	/**  Finished work, newest first, at most [`MAX_DONE`]. */
@@ -271,16 +275,26 @@ export type Decisions = Decisions_Serialize | Decisions_Deserialize;
 export type Decisions_Deserialize = {
 	/**  Waiting on you now (`captain_actionable`), oldest first. Never capped. */
 	live: Decision_Deserialize[],
-	/**  Set aside: dated, blocked or aged holds, each with the reason Firstmate gives. */
+	/**
+	 *  Set aside: dated, blocked or aged holds, each with the reason Firstmate gives, oldest
+	 *  first, at most [`MAX_DEFERRED`].
+	 */
 	deferred: Decision_Deserialize[],
+	/**  How many deferred holds there are in all. */
+	deferred_total: number,
 };
 
 /**  The open decisions, split the way the strip and the decisions view show them. */
 export type Decisions_Serialize = {
 	/**  Waiting on you now (`captain_actionable`), oldest first. Never capped. */
 	live: Decision_Serialize[],
-	/**  Set aside: dated, blocked or aged holds, each with the reason Firstmate gives. */
+	/**
+	 *  Set aside: dated, blocked or aged holds, each with the reason Firstmate gives, oldest
+	 *  first, at most [`MAX_DEFERRED`].
+	 */
 	deferred: Decision_Serialize[],
+	/**  How many deferred holds there are in all. */
+	deferred_total: number,
 };
 
 export type FleetRow = FleetRow_Serialize | FleetRow_Deserialize;
