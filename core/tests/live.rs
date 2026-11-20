@@ -204,5 +204,6 @@ async fn second_start_paints_from_the_disk_cache() {
     })
     .await
     .expect("cached snapshot shown before the run finishes");
-    assert!(v.snapshot.running);
+    // The slow run takes 3 s, so a cached view within 2 s can only have come from the disk.
+    assert_eq!(v.snapshot.generated_at, Some(1_795_168_775));
 }

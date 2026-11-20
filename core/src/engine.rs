@@ -323,10 +323,15 @@ fn write_cache(path: &Path, json: &str) -> std::io::Result<()> {
     let dir = path.parent().unwrap_or(Path::new("."));
     std::fs::create_dir_all(dir)?;
     let tmp = dir.join(format!(".snapshot.{}.tmp", std::process::id()));
+    // A leftover from a crashed write is removed, then the file is created exclusively, so a
+    // planted link at that name is never followed.
+    match std::fs::remove_file(&tmp) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e),
+        _ => {}
+    }
     let mut f = std::fs::OpenOptions::new()
         .write(true)
-        .create(true)
-        .truncate(true)
+        .create_new(true)
         .mode(0o600)
         .open(&tmp)?;
     f.write_all(json.as_bytes())?;
