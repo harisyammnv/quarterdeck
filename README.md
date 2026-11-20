@@ -103,6 +103,14 @@ Files are read through `core::safe_read`, which refuses anything outside its roo
 Untrusted Markdown renders through `ui/src/ui/Markdown.tsx` (sanitized, raw HTML dropped, links confirmed before they open).
 Shared primitives live in `ui/src/ui/`; areas compose them rather than restyling them.
 
+## Containers
+
+The Containers view reads the local Docker engine over the Unix socket of the active Docker context (`DOCKER_HOST` when it is `unix://`, else `currentContext` in `~/.docker/config.json`); a TCP or SSH context is reported as not supported and never dialled.
+It lists containers, images, volumes and networks, groups containers under the task worktree that holds their compose folder or a bind-mounted path, and reads a bounded log tail and CPU and memory for the selected container only.
+It is read-only: nothing is started, stopped, removed or exec'd, and container environment variables never reach the window.
+When the engine is Kiri, Open Kiri runs `/usr/bin/open -b dev.kiri.app`.
+`pnpm dev` previews the engine states with `?area=containers&containers=down|tcp|empty|many`.
+
 ## Design
 
 The look is direction A, version 2 of the design mocks: a fog grey frame, floating white blocks, a black labelled icon rail, pill buttons and DM Sans.

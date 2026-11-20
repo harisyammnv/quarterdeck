@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kiri-open"
+description = "Enables the kiri_open command without any pre-configured scope."
+commands.allow = ["kiri_open"]
+
+[[permission]]
+identifier = "deny-kiri-open"
+description = "Denies the kiri_open command without any pre-configured scope."
+commands.deny = ["kiri_open"]

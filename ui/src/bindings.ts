@@ -8,6 +8,17 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 
 /** Commands */
 export const commands = {
+	/**  The last lines of output of a container from the last listing, by short id. */
+	containerLogs: (id: string, options?: InvokeOptions) => __TAURI_INVOKE<ContainerLogs_Serialize>("container_logs", { id }, options),
+	/**  One CPU and memory sample of a container from the last listing, by short id. */
+	containerStats: (id: string, options?: InvokeOptions) => __TAURI_INVOKE<ContainerStats_Serialize>("container_stats", { id }, options),
+	/**
+	 *  Lists containers, images, volumes and networks of the active Docker context, with
+	 *  containers grouped under the worktrees of the tasks in the fleet snapshot.
+	 */
+	containersList: (options?: InvokeOptions) => __TAURI_INVOKE<ContainersView_Serialize>("containers_list", undefined, options),
+	/**  Opens Kiri's own window. Takes no argument: the launch is fixed. */
+	kiriOpen: (options?: InvokeOptions) => __TAURI_INVOKE<null>("kiri_open", undefined, options),
 	/**  The current fleet view, or `None` when no home is configured. */
 	fleetView: (options?: InvokeOptions) => __TAURI_INVOKE<FleetView_Serialize | null>("fleet_view", undefined, options),
 	/**  Asks for a fresh snapshot. */
@@ -72,6 +83,177 @@ export type AppInfo_Serialize = {
 	theme: string | null,
 	version: string,
 };
+
+/**  The containers that belong to one task's worktree. */
+export type ContainerGroup = ContainerGroup_Serialize | ContainerGroup_Deserialize;
+
+/**  The containers that belong to one task's worktree. */
+export type ContainerGroup_Deserialize = {
+	task_id: string,
+	project?: string | null,
+	/**  The worktree folder name. */
+	worktree: string,
+	state: TaskState,
+	containers: ContainerRow_Deserialize[],
+};
+
+/**  The containers that belong to one task's worktree. */
+export type ContainerGroup_Serialize = {
+	task_id: string,
+	project: string | null,
+	/**  The worktree folder name. */
+	worktree: string,
+	state: TaskState,
+	containers: ContainerRow_Serialize[],
+};
+
+/**  The last lines of one container's output. */
+export type ContainerLogs = ContainerLogs_Serialize | ContainerLogs_Deserialize;
+
+/**  The last lines of one container's output. */
+export type ContainerLogs_Deserialize = {
+	id: string,
+	lines: LogLine_Deserialize[],
+	/**  Older lines were dropped to stay inside the caps. */
+	truncated: boolean,
+};
+
+/**  The last lines of one container's output. */
+export type ContainerLogs_Serialize = {
+	id: string,
+	lines: LogLine_Serialize[],
+	/**  Older lines were dropped to stay inside the caps. */
+	truncated: boolean,
+};
+
+export type ContainerRow = ContainerRow_Serialize | ContainerRow_Deserialize;
+
+export type ContainerRow_Deserialize = {
+	/**  Short id (12 hex characters); the handle for logs and stats. */
+	id: string,
+	/**  Container name without the leading slash. */
+	name: string,
+	/**  The compose service, when the container belongs to a compose project. */
+	service?: string | null,
+	image: string,
+	state: ContainerState,
+	/**  The engine's status text, such as "Up 5 minutes". */
+	status: string,
+	exit_code?: number | null,
+	ports: PortMap_Deserialize[],
+	created_at?: number | null,
+	started_at?: number | null,
+	finished_at?: number | null,
+	/**  The compose file, relative to its worktree folder. */
+	compose?: string | null,
+};
+
+export type ContainerRow_Serialize = {
+	/**  Short id (12 hex characters); the handle for logs and stats. */
+	id: string,
+	/**  Container name without the leading slash. */
+	name: string,
+	/**  The compose service, when the container belongs to a compose project. */
+	service: string | null,
+	image: string,
+	state: ContainerState,
+	/**  The engine's status text, such as "Up 5 minutes". */
+	status: string,
+	exit_code: number | null,
+	ports: PortMap_Serialize[],
+	created_at: number | null,
+	started_at: number | null,
+	finished_at: number | null,
+	/**  The compose file, relative to its worktree folder. */
+	compose: string | null,
+};
+
+export type ContainerState = "created" | "running" | "paused" | "restarting" | "removing" | "exited" | "dead" | "unknown";
+
+export type ContainerStats = ContainerStats_Serialize | ContainerStats_Deserialize;
+
+export type ContainerStats_Deserialize = {
+	id: string,
+	/**  CPU use as a share of one core times 100, as `docker stats` shows it. */
+	cpu_percent?: number | null,
+	/**  Memory in use, without the reclaimable page cache. */
+	memory_bytes?: number | null,
+	memory_limit?: number | null,
+};
+
+export type ContainerStats_Serialize = {
+	id: string,
+	/**  CPU use as a share of one core times 100, as `docker stats` shows it. */
+	cpu_percent: number | null,
+	/**  Memory in use, without the reclaimable page cache. */
+	memory_bytes: number | null,
+	memory_limit: number | null,
+};
+
+/**  Everything the containers view renders. */
+export type ContainersView = ContainersView_Serialize | ContainersView_Deserialize;
+
+/**  Everything the containers view renders. */
+export type ContainersView_Deserialize = {
+	status: EngineStatus,
+	/**  The Docker context name. */
+	context?: string | null,
+	/**  Why the engine is not ready, in words for the UI. */
+	detail?: string | null,
+	engine_version?: string | null,
+	/**  Kiri's version, when the engine is Kiri. */
+	kiri_version?: string | null,
+	/**  One group per task worktree, in fleet order, including worktrees with no containers. */
+	groups: ContainerGroup_Deserialize[],
+	/**  Containers that sit in no task worktree. */
+	other: ContainerRow_Deserialize[],
+	images: ImageRow_Deserialize[],
+	volumes: VolumeRow_Deserialize[],
+	networks: NetworkRow[],
+	counts: Counts,
+	/**  Some list was cut at its cap. */
+	truncated: boolean,
+};
+
+/**  Everything the containers view renders. */
+export type ContainersView_Serialize = {
+	status: EngineStatus,
+	/**  The Docker context name. */
+	context: string | null,
+	/**  Why the engine is not ready, in words for the UI. */
+	detail: string | null,
+	engine_version: string | null,
+	/**  Kiri's version, when the engine is Kiri. */
+	kiri_version: string | null,
+	/**  One group per task worktree, in fleet order, including worktrees with no containers. */
+	groups: ContainerGroup_Serialize[],
+	/**  Containers that sit in no task worktree. */
+	other: ContainerRow_Serialize[],
+	images: ImageRow_Serialize[],
+	volumes: VolumeRow_Serialize[],
+	networks: NetworkRow[],
+	counts: Counts,
+	/**  Some list was cut at its cap. */
+	truncated: boolean,
+};
+
+/**  Totals before any cap. */
+export type Counts = {
+	containers: number,
+	running: number,
+	images: number,
+	volumes: number,
+	networks: number,
+};
+
+/**  Whether the engine could be read. */
+export type EngineStatus = 
+/**  Listed successfully. */
+"ready" | 
+/**  No socket, or it did not answer. */
+"not-running" | 
+/**  The active context is not a local Unix socket. */
+"unsupported";
 
 export type FleetRow = FleetRow_Serialize | FleetRow_Deserialize;
 
@@ -169,6 +351,56 @@ export type HomeSource =
 /**  The home chosen in the window, saved in the app configuration. */
 "chosen";
 
+export type ImageRow = ImageRow_Serialize | ImageRow_Deserialize;
+
+export type ImageRow_Deserialize = {
+	id: string,
+	/**  First `repo:tag`, or `<none>`. */
+	tag: string,
+	/**  How many more tags point at the image. */
+	more_tags: number,
+	size: number | null,
+	created_at?: number | null,
+	/**  Containers using the image, when the engine reports it. */
+	containers?: number | null,
+};
+
+export type ImageRow_Serialize = {
+	id: string,
+	/**  First `repo:tag`, or `<none>`. */
+	tag: string,
+	/**  How many more tags point at the image. */
+	more_tags: number,
+	size: number | null,
+	created_at: number | null,
+	/**  Containers using the image, when the engine reports it. */
+	containers: number | null,
+};
+
+export type LogLine = LogLine_Serialize | LogLine_Deserialize;
+
+export type LogLine_Deserialize = {
+	/**  Unix seconds from the engine's timestamp, when it had one. */
+	at?: number | null,
+	stderr: boolean,
+	text: string,
+};
+
+export type LogLine_Serialize = {
+	/**  Unix seconds from the engine's timestamp, when it had one. */
+	at: number | null,
+	stderr: boolean,
+	text: string,
+};
+
+export type NetworkRow = {
+	id: string,
+	name: string,
+	driver: string,
+	scope: string,
+	internal: boolean,
+};
+
 export type NoteOutcome = 
 /**  A new note was saved. */
 "created" | 
@@ -185,6 +417,22 @@ export type NoteReceipt = {
 	announced: boolean,
 	/**  Firstmate has already acknowledged (handled) the note. */
 	acknowledged: boolean,
+};
+
+export type PortMap = PortMap_Serialize | PortMap_Deserialize;
+
+export type PortMap_Deserialize = {
+	/**  The published host port, when published. */
+	host?: number | null,
+	container: number,
+	proto: string,
+};
+
+export type PortMap_Serialize = {
+	/**  The published host port, when published. */
+	host: number | null,
+	container: number,
+	proto: string,
 };
 
 export type SnapshotInfo = SnapshotInfo_Serialize | SnapshotInfo_Deserialize;
@@ -259,6 +507,20 @@ export type UpdateCause = {
 	detected_ms: number | null,
 	/**  When this view was built, in Unix milliseconds. */
 	emitted_ms: number | null,
+};
+
+export type VolumeRow = VolumeRow_Serialize | VolumeRow_Deserialize;
+
+export type VolumeRow_Deserialize = {
+	name: string,
+	driver: string,
+	created_at?: number | null,
+};
+
+export type VolumeRow_Serialize = {
+	name: string,
+	driver: string,
+	created_at: number | null,
 };
 
 /* Tauri Specta runtime */

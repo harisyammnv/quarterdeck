@@ -6,8 +6,12 @@ fn main() {
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
         tauri_build::AppManifest::new().commands(&[
             "app_info",
+            "container_logs",
+            "container_stats",
+            "containers_list",
             "fleet_view",
             "home_pick",
+            "kiri_open",
             "refresh_fleet",
             "send_note",
             "task_pr_open",

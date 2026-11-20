@@ -11,13 +11,17 @@
 pub mod commands;
 mod state;
 
-use commands::{fleet, shell, Projection};
+use commands::{containers, fleet, shell, Projection};
 use tauri_specta::{collect_commands, collect_events};
 
 /// The typed IPC surface, shared by the app and the bindings export.
 pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .commands(collect_commands![
+            containers::container_logs,
+            containers::container_stats,
+            containers::containers_list,
+            containers::kiri_open,
             fleet::fleet_view,
             fleet::refresh_fleet,
             fleet::send_note,
@@ -60,6 +64,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(state)
+        .manage(containers::ContainersState::default())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);

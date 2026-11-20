@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import type { FleetView } from "./bridge";
 import { placeholder } from "./shell/Placeholder";
+import ContainersStatus from "./views/containers/StatusItem";
 
 type Lazy = ComponentType | LazyExoticComponent<ComponentType>;
 
@@ -68,7 +69,7 @@ export const views: ViewDef[] = [
   { id: "board", label: "Board", description: "Queued, in flight, waiting on you, done", crumb: "Board", icon: Kanban, rail: true, component: placeholder("Board", Kanban, "Columns for Queued, In flight, Waiting on you and Done, read from the backlog in the fleet snapshot."), layout: { projects: false, inspector: false } },
   { id: "security", label: "Security", description: "Findings and dependency rollups", crumb: "Security", icon: ShieldCheck, rail: true, component: placeholder("Security", ShieldCheck, "Findings, dependency rollups and scanner jobs for every project, gathered in one place.", "Phase 2"), layout: { projects: false, inspector: false } },
   { id: "council", label: "Council", description: "Independent reviews of a pull request", crumb: "Council", icon: Scales, rail: true, component: placeholder("Council", Scales, "Independent reviewers read a pull request through separate lenses and agree on a verdict.", "Phase 3"), layout: { projects: false, inspector: false } },
-  { id: "containers", label: "Containers", description: "Docker containers by worktree", crumb: "Containers", icon: Cube, rail: true, component: placeholder("Containers", Cube, "Containers, images, volumes and networks from the local Docker engine, grouped by worktree. Read-only."), layout: { projects: false, inspector: false } },
+  { id: "containers", label: "Containers", description: "Docker containers by worktree", crumb: "Containers", icon: Cube, rail: true, component: lazy(() => import("./views/containers")), layout: { projects: false, inspector: false }, statusItem: ContainersStatus },
   { id: "memory", label: "Memory", description: "Preferences, learnings and reports", crumb: "Memory and skills", icon: Brain, rail: true, component: placeholder("Memory", Brain, "Preferences, learnings, briefs and reports, readable and searchable. Firstmate keeps owning every edit."), layout: { projects: false, inspector: false } },
   { id: "skills", label: "Skills", description: "Every installed skill and where it comes from", crumb: "Skills", icon: Sparkle, rail: true, component: placeholder("Skills", Sparkle, "Every skill in the known skill folders, with where it comes from and where the same name appears twice."), layout: { projects: false, inspector: false } },
 ];

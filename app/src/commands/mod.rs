@@ -6,6 +6,7 @@
 //! view, one `projection(...)` line in `lib.rs`. The `registry_is_consistent` test keeps the
 //! lists in step.
 
+pub mod containers;
 pub mod fleet;
 pub mod shell;
 
