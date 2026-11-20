@@ -1,0 +1,197 @@
+/* Board view. Tokens only; classes prefixed board-. */
+
+.board-state {
+  padding: 0 16px;
+}
+
+.board-cols {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 12px 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.board-lane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--sunken);
+  border-radius: var(--radius-inner);
+  --muted: var(--muted-strong);
+}
+
+.board-lane-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  flex: none;
+}
+
+.board-lane-t {
+  margin: 0;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  flex: 1;
+}
+
+.board-lane-h .count {
+  background: var(--panel);
+}
+
+.board-lane-ring {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted-strong);
+  box-sizing: border-box;
+  flex: none;
+}
+
+.board-cards {
+  padding: 0 8px;
+  overscroll-behavior: contain;
+}
+
+/* A fixed height, so the lanes can window long lists. */
+.board-card {
+  box-sizing: border-box;
+  height: 128px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-inner);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: var(--panel-hi);
+  overflow: hidden;
+  --muted: var(--muted-panel);
+}
+
+.board-call {
+  box-shadow: inset 3px 0 0 var(--warning-dot), var(--panel-hi);
+}
+
+.board-card-top {
+  gap: 6px;
+  flex: none;
+}
+
+.board-proj,
+.board-age,
+.board-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.board-age {
+  flex: none;
+}
+
+.board-title {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  line-height: 18px;
+  max-height: 36px;
+  flex: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.board-title-btn {
+  all: unset;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  line-height: 18px;
+  max-height: 36px;
+  flex: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.board-title-btn:hover {
+  text-decoration: underline;
+}
+
+.board-title-btn:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.board-sub {
+  flex: none;
+}
+
+.board-sub.mono {
+  font-size: 11.5px;
+}
+
+.board-chips {
+  gap: 6px;
+  margin-top: auto;
+  flex: none;
+  overflow: hidden;
+}
+
+.board-link,
+.board-ib {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 11.5px;
+  cursor: pointer;
+  flex: none;
+}
+
+.board-ib {
+  width: 24px;
+  padding: 0;
+  justify-content: center;
+  color: var(--muted-strong);
+}
+
+.board-link:hover,
+.board-ib:hover {
+  border-color: var(--edge);
+  color: var(--ink);
+}
+
+.board-link:focus-visible,
+.board-ib:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.board-empty,
+.board-foot {
+  margin: 0;
+  padding: 4px 12px 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.board-foot {
+  padding-top: 8px;
+  flex: none;
+}
