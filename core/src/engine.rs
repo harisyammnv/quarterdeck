@@ -256,14 +256,26 @@ fn classify(path: &Path, backlog_name: Option<&std::ffi::OsStr>) -> Option<FsCha
     None
 }
 
-/// Reads at most the last [`MAX_RECORD_BYTES`] of a record. `Ok(None)` when it is gone.
+/// Reads at most [`MAX_RECORD_BYTES`] of a record. `Ok(None)` when it is gone.
+///
+/// Records are written by workers, so the read trusts nothing about the path: it opens
+/// without following a final symlink and without blocking (a FIFO cannot stall the engine),
+/// refuses anything that is not a regular file, and never reads more than the cap.
 async fn read_tail(path: &Path) -> std::io::Result<Option<(String, i64)>> {
-    let mut file = match tokio::fs::File::open(path).await {
+    let mut file = match tokio::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+        .await
+    {
         Ok(f) => f,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(e) => return Err(e),
     };
     let meta = file.metadata().await?;
+    if !meta.is_file() {
+        return Err(std::io::Error::other("not a regular file"));
+    }
     let mtime_ms = meta
         .modified()
         .ok()
@@ -275,7 +287,8 @@ async fn read_tail(path: &Path) -> std::io::Result<Option<(String, i64)>> {
         file.seek(std::io::SeekFrom::Start(skip)).await?;
     }
     let mut bytes = Vec::with_capacity(usize::try_from(len - skip).unwrap_or(0));
-    file.read_to_end(&mut bytes).await?;
+    // The cap holds even if the file grows between the stat and the read.
+    file.take(MAX_RECORD_BYTES).read_to_end(&mut bytes).await?;
     let mut text = String::from_utf8_lossy(&bytes).into_owned();
     if skip > 0 {
         // Drop the partial first line left by seeking into the middle of the file.
@@ -309,11 +322,21 @@ fn cache_file(dir: &Path, home: &FmHome) -> PathBuf {
 }
 
 fn read_cache(path: &Path) -> Option<Snapshot> {
-    let meta = std::fs::symlink_metadata(path).ok()?;
+    use std::io::Read as _;
+    use std::os::unix::fs::OpenOptionsExt as _;
+    // Checked on the open handle, not the path, so nothing can be swapped in between.
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+        .ok()?;
+    let meta = file.metadata().ok()?;
     if !meta.is_file() || meta.len() > MAX_CACHE_BYTES {
         return None;
     }
-    Snapshot::parse(&std::fs::read_to_string(path).ok()?).ok()
+    let mut text = String::new();
+    file.take(MAX_CACHE_BYTES).read_to_string(&mut text).ok()?;
+    Snapshot::parse(&text).ok()
 }
 
 /// Writes the cache atomically with mode 0600: it holds the fleet's records.
@@ -595,6 +618,29 @@ mod tests {
         std::fs::write(&path, "{").unwrap();
         assert!(read_cache(&path).is_none(), "a damaged cache is ignored");
         assert!(read_cache(&dir.path().join("absent.json")).is_none());
+    }
+
+    #[tokio::test]
+    async fn read_tail_refuses_links_and_fifos() {
+        let dir = tempfile::tempdir().unwrap();
+        let outside = dir.path().join("outside.txt");
+        std::fs::write(&outside, "working [at=1]: secret").unwrap();
+        let link = dir.path().join("a.status");
+        std::os::unix::fs::symlink(&outside, &link).unwrap();
+        assert!(
+            read_tail(&link).await.is_err(),
+            "a symlinked record is not followed"
+        );
+        let fifo = dir.path().join("b.status");
+        assert!(std::process::Command::new("/usr/bin/mkfifo")
+            .arg(&fifo)
+            .status()
+            .unwrap()
+            .success());
+        let r = tokio::time::timeout(Duration::from_secs(2), read_tail(&fifo))
+            .await
+            .expect("a FIFO record must not stall the engine");
+        assert!(r.is_err());
     }
 
     #[tokio::test]
