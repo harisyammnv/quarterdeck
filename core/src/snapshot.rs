@@ -108,6 +108,18 @@ pub struct BacklogRecord {
     pub since: Option<String>,
     #[serde(default)]
     pub order: Option<i64>,
+    #[serde(default)]
+    pub hold_set: Option<String>,
+    #[serde(default)]
+    pub hold_age_days: Option<serde_json::Number>,
+    #[serde(default)]
+    pub unresolved_blocker_ids: Vec<String>,
+    #[serde(default)]
+    pub links: Vec<String>,
+    #[serde(default)]
+    pub merged: Option<String>,
+    #[serde(default)]
+    pub reported: Option<String>,
 }
 
 /// One entry from `scout_reports[]`.

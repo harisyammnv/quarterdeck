@@ -3,6 +3,7 @@ import {
   BrainIcon as Brain,
   CubeIcon as Cube,
   GearSixIcon as GearSix,
+  HandPalmIcon as HandPalm,
   KanbanIcon as Kanban,
   SailboatIcon as Sailboat,
   ScalesIcon as Scales,
@@ -66,7 +67,8 @@ export interface SectionDef {
  */
 export const views: ViewDef[] = [
   { id: "fleet", label: "Fleet", description: "Every task in flight, live", crumb: "Fleet", icon: Sailboat, rail: true, component: lazy(() => import("./views/fleet")), layout: { projects: true, inspector: true }, badge: (v) => v?.decisions ?? 0 },
-  { id: "board", label: "Board", description: "Queued, in flight, waiting on you, done", crumb: "Board", icon: Kanban, rail: true, component: placeholder("Board", Kanban, "Columns for Queued, In flight, Waiting on you and Done, read from the backlog in the fleet snapshot."), layout: { projects: false, inspector: false } },
+  { id: "board", label: "Board", description: "Queued, in flight, waiting on you, done", crumb: "Board", icon: Kanban, rail: true, component: lazy(() => import("./views/board")), layout: { projects: false, inspector: false } },
+  { id: "decisions", label: "Needs your call", description: "Every open decision, with its reason", crumb: "Needs your call", icon: HandPalm, rail: false, component: lazy(() => import("./views/decisions")), layout: { projects: true, inspector: false } },
   { id: "security", label: "Security", description: "Findings and dependency rollups", crumb: "Security", icon: ShieldCheck, rail: true, component: placeholder("Security", ShieldCheck, "Findings, dependency rollups and scanner jobs for every project, gathered in one place.", "Phase 2"), layout: { projects: false, inspector: false } },
   { id: "council", label: "Council", description: "Independent reviews of a pull request", crumb: "Council", icon: Scales, rail: true, component: placeholder("Council", Scales, "Independent reviewers read a pull request through separate lenses and agree on a verdict.", "Phase 3"), layout: { projects: false, inspector: false } },
   { id: "containers", label: "Containers", description: "Docker containers by worktree", crumb: "Containers", icon: Cube, rail: true, component: placeholder("Containers", Cube, "Containers, images, volumes and networks from the local Docker engine, grouped by worktree. Read-only."), layout: { projects: false, inspector: false } },
@@ -90,7 +92,7 @@ export const inspectorSections: SectionDef[] = [
 ];
 
 /** Above the Fleet panel: the "Needs your call" room (the one teal room, Fleet only). */
-export const fleetTop: Lazy | null = null;
+export const fleetTop: Lazy | null = lazy(() => import("./views/decisions/Strip"));
 
 /** The project and worktree list inside the left frame. `null` shows the frame's placeholder. */
 export const sidebar: Lazy | null = lazy(() => import("./views/projects"));
