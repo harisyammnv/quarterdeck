@@ -19,6 +19,7 @@ tokio.workspace = true
 notify.workspace = true
 time.workspace = true
 specta = { workspace = true, optional = true }
+yaml-rust2.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
