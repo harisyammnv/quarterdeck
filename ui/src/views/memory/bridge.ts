@@ -6,9 +6,9 @@ import { inApp } from "../../bridge";
 import {
   commands,
   type MemoryDoc_Serialize as MemoryDoc,
-  type MemoryHit_Serialize as MemoryHit,
+  type MemoryHit,
   type MemoryItem_Serialize as MemoryItem,
-  type MemorySearch_Serialize as MemorySearch,
+  type MemorySearch,
   type MemoryView_Serialize as MemoryView,
 } from "../../bindings";
 import { previewDoc, previewMemory, previewSearch } from "./preview";

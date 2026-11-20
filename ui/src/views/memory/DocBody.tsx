@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Markdown } from "../../components";
+import { Markdown } from "../../ui";
 import { useFindHighlight } from "./useFindHighlight";
 
 /**
@@ -11,9 +11,7 @@ export function DocBody({ text, truncated, find }: { text: string; truncated: bo
   useFindHighlight(ref, find, text);
   return (
     <div className="memory-body" ref={ref}>
-      <div className="memory-doc">
-        <Markdown source={text} />
-      </div>
+      <Markdown source={text} className="memory-doc" />
       {truncated && <p className="memory-trunc">This document is longer than 1 MiB; only its start is shown.</p>}
     </div>
   );

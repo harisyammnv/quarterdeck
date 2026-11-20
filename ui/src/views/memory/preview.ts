@@ -109,16 +109,15 @@ export function previewSearch(query: string): MemorySearch {
   if (q.length < 2) return out;
   for (const it of previewMemory().items) {
     const lines = previewDoc(it.id).text.split("\n");
-    let found = false;
+    const before = out.hits.length;
     lines.forEach((line, n) => {
       const at = line.toLowerCase().indexOf(q);
       if (at < 0) return;
-      found = true;
       const lead = /^\s*(?:[-*>]\s+|#+\s*|\d+\.\s+)?/.exec(line)?.[0].length ?? 0;
       const snippet = line.slice(lead);
       out.hits.push({ id: it.id, kind: it.kind, title: it.title, line: n + 1, snippet, ranges: [[at - lead, at - lead + q.length]] });
     });
-    if (found) out.documents += 1;
+    if (out.hits.length > before) out.documents += 1;
   }
   return out;
 }

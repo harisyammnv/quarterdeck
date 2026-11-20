@@ -21,8 +21,20 @@
 }
 
 .memory-main {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+
+/* The find field sits over the right end of whichever pane header is showing. */
+.memory-findslot {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+}
+
+.memory-main .memory-phead {
+  padding-right: 222px;
 }
 
 .memory-sh {
@@ -125,12 +137,6 @@
   font-weight: 500;
 }
 
-.memory-tile {
-  width: 18px;
-  height: 18px;
-  font-size: 8.5px;
-}
-
 .memory-foot {
   display: flex;
   align-items: center;
@@ -192,6 +198,12 @@
   appearance: none;
 }
 
+/* The field draws the focus ring, not the input inside it. */
+.memory-find input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .memory-find input::-webkit-search-cancel-button {
   display: none;
 }
@@ -230,11 +242,9 @@
   color: var(--muted);
 }
 
-/* Rendered Markdown, following the mock's .doc measurements. */
+/* Rendered Markdown: the shared .doc styles, tightened to the memory mock's measurements. */
 .memory-doc {
   max-width: 66ch;
-  font-size: 13.5px;
-  line-height: 1.6;
   overflow-wrap: anywhere;
 }
 
@@ -242,104 +252,18 @@
   margin-top: 0;
 }
 
-.memory-doc h1,
-.memory-doc h2,
 .memory-doc h3,
-.memory-doc h4,
-.memory-doc h5,
-.memory-doc h6 {
+.memory-doc h4 {
   margin: 14px 0 4px;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.memory-doc h1 {
-  font-size: 16px;
-  letter-spacing: -0.015em;
-}
-
-.memory-doc h2 {
-  font-size: 15px;
-  letter-spacing: -0.01em;
-}
-
-.memory-doc p {
-  margin: 4px 0 8px;
 }
 
 .memory-doc ul,
 .memory-doc ol {
-  margin: 4px 0;
   padding-left: 18px;
 }
 
-.memory-doc li {
-  margin: 2px 0;
-}
-
-.memory-doc code {
-  font-family: var(--mono);
-  font-size: 12px;
-  background: var(--sunken);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 0 4px;
-}
-
-.memory-doc pre {
-  margin: 8px 0;
-  padding: 10px 12px;
-  background: var(--sunken);
-  border: 1px solid var(--line);
-  border-radius: var(--r-inner);
-  overflow-x: auto;
-  line-height: 1.5;
-}
-
 .memory-doc pre code {
-  border: 0;
-  padding: 0;
-  background: none;
   overflow-wrap: normal;
-}
-
-.memory-doc blockquote {
-  margin: 8px 0;
-  padding: 0 0 0 12px;
-  border-left: 3px solid var(--line);
-  color: var(--muted);
-}
-
-.memory-doc hr {
-  border: 0;
-  border-top: 1px solid var(--line);
-  margin: 14px 0;
-}
-
-.memory-doc table {
-  border-collapse: collapse;
-  margin: 8px 0;
-  font-size: 12.5px;
-}
-
-.memory-doc th,
-.memory-doc td {
-  border: 1px solid var(--line);
-  padding: 4px 8px;
-  text-align: left;
-  vertical-align: top;
-}
-
-.memory-doc th {
-  background: var(--sunken);
-  font-weight: 700;
-}
-
-.memory-doc a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 ::highlight(memory-find) {
@@ -347,7 +271,8 @@
   color: var(--ink);
 }
 
-.memory-windowed {
+.memory-group,
+.skills-panel .vlist {
   flex: 1;
   min-height: 0;
   overflow: auto;

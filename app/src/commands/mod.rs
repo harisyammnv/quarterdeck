@@ -7,7 +7,9 @@
 //! lists in step.
 
 pub mod fleet;
+pub mod memory;
 pub mod shell;
+pub mod skills;
 
 use std::sync::Arc;
 

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { FolderSimpleIcon as FolderSimple } from "@phosphor-icons/react";
-import { StatusPill, Tag } from "../../components";
+import { StatusPill, Tag } from "../../ui";
 import type { SkillItem, SkillScope } from "./bridge";
 
 export const SCOPE_LABEL: Record<SkillScope, string> = {

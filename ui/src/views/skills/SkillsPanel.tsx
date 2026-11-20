@@ -1,15 +1,21 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { InfoIcon as Info, MagnifyingGlassIcon as MagnifyingGlass, SparkleIcon as Sparkle, WarningCircleIcon as WarningCircle } from "@phosphor-icons/react";
-import { Banner, EmptyState, QuietPill } from "../../components";
-import { Windowed } from "../memory/Windowed";
+import { Banner, QuietPill, Tabs, VirtualList, Zero, type Segment } from "../../ui";
 import type { Loaded } from "../memory/useRefreshing";
 import type { SkillsView } from "./bridge";
 import { SkillRow, matchesSkill, type ScopeFilter } from "./SkillRows";
 
-const FILTERS: [ScopeFilter, string][] = [
-  ["all", "All"],
-  ["user", "User"],
-  ["project", "Project"],
+/** The memory screen's column keeps the mock's three filters; the full view adds Firstmate. */
+const FILTERS: Segment<ScopeFilter>[] = [
+  { id: "all", label: "All" },
+  { id: "user", label: "User" },
+  { id: "project", label: "Project" },
+];
+const FULL_FILTERS: Segment<ScopeFilter>[] = [
+  { id: "all", label: "All" },
+  { id: "user", label: "User" },
+  { id: "firstmate", label: "Firstmate" },
+  { id: "project", label: "Project" },
 ];
 
 /** Rows shown before the "more skills" note in the compact panel. */
@@ -51,38 +57,25 @@ export function SkillsPanel({
         <h2 className="skills-h2">Skills</h2>
         {all && <QuietPill>{all.length} installed</QuietPill>}
         <span className="grow" />
-        <span className="seg" role="group" aria-label="Show skills from">
-          {FILTERS.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={scope === id}
-              onClick={() => {
-                setScope(id);
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </span>
+        <Tabs items={compact ? FILTERS : FULL_FILTERS} value={scope} onChange={setScope} label="Show skills from" />
       </div>
       {search}
       {skills.error && <Banner title={skills.error}>Skills could not be listed: {skills.error}</Banner>}
       {skills.data?.capped && <Banner>Some skill folders hold more skills than are listed.</Banner>}
       {!all ? (
         skills.error ? (
-          <EmptyState icon={WarningCircle} title="No skills to show" dashed={false}>
+          <Zero icon={WarningCircle} title="No skills to show" dashed={false}>
             The skill folders could not be read.
-          </EmptyState>
+          </Zero>
         ) : (
-          <EmptyState icon={Sparkle} title="Finding skills" dashed={false}>
+          <Zero icon={Sparkle} title="Finding skills" dashed={false}>
             Reading the skill folders.
-          </EmptyState>
+          </Zero>
         )
       ) : rows.length === 0 ? (
-        <EmptyState icon={MagnifyingGlass} title="No skills match" dashed={false}>
+        <Zero icon={MagnifyingGlass} title="No skills match" dashed={false}>
           {query ? "Try another word, or show all scopes." : "Nothing is installed in this scope."}
-        </EmptyState>
+        </Zero>
       ) : compact ? (
         <div className="skills-list" role="list" aria-label="Installed skills">
           {shown.map((s) => (
@@ -97,17 +90,18 @@ export function SkillsPanel({
               </span>
               <span>
                 <b>{more} more skills</b>
-                <span className="t12">Open Skills (⌘7) to search them, or filter by User or Project.</span>
+                <span className="t12">Press ⌘7 to search them, or filter by User or Project.</span>
               </span>
             </button>
           )}
         </div>
       ) : (
-        <Windowed
+        <VirtualList
           className="skills-list"
           label="Installed skills"
           items={rows}
           rowHeight={ROW_HEIGHT}
+          rowKey={(s) => s.id}
           render={(s) => <SkillRow skill={s} selected={s.id === selected} onOpen={onOpen} />}
         />
       )}

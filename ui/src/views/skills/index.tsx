@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { SparkleIcon as Sparkle } from "@phosphor-icons/react";
-import { EmptyState, useHotkey } from "../../components";
+import { Zero, useHotkey } from "../../ui";
 import { FindField } from "../memory/FindField";
 import { useRefreshing } from "../memory/useRefreshing";
 import { skillsList } from "./bridge";
@@ -32,9 +32,9 @@ export default function SkillsView() {
         {open ? (
           <SkillDocPane id={open} find={query} />
         ) : (
-          <EmptyState icon={Sparkle} title="No skill selected" dashed={false}>
+          <Zero icon={Sparkle} title="No skill selected" dashed={false}>
             Choose a skill to read what it does.
-          </EmptyState>
+          </Zero>
         )}
       </section>
     </div>

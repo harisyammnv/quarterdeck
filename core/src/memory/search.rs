@@ -18,11 +18,9 @@ pub struct MemoryHit {
     pub kind: MemoryKind,
     pub title: String,
     /// 1-based line number in the document.
-    #[cfg_attr(feature = "specta", specta(type = f64))]
     pub line: u32,
     pub snippet: String,
     /// Matched ranges in `snippet`, as UTF-16 offsets `[start, end)` for the UI.
-    #[cfg_attr(feature = "specta", specta(type = Vec<(f64, f64)>))]
     pub ranges: Vec<(u32, u32)>,
 }
 
@@ -34,7 +32,6 @@ pub struct MemorySearch {
     /// More lines matched than `hits` holds.
     pub truncated: bool,
     /// Documents with at least one match.
-    #[cfg_attr(feature = "specta", specta(type = f64))]
     pub documents: u32,
 }
 

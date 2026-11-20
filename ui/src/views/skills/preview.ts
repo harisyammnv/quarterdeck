@@ -18,9 +18,6 @@ function skill(
 }
 
 const ITEMS: SkillItem[] = [
-  skill("firstmate:ship-landing", "ship-landing", "firstmate", "When a ship reports a pull request or a ready branch.", "firstmate", ["Firstmate .agents/skills"], 0, true),
-  skill("firstmate:coding-guidelines", "coding-guidelines", "firstmate", "Before editing Firstmate's shared files.", "firstmate", ["Firstmate .agents/skills"], 0, true),
-  skill("firstmate:stow", "stow", "firstmate", "Curate preferences and learnings into tiers instead of appending forever.", "firstmate", ["Firstmate .agents/skills"]),
   skill("user:agents:security-audit", "security-audit", "user", "Security questions, focused reviews, audits and pen tests.", "example-org/security-audit-skill", ["~/.agents/skills"]),
   skill("user:agents:tdd", "tdd", "user", "Build features or fix bugs test-first.", "example-org/skills", ["~/.agents/skills", "~/.claude/skills"], 2),
   skill("user:agents:diagnosing-bugs", "diagnosing-bugs", "user", "A diagnosis loop for hard bugs and regressions.", "example-org/skills", ["~/.agents/skills"]),
@@ -28,6 +25,9 @@ const ITEMS: SkillItem[] = [
   skill("user:agents:domain-modeling", "domain-modeling", "user", "Pin down domain terms and record decisions.", "example-org/skills", ["~/.agents/skills"]),
   skill("user:claude:code-review", "code-review", "user", "Another copy of the review skill.", null, ["~/.claude/skills"], 2),
   skill("user:claude:release-notes", "release-notes", "user", "Draft release notes from merged pull requests.", null, ["~/.claude/skills"]),
+  skill("firstmate:ship-landing", "ship-landing", "firstmate", "When a ship reports a pull request or a ready branch.", "firstmate", ["Firstmate .agents/skills"], 0, true),
+  skill("firstmate:coding-guidelines", "coding-guidelines", "firstmate", "Before editing Firstmate's shared files.", "firstmate", ["Firstmate .agents/skills"], 0, true),
+  skill("firstmate:stow", "stow", "firstmate", "Curate preferences and learnings into tiers instead of appending forever.", "firstmate", ["Firstmate .agents/skills"]),
   skill("project:ledger-api:claude:tdd", "tdd", "project", "Test-first rules for this repository's ledger code.", "ledger-api", ["ledger-api/.claude/skills"], 2),
   skill("project:portal-web:agents:form-callbacks", "form-callbacks", "project", "Rules for safe form callbacks in this repository.", "portal-web", ["portal-web/.agents/skills"]),
 ];

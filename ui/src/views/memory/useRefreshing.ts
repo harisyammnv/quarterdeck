@@ -11,12 +11,12 @@ export function useRefreshing<T>(fetch: () => Promise<T>): [Loaded<T>, () => voi
   const [state, setState] = useState<Loaded<T>>({ data: null, error: null, loading: true });
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => {
+    setState((s) => ({ ...s, loading: true }));
     setTick((t) => t + 1);
   }, []);
 
   useEffect(() => {
     let live = true;
-    setState((s) => ({ ...s, loading: true }));
     fetch()
       .then((data) => {
         if (live) setState({ data, error: null, loading: false });

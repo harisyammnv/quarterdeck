@@ -16,6 +16,15 @@ export const commands = {
 	sendNote: (text: string, requestId: string, options?: InvokeOptions) => __TAURI_INVOKE<NoteReceipt>("send_note", { text, requestId }, options),
 	/**  The UI reports that it painted view `seq`; completes a status-change latency sample. */
 	viewRendered: (seq: number, renderedMs: number | null, options?: InvokeOptions) => __TAURI_INVOKE<void>("view_rendered", { seq, renderedMs }, options),
+	/**
+	 *  Lists the memory documents: preferences, shared preferences, learnings, project guides and
+	 *  briefs. Rescans the home on every call.
+	 */
+	memoryList: (options?: InvokeOptions) => __TAURI_INVOKE<MemoryView_Serialize>("memory_list", undefined, options),
+	/**  Reads one memory document by the id `memory_list` gave it (at most 1 MiB). */
+	memoryRead: (id: string, options?: InvokeOptions) => __TAURI_INVOKE<MemoryDoc_Serialize>("memory_read", { id }, options),
+	/**  Finds lines containing `query` across every memory document, case-insensitively. */
+	memorySearch: (query: string, options?: InvokeOptions) => __TAURI_INVOKE<MemorySearch>("memory_search", { query }, options),
 	appInfo: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo_Serialize>("app_info", undefined, options),
 	/**
 	 *  Opens the system folder picker, and when a valid Firstmate home is picked, remembers it
@@ -35,6 +44,13 @@ export const commands = {
 	 *  documents, after the window has shown the full address and the person confirmed it.
 	 */
 	urlOpen: (url: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("url_open", { url }, options),
+	/**  Reads one skill's body by the id `skills_list` gave it (at most 1 MiB). */
+	skillRead: (id: string, options?: InvokeOptions) => __TAURI_INVOKE<SkillDoc_Serialize>("skill_read", { id }, options),
+	/**
+	 *  Lists every skill in Firstmate's, the user's and the projects' skill folders. Rescans on
+	 *  every call.
+	 */
+	skillsList: (options?: InvokeOptions) => __TAURI_INVOKE<SkillsView_Serialize>("skills_list", undefined, options),
 };
 
 /** Events */
@@ -159,6 +175,118 @@ export type HomeSource =
 /**  The home chosen in the window, saved in the app configuration. */
 "chosen";
 
+/**  A document ready to render. */
+export type MemoryDoc = MemoryDoc_Serialize | MemoryDoc_Deserialize;
+
+/**  A document ready to render. */
+export type MemoryDoc_Deserialize = {
+	item: MemoryItem_Deserialize,
+	/**  The Markdown source; untrusted, rendered only through the shared Markdown component. */
+	text: string,
+	/**  Top-level list items, for a count such as "38 entries". */
+	entries: number,
+	/**  The file was longer than [MAX_DOC_BYTES] and only its start is in `text`. */
+	truncated: boolean,
+};
+
+/**  A document ready to render. */
+export type MemoryDoc_Serialize = {
+	item: MemoryItem_Serialize,
+	/**  The Markdown source; untrusted, rendered only through the shared Markdown component. */
+	text: string,
+	/**  Top-level list items, for a count such as "38 entries". */
+	entries: number,
+	/**  The file was longer than [MAX_DOC_BYTES] and only its start is in `text`. */
+	truncated: boolean,
+};
+
+/**  One matching line. */
+export type MemoryHit = {
+	id: string,
+	kind: MemoryKind,
+	title: string,
+	/**  1-based line number in the document. */
+	line: number,
+	snippet: string,
+	/**  Matched ranges in `snippet`, as UTF-16 offsets `[start, end)` for the UI. */
+	ranges: ([number, number])[],
+};
+
+/**  One document in the list. */
+export type MemoryItem = MemoryItem_Serialize | MemoryItem_Deserialize;
+
+/**  One document in the list. */
+export type MemoryItem_Deserialize = {
+	/**  Opaque id for `memory_read`. */
+	id: string,
+	kind: MemoryKind,
+	title: string,
+	/**  The task id or project name the document belongs to, when it has one. */
+	owner?: string | null,
+	/**  A short display path relative to its root, such as `data/learnings.md`. */
+	label: string,
+	/**  Modification time, Unix seconds. */
+	modified?: number | null,
+};
+
+/**  One document in the list. */
+export type MemoryItem_Serialize = {
+	/**  Opaque id for `memory_read`. */
+	id: string,
+	kind: MemoryKind,
+	title: string,
+	/**  The task id or project name the document belongs to, when it has one. */
+	owner: string | null,
+	/**  A short display path relative to its root, such as `data/learnings.md`. */
+	label: string,
+	/**  Modification time, Unix seconds. */
+	modified: number | null,
+};
+
+/**  What a memory document is. */
+export type MemoryKind = 
+/**  `data/captain.md`: how the operator likes work delivered. */
+"preferences" | 
+/**  `data/captain-shared.md`: preferences inherited by second mates. */
+"shared-preferences" | 
+/**  `data/learnings.md`: what the fleet has learned. */
+"learnings" | 
+/**  `data/<task>/brief.md`: the instructions a task was given. */
+"brief" | 
+/**  `AGENTS.md` (or `CLAUDE.md`) at the root of a project the fleet works on. */
+"project-guide";
+
+export type MemorySearch = {
+	query: string,
+	hits: MemoryHit[],
+	/**  More lines matched than `hits` holds. */
+	truncated: boolean,
+	/**  Documents with at least one match. */
+	documents: number,
+};
+
+/**
+ *  Everything the memory list shows: preferences, shared preferences and learnings first
+ *  (when present), then project guides by name, then briefs newest first.
+ */
+export type MemoryView = MemoryView_Serialize | MemoryView_Deserialize;
+
+/**
+ *  Everything the memory list shows: preferences, shared preferences and learnings first
+ *  (when present), then project guides by name, then briefs newest first.
+ */
+export type MemoryView_Deserialize = {
+	items: MemoryItem_Deserialize[],
+};
+
+/**
+ *  Everything the memory list shows: preferences, shared preferences and learnings first
+ *  (when present), then project guides by name, then briefs newest first.
+ */
+export type MemoryView_Serialize = {
+	items: MemoryItem_Serialize[],
+};
+
 export type NoteOutcome = 
 /**  A new note was saved. */
 "created" | 
@@ -175,6 +303,99 @@ export type NoteReceipt = {
 	announced: boolean,
 	/**  Firstmate has already acknowledged (handled) the note. */
 	acknowledged: boolean,
+};
+
+export type SkillDoc = SkillDoc_Serialize | SkillDoc_Deserialize;
+
+export type SkillDoc_Deserialize = {
+	item: SkillItem_Deserialize,
+	/**
+	 *  The Markdown body after the front matter; untrusted, rendered only through the shared
+	 *  Markdown component.
+	 */
+	text: string,
+	truncated: boolean,
+};
+
+export type SkillDoc_Serialize = {
+	item: SkillItem_Serialize,
+	/**
+	 *  The Markdown body after the front matter; untrusted, rendered only through the shared
+	 *  Markdown component.
+	 */
+	text: string,
+	truncated: boolean,
+};
+
+export type SkillItem = SkillItem_Serialize | SkillItem_Deserialize;
+
+export type SkillItem_Deserialize = {
+	/**  Opaque id for `skill_read`. */
+	id: string,
+	name: string,
+	/**  The trigger description, on one line; empty when the skill has none. */
+	description: string,
+	scope: SkillScope,
+	/**
+	 *  Where it came from: a source repository when one is recorded, the project for a
+	 *  project skill, `firstmate` for Firstmate's own.
+	 */
+	source?: string | null,
+	/**  Short labels of the folders it was found in, such as `~/.agents/skills`. */
+	locations: string[],
+	/**  How many separate copies with the same name exist elsewhere (links excluded). */
+	also_in: number,
+	/**  Marked internal in its metadata (not meant to be invoked by hand). */
+	internal: boolean,
+	/**  The front matter could not be read as YAML. */
+	malformed: boolean,
+};
+
+export type SkillItem_Serialize = {
+	/**  Opaque id for `skill_read`. */
+	id: string,
+	name: string,
+	/**  The trigger description, on one line; empty when the skill has none. */
+	description: string,
+	scope: SkillScope,
+	/**
+	 *  Where it came from: a source repository when one is recorded, the project for a
+	 *  project skill, `firstmate` for Firstmate's own.
+	 */
+	source: string | null,
+	/**  Short labels of the folders it was found in, such as `~/.agents/skills`. */
+	locations: string[],
+	/**  How many separate copies with the same name exist elsewhere (links excluded). */
+	also_in: number,
+	/**  Marked internal in its metadata (not meant to be invoked by hand). */
+	internal: boolean,
+	/**  The front matter could not be read as YAML. */
+	malformed: boolean,
+};
+
+/**  Where a skill is installed. */
+export type SkillScope = 
+/**  Firstmate's own `.agents/skills`. */
+"firstmate" | 
+/**  The user's `~/.agents/skills` or `~/.claude/skills`. */
+"user" | 
+/**  A project's `.agents/skills` or `.claude/skills`. */
+"project";
+
+export type SkillsView = SkillsView_Serialize | SkillsView_Deserialize;
+
+export type SkillsView_Deserialize = {
+	/**  User skills first, then Firstmate's, then project skills; by name within each. */
+	items: SkillItem_Deserialize[],
+	/**  More skills were found than [MAX_SKILLS] or a root held more than [MAX_PER_ROOT]. */
+	capped: boolean,
+};
+
+export type SkillsView_Serialize = {
+	/**  User skills first, then Firstmate's, then project skills; by name within each. */
+	items: SkillItem_Serialize[],
+	/**  More skills were found than [MAX_SKILLS] or a root held more than [MAX_PER_ROOT]. */
+	capped: boolean,
 };
 
 export type SnapshotInfo = SnapshotInfo_Serialize | SnapshotInfo_Deserialize;

@@ -15,6 +15,8 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
+use crate::engine::HomeState;
+
 pub use search::{MemoryHit, MemorySearch};
 
 /// Documents larger than this are read up to the limit and marked truncated.
@@ -72,7 +74,6 @@ pub struct MemoryDoc {
     /// The Markdown source; untrusted, rendered only through the shared Markdown component.
     pub text: String,
     /// Top-level list items, for a count such as "38 entries".
-    #[cfg_attr(feature = "specta", specta(type = f64))]
     pub entries: u32,
     /// The file was longer than [MAX_DOC_BYTES] and only its start is in `text`.
     pub truncated: bool,
@@ -83,7 +84,7 @@ pub enum MemoryError {
     #[error("no memory document has the id {0:?}")]
     UnknownId(String),
     #[error("{0} could not be read: {1}")]
-    Unreadable(String, fsread::ReadError),
+    Unreadable(String, crate::safe_read::ReadError),
 }
 
 /// A project the fleet works on, by display name and checkout path (from the snapshot).
@@ -91,6 +92,29 @@ pub enum MemoryError {
 pub struct ProjectRoot {
     pub name: String,
     pub path: PathBuf,
+}
+
+/// The projects the fleet works on, from the snapshot's task records: each distinct project
+/// checkout, named by its directory. Empty until the first snapshot.
+pub fn project_roots(state: &HomeState) -> Vec<ProjectRoot> {
+    let Some(snapshot) = &state.snapshot else {
+        return Vec::new();
+    };
+    let mut out: Vec<ProjectRoot> = Vec::new();
+    for task in &snapshot.tasks {
+        let (Some(path), Some(name)) = (&task.project, task.project_name()) else {
+            continue;
+        };
+        if !path.is_absolute() || out.iter().any(|p| p.path == *path || p.name == name) {
+            continue;
+        }
+        out.push(ProjectRoot {
+            name,
+            path: path.clone(),
+        });
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
 }
 
 /// A scanned list plus the private id-to-path map behind it.
@@ -426,7 +450,10 @@ pub(crate) mod tests {
         let idx = f.index();
         let err = idx.read("project:ledger-api").await.unwrap_err();
         assert!(
-            matches!(err, MemoryError::Unreadable(_, fsread::ReadError::Escapes)),
+            matches!(
+                err,
+                MemoryError::Unreadable(_, crate::safe_read::ReadError::Escapes)
+            ),
             "{err}"
         );
     }
@@ -439,6 +466,29 @@ pub(crate) mod tests {
         let doc = f.index().read("learnings").await.unwrap();
         assert!(doc.truncated);
         assert_eq!(doc.text.len() as u64, MAX_DOC_BYTES);
+    }
+
+    #[test]
+    fn project_roots_come_from_snapshot_tasks() {
+        use std::sync::Arc;
+        let snap = crate::snapshot::Snapshot::parse(
+            r#"{"schema":"fm-fleet-snapshot.v1","tasks":[
+                {"id":"a","project":"/p/ledger-api"},
+                {"id":"b","project":"/p/ledger-api"},
+                {"id":"c","project":"relative/portal-web"},
+                {"id":"d"},
+                {"id":"e","project":"/p/route-planner"}
+            ]}"#,
+        )
+        .unwrap();
+        let state = HomeState {
+            snapshot: Some(Arc::new(snap)),
+            ..HomeState::default()
+        };
+        let roots = project_roots(&state);
+        let names: Vec<_> = roots.iter().map(|r| r.name.as_str()).collect();
+        assert_eq!(names, ["ledger-api", "route-planner"]);
+        assert!(project_roots(&HomeState::default()).is_empty());
     }
 
     #[test]

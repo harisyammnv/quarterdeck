@@ -12,7 +12,8 @@ import {
   WarningCircleIcon as WarningCircle,
   type Icon,
 } from "@phosphor-icons/react";
-import { Banner, EmptyState, IconButton, monogram, tileFill, useHotkey, useNow } from "../../components";
+import { useApp } from "../../state/app";
+import { Banner, IconButton, ProjectTile, VirtualList, Zero, useHotkey, useNow } from "../../ui";
 import { SkillDocPane } from "../skills/SkillDocPane";
 import { SkillsPanel } from "../skills/SkillsPanel";
 import { skillsList } from "../skills/bridge";
@@ -22,7 +23,6 @@ import { DocBody } from "./DocBody";
 import { FindField } from "./FindField";
 import { plural, shortAge } from "./format";
 import { useRefreshing } from "./useRefreshing";
-import { Windowed } from "./Windowed";
 import "./memory.css";
 
 type GroupKind = "brief" | "project-guide";
@@ -55,6 +55,7 @@ export default function MemoryView() {
   const [showHits, setShowHits] = useState(false);
   const find = useRef<HTMLInputElement>(null);
   const now = useNow(60_000);
+  const { setArea } = useApp();
   useHotkey("/", () => find.current?.focus());
 
   const items = list.data?.items;
@@ -68,8 +69,8 @@ export default function MemoryView() {
   }, [items]);
 
   // Until something is chosen, open the learnings (the mock's default), else the first document.
-  const current: Sel | null =
-    sel ?? (groups.core.length ? { t: "doc", id: (groups.core.find((i) => i.kind === "learnings") ?? groups.core[0]).id } : null);
+  const fallback = groups.core.find((i) => i.kind === "learnings") ?? groups.core.at(0);
+  const current: Sel | null = sel ?? (fallback ? { t: "doc", id: fallback.id } : null);
 
   const onQuery = useCallback((q: string) => {
     setQuery(q);
@@ -92,39 +93,39 @@ export default function MemoryView() {
         icon={ArrowLeft}
         label={`Back to ${GROUP_TITLE[docItem.kind]}`}
         onClick={() => {
-          setSel({ t: "group", kind: docItem.kind as GroupKind });
+          setSel({ t: "group", kind: docItem.kind === "brief" ? "brief" : "project-guide" });
         }}
       />
     ) : null;
 
   let main: ReactNode;
   if (showHits) {
-    main = <SearchPane query={query} onOpen={openDoc} find={findField} />;
+    main = <SearchPane query={query} onOpen={openDoc} />;
   } else if (!current) {
     main = (
       <>
-        <MainHead icon={BookOpen} title="Memory" find={findField} />
+        <MainHead icon={BookOpen} title="Memory" />
         {list.error ? (
-          <EmptyState icon={WarningCircle} title="Memory could not be read" dashed={false}>
+          <Zero icon={WarningCircle} title="Memory could not be read" dashed={false}>
             {list.error}
-          </EmptyState>
+          </Zero>
         ) : list.loading || !items ? (
-          <EmptyState icon={CircleDashed} title="Reading memory" dashed={false}>
+          <Zero icon={CircleDashed} title="Reading memory" dashed={false}>
             Looking at the home's documents.
-          </EmptyState>
+          </Zero>
         ) : (
-          <EmptyState icon={BookOpen} title="Nothing written yet" dashed={false}>
+          <Zero icon={BookOpen} title="Nothing written yet" dashed={false}>
             Preferences and learnings appear here once Firstmate records them.
-          </EmptyState>
+          </Zero>
         )}
       </>
     );
   } else if (current.t === "group") {
-    main = <GroupPane kind={current.kind} items={groups[current.kind]} now={now} onOpen={openDoc} find={findField} />;
+    main = <GroupPane kind={current.kind} items={groups[current.kind]} now={now} onOpen={openDoc} />;
   } else if (current.t === "skill") {
-    main = <SkillDocPane id={current.id} find={query} actions={findField} />;
+    main = <SkillDocPane id={current.id} find={query} />;
   } else {
-    main = <DocPane id={current.id} back={back} find={findField} query={query} />;
+    main = <DocPane id={current.id} back={back} query={query} />;
   }
 
   return (
@@ -143,20 +144,29 @@ export default function MemoryView() {
       />
       <section className="panel memory-main" aria-label="Document">
         {main}
+        {/* One find field for every pane, outside them so switching panes never remounts it. */}
+        <div className="memory-findslot">{findField}</div>
       </section>
-      <SkillsPanel skills={skills} selected={current?.t === "skill" ? current.id : null} onOpen={openSkill} compact />
+      <SkillsPanel
+        skills={skills}
+        selected={current?.t === "skill" ? current.id : null}
+        onOpen={openSkill}
+        compact
+        onMore={() => {
+          setArea("skills");
+        }}
+      />
     </div>
   );
 }
 
-function MainHead({ icon: I, title, meta, back, find }: { icon: Icon; title: string; meta?: string; back?: ReactNode; find: ReactNode }) {
+function MainHead({ icon: I, title, meta, back }: { icon: Icon; title: string; meta?: string; back?: ReactNode }) {
   return (
     <div className="phead memory-phead">
       {back ?? <I size={18} className="mut" aria-hidden="true" />}
       <h1 className="ptitle trunc">{title}</h1>
       {meta && <span className="mut t12 tn">{meta}</span>}
       <span className="grow" />
-      {find}
     </div>
   );
 }
@@ -204,7 +214,7 @@ const MemoryNav = memo(function MemoryNav({
           }} />
         ))}
         {briefs.length > 0 && (
-          <NavRow icon={Scroll} title="Instructions" hint={`${plural(briefs.length, "set", "sets")} for current and past work`} age={shortAge(briefs[0].modified, now)} on={groupOn("brief")} onClick={() => {
+          <NavRow icon={Scroll} title="Instructions" hint={`${plural(briefs.length, "set", "sets")} for current and past work`} age={shortAge(briefs[0]?.modified ?? null, now)} on={groupOn("brief")} onClick={() => {
             onGroup("brief");
           }} />
         )}
@@ -221,7 +231,7 @@ const MemoryNav = memo(function MemoryNav({
           </div>
           <div className="memory-list" role="list">
             {briefs.slice(0, RECENT).map((b) => (
-              <NavRow key={b.id} tile={b.title} title={b.title} hint="Brief" age={shortAge(b.modified, now)} on={docId === b.id} recent onClick={() => {
+              <NavRow key={b.id} tile={b.title} title={b.title} hint="Brief" age={shortAge(b.modified, now, true)} on={docId === b.id} recent onClick={() => {
                 onDoc(b.id);
               }} />
             ))}
@@ -262,9 +272,7 @@ function NavRow({
         {I ? (
           <I size={18} className="mut" aria-hidden="true" />
         ) : (
-          <span className="mono-ic memory-tile" style={{ background: tileFill(tile ?? title) }} aria-hidden="true">
-            {monogram(tile ?? title)}
-          </span>
+          <ProjectTile name={tile ?? title} size={18} />
         )}
         <span className="memory-li-text">
           <span className="t13 trunc">{title}</span>
@@ -278,7 +286,7 @@ function NavRow({
 
 type DocLoad = { id: string; doc: MemoryDoc | null; error: string | null };
 
-function DocPane({ id, back, find, query }: { id: string; back: ReactNode; find: ReactNode; query: string }) {
+function DocPane({ id, back, query }: { id: string; back: ReactNode; query: string }) {
   const [load, setLoad] = useState<DocLoad>({ id, doc: null, error: null });
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -310,15 +318,15 @@ function DocPane({ id, back, find, query }: { id: string; back: ReactNode; find:
   const meta = item ? (counted ? plural(doc.entries, "entry", "entries") : item.label) : undefined;
   return (
     <>
-      <MainHead icon={item ? KIND_ICON[item.kind] : BookOpen} title={item?.title ?? "Reading"} meta={meta} back={back} find={find} />
+      <MainHead icon={item ? KIND_ICON[item.kind] : BookOpen} title={item?.title ?? "Reading"} meta={meta} back={back} />
       {error ? (
-        <EmptyState icon={WarningCircle} title="This document could not be read" dashed={false}>
+        <Zero icon={WarningCircle} title="This document could not be read" dashed={false}>
           {error}
-        </EmptyState>
+        </Zero>
       ) : !doc ? (
-        <EmptyState icon={CircleDashed} title="Reading the document" dashed={false} />
+        <Zero icon={CircleDashed} title="Reading the document" dashed={false} />
       ) : doc.text.trim() === "" ? (
-        <EmptyState icon={BookOpen} title="This document is empty" dashed={false} />
+        <Zero icon={BookOpen} title="This document is empty" dashed={false} />
       ) : (
         <DocBody text={doc.text} truncated={doc.truncated} find={query} />
       )}
@@ -326,20 +334,21 @@ function DocPane({ id, back, find, query }: { id: string; back: ReactNode; find:
   );
 }
 
-function GroupPane({ kind, items, now, onOpen, find }: { kind: GroupKind; items: MemoryItem[]; now: number; onOpen: (id: string) => void; find: ReactNode }) {
+function GroupPane({ kind, items, now, onOpen }: { kind: GroupKind; items: MemoryItem[]; now: number; onOpen: (id: string) => void }) {
   const I = KIND_ICON[kind];
   const meta = kind === "brief" ? plural(items.length, "set", "sets") : plural(items.length, "project", "projects");
   return (
     <>
-      <MainHead icon={I} title={GROUP_TITLE[kind]} meta={meta} find={find} />
+      <MainHead icon={I} title={GROUP_TITLE[kind]} meta={meta} />
       {items.length === 0 ? (
-        <EmptyState icon={I} title={`No ${GROUP_TITLE[kind].toLowerCase()} yet`} dashed={false} />
+        <Zero icon={I} title={`No ${GROUP_TITLE[kind].toLowerCase()} yet`} dashed={false} />
       ) : (
-        <Windowed
+        <VirtualList
           className="memory-group"
           label={GROUP_TITLE[kind]}
           items={items}
           rowHeight={56}
+          rowKey={(i) => i.id}
           render={(i) => (
             <button
               type="button"
@@ -348,14 +357,12 @@ function GroupPane({ kind, items, now, onOpen, find }: { kind: GroupKind; items:
                 onOpen(i.id);
               }}
             >
-              <span className="mono-ic memory-tile" style={{ background: tileFill(i.title) }} aria-hidden="true">
-                {monogram(i.title)}
-              </span>
+              <ProjectTile name={i.title} size={20} />
               <span className="memory-li-text">
                 <span className="t13 trunc">{i.title}</span>
                 <span className="t12 mut trunc">{i.label}</span>
               </span>
-              <span className="t12 mut tn">{shortAge(i.modified, now)}</span>
+              <span className="t12 mut tn">{shortAge(i.modified, now, true)}</span>
             </button>
           )}
         />
@@ -366,7 +373,7 @@ function GroupPane({ kind, items, now, onOpen, find }: { kind: GroupKind; items:
 
 type SearchLoad = { query: string; result: MemorySearch | null; error: string | null };
 
-function SearchPane({ query, onOpen, find }: { query: string; onOpen: (id: string) => void; find: ReactNode }) {
+function SearchPane({ query, onOpen }: { query: string; onOpen: (id: string) => void }) {
   const [load, setLoad] = useState<SearchLoad>({ query: "", result: null, error: null });
   const q = query.trim();
   useEffect(() => {
@@ -389,7 +396,7 @@ function SearchPane({ query, onOpen, find }: { query: string; onOpen: (id: strin
   const groups = useMemo(() => {
     const out: { id: string; title: string; kind: MemoryKind; hits: MemoryHit[] }[] = [];
     for (const h of r?.hits ?? []) {
-      const last = out[out.length - 1] as (typeof out)[number] | undefined;
+      const last = out.at(-1);
       if (last?.id === h.id) last.hits.push(h);
       else out.push({ id: h.id, title: h.title, kind: h.kind, hits: [h] });
     }
@@ -399,17 +406,17 @@ function SearchPane({ query, onOpen, find }: { query: string; onOpen: (id: strin
   const meta = r ? `${plural(r.hits.length, "line", "lines")} in ${plural(r.documents, "document", "documents")}` : undefined;
   return (
     <>
-      <MainHead icon={MagnifyingGlass} title={`Matches for “${q}”`} meta={stale ? "Searching" : meta} find={find} />
+      <MainHead icon={MagnifyingGlass} title={`Matches for “${q}”`} meta={stale ? "Searching" : meta} />
       {load.error ? (
-        <EmptyState icon={WarningCircle} title="The search failed" dashed={false}>
+        <Zero icon={WarningCircle} title="The search failed" dashed={false}>
           {load.error}
-        </EmptyState>
+        </Zero>
       ) : !r ? (
-        <EmptyState icon={CircleDashed} title="Searching memory" dashed={false} />
+        <Zero icon={CircleDashed} title="Searching memory" dashed={false} />
       ) : r.hits.length === 0 ? (
-        <EmptyState icon={MagnifyingGlass} title="No matches" dashed={false}>
+        <Zero icon={MagnifyingGlass} title="No matches" dashed={false}>
           Nothing in preferences, learnings, instructions or project guides mentions “{r.query}”.
-        </EmptyState>
+        </Zero>
       ) : (
         <div className="memory-hits" aria-busy={stale}>
           {r.truncated && <Banner>{SEARCH_LIMIT_NOTE}</Banner>}

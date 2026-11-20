@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { MagnifyingGlassIcon as MagnifyingGlass, XIcon as X } from "@phosphor-icons/react";
-import { Kbd } from "../../components";
+import { Kbd } from "../../ui";
 
 /** The "Find in memory" field: a search input with the / shortcut shown, and a clear button. */
 export const FindField = forwardRef<HTMLInputElement, { value: string; onChange: (v: string) => void; placeholder: string; className?: string }>(

@@ -53,7 +53,6 @@ pub struct SkillItem {
     /// Short labels of the folders it was found in, such as `~/.agents/skills`.
     pub locations: Vec<String>,
     /// How many separate copies with the same name exist elsewhere (links excluded).
-    #[cfg_attr(feature = "specta", specta(type = f64))]
     pub also_in: u32,
     /// Marked internal in its metadata (not meant to be invoked by hand).
     pub internal: bool,
@@ -64,7 +63,7 @@ pub struct SkillItem {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct SkillsView {
-    /// Firstmate skills first, then user, then project; by name within each.
+    /// User skills first, then Firstmate's, then project skills; by name within each.
     pub items: Vec<SkillItem>,
     /// More skills were found than [MAX_SKILLS] or a root held more than [MAX_PER_ROOT].
     pub capped: bool,
@@ -85,7 +84,7 @@ pub enum SkillError {
     #[error("no skill has the id {0:?}")]
     UnknownId(String),
     #[error("the skill {0} could not be read: {1}")]
-    Unreadable(String, fsread::ReadError),
+    Unreadable(String, crate::safe_read::ReadError),
 }
 
 /// Where to look.
@@ -277,8 +276,8 @@ impl SkillIndex {
 impl SkillScope {
     fn rank(self) -> u8 {
         match self {
-            Self::Firstmate => 0,
-            Self::User => 1,
+            Self::User => 0,
+            Self::Firstmate => 1,
             Self::Project => 2,
         }
     }
@@ -293,7 +292,8 @@ fn one_line(s: &str) -> String {
 async fn read_lock(user_home: &Path) -> HashMap<String, String> {
     let root = user_home.join(".agents");
     let Ok(text) =
-        fsread::read_text_under(&root, Path::new(".skill-lock.json"), LOCK_MAX_BYTES).await
+        crate::safe_read::read_text_under(&root, Path::new(".skill-lock.json"), LOCK_MAX_BYTES)
+            .await
     else {
         return HashMap::new();
     };
@@ -411,12 +411,6 @@ mod tests {
         assert_eq!(
             rows,
             [
-                (
-                    "firstmate:ship-landing",
-                    "ship-landing",
-                    SkillScope::Firstmate,
-                    Some("firstmate")
-                ),
                 ("user:claude:broken", "broken", SkillScope::User, None),
                 (
                     "user:agents:code-review",
@@ -438,6 +432,12 @@ mod tests {
                     Some("example-org/skills")
                 ),
                 (
+                    "firstmate:ship-landing",
+                    "ship-landing",
+                    SkillScope::Firstmate,
+                    Some("firstmate")
+                ),
+                (
                     "project:ledger-api:claude:tdd",
                     "tdd",
                     SkillScope::Project,
@@ -452,7 +452,12 @@ mod tests {
     async fn folded_descriptions_and_metadata() {
         let f = fixture();
         let idx = SkillIndex::scan(&f.sources()).await;
-        let ship = &idx.view().items[0];
+        let ship = idx
+            .view()
+            .items
+            .iter()
+            .find(|i| i.name == "ship-landing")
+            .unwrap();
         assert_eq!(
             ship.description,
             "When a ship reports a pull request or a ready branch."
@@ -536,7 +541,10 @@ mod tests {
         assert!(item.malformed);
         assert!(matches!(
             idx.read("user:claude:no-front").await,
-            Err(SkillError::Unreadable(_, fsread::ReadError::Escapes))
+            Err(SkillError::Unreadable(
+                _,
+                crate::safe_read::ReadError::Escapes
+            ))
         ));
     }
 

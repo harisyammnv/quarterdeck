@@ -60,8 +60,8 @@ export const views: ViewDef[] = [
   { id: "fleet", label: "Fleet", crumb: "Fleet", icon: Sailboat, rail: true, component: lazy(() => import("./views/fleet")), layout: { projects: true, inspector: true }, badge: (v) => v?.rows.filter((r) => r.state === "needs-decision").length ?? 0 },
   { id: "board", label: "Board", crumb: "Board", icon: Kanban, rail: true, component: placeholder("Board", Kanban, "Columns for Queued, In flight, Waiting on you and Done, read from the backlog in the fleet snapshot."), layout: { projects: false, inspector: false } },
   { id: "containers", label: "Containers", crumb: "Containers", icon: Cube, rail: true, component: placeholder("Containers", Cube, "Containers, images, volumes and networks from the local Docker engine, grouped by worktree. Read-only."), layout: { projects: false, inspector: false } },
-  { id: "memory", label: "Memory", crumb: "Memory and skills", icon: Brain, rail: true, component: placeholder("Memory", Brain, "Preferences, learnings, briefs and reports, readable and searchable. Firstmate keeps owning every edit."), layout: { projects: false, inspector: false } },
-  { id: "skills", label: "Skills", crumb: "Skills", icon: Sparkle, rail: true, component: placeholder("Skills", Sparkle, "Every skill in the known skill folders, with where it comes from and where the same name appears twice."), layout: { projects: false, inspector: false } },
+  { id: "memory", label: "Memory", crumb: "Memory and skills", icon: Brain, rail: true, component: lazy(() => import("./views/memory")), layout: { projects: false, inspector: false } },
+  { id: "skills", label: "Skills", crumb: "Skills", icon: Sparkle, rail: true, component: lazy(() => import("./views/skills")), layout: { projects: false, inspector: false } },
 ];
 
 /** Settings, at the foot of the rail, bound to ⌘,. */

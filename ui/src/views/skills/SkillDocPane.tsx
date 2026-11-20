@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { CircleDashedIcon as CircleDashed, SparkleIcon as Sparkle, WarningCircleIcon as WarningCircle } from "@phosphor-icons/react";
-import { EmptyState, StatusPill, Tag } from "../../components";
+import { StatusPill, Tag, Zero } from "../../ui";
 import { DocBody } from "../memory/DocBody";
 import { skillRead, type SkillDoc } from "./bridge";
 import { SCOPE_LABEL } from "./SkillRows";
@@ -8,7 +8,7 @@ import { SCOPE_LABEL } from "./SkillRows";
 type Load = { id: string; doc: SkillDoc | null; error: string | null };
 
 /** One skill, read on demand: its header facts and its body. */
-export function SkillDocPane({ id, find, actions }: { id: string; find: string; actions?: ReactNode }) {
+export function SkillDocPane({ id, find }: { id: string; find: string }) {
   const [load, setLoad] = useState<Load>({ id, doc: null, error: null });
   useEffect(() => {
     let live = true;
@@ -38,14 +38,13 @@ export function SkillDocPane({ id, find, actions }: { id: string; find: string; 
           </StatusPill>
         )}
         <span className="grow" />
-        {actions}
       </div>
       {error ? (
-        <EmptyState icon={WarningCircle} title="This skill could not be read" dashed={false}>
+        <Zero icon={WarningCircle} title="This skill could not be read" dashed={false}>
           {error}
-        </EmptyState>
+        </Zero>
       ) : !doc ? (
-        <EmptyState icon={CircleDashed} title="Reading the skill" dashed={false} />
+        <Zero icon={CircleDashed} title="Reading the skill" dashed={false} />
       ) : (
         <>
           <dl className="skills-facts">
