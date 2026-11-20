@@ -132,6 +132,13 @@ Icons are Phosphor (regular, with duotone for the selected rail item).
 - DM Sans and the icons are bundled; the app makes no network requests.
 - The core reads the Firstmate home and writes nothing to it; the one write is a note through Firstmate's own intake script.
 
+## Memory and skills
+
+The Memory view lists the home's preferences, shared preferences, learnings, task briefs, the reports the snapshot lists (through the reports area's `reports_list` and `report_read`) and the agent guide of each project in the latest snapshot, and finds text across the memory documents.
+The Skills view lists every `SKILL.md` folder in Firstmate's `.agents/skills`, the user's `~/.agents/skills` and `~/.claude/skills`, and each project's `.agents/skills` and `.claude/skills`, with its trigger, source and every other place the same name is installed.
+Both are read-only: the window sends ids, the core maps them to the paths its last scan found and reads at most 1 MiB through `safe_read`, and Markdown is shown through the shared sanitizing renderer.
+They rescan when the view opens and when the window regains focus.
+
 ## Credits
 
 - [PandaCode](https://github.com/aicodeking/pandacode) was the reference for the Tauri, xterm.js and portable-pty stack and its IPC contract.

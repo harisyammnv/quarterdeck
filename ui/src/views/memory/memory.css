@@ -1,0 +1,328 @@
+/* Memory and skills screen (A2 memory mock). Every class here starts with memory-. */
+
+.memory-cols {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  gap: var(--space-8);
+}
+
+.memory-cols > .ui-panel {
+  min-height: 0;
+}
+
+.memory-nav {
+  width: 284px;
+  flex: none;
+}
+
+.memory-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The find field sits over the right end of whichever pane header is showing. */
+.memory-findslot {
+  position: absolute;
+  top: var(--space-10);
+  right: var(--space-16);
+}
+
+.memory-main .memory-phead {
+  padding-right: 222px;
+}
+
+.memory-sh {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-12) var(--space-16) var(--space-8);
+  flex: none;
+}
+
+.memory-sect {
+  padding-top: var(--space-14);
+}
+
+.memory-sect .sect {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.memory-h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.memory-list {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+.memory-li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  width: 100%;
+  padding: 9px var(--space-14);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  min-width: 0;
+}
+
+.memory-li.recent {
+  padding: var(--space-8) var(--space-14);
+}
+
+.memory-list > [role="listitem"]:last-child > .memory-li {
+  border-bottom: 0;
+}
+
+.memory-li:hover {
+  background: var(--hover);
+  --muted: var(--muted-strong);
+}
+
+.memory-li:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  z-index: 1;
+}
+
+.memory-li.sel {
+  background: var(--selected);
+  --muted: var(--muted-strong);
+}
+
+.memory-li.sel::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: var(--space-12);
+  bottom: var(--space-12);
+  width: 3px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.memory-li > svg {
+  flex: none;
+}
+
+.memory-li-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.memory-li .t13 {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.memory-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: 9px var(--space-14);
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+  flex: none;
+}
+
+.memory-phead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  height: 48px;
+  padding: 0 var(--space-16);
+  flex: none;
+}
+
+.memory-phead > .ptitle {
+  margin: 0;
+  flex: 0 1 auto;
+}
+
+.memory-phead > svg {
+  flex: none;
+}
+
+/* The design system's search field (qd-cmd), at the mock's width for a panel header. */
+.memory-find {
+  width: 190px;
+  flex: none;
+}
+
+.memory-find input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* The field draws the focus ring, not the input inside it. */
+.memory-find input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.memory-find input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.memory-find input::placeholder {
+  color: var(--muted-strong);
+}
+
+.memory-find-clear {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sunken);
+  color: var(--ink);
+  flex: none;
+}
+
+.memory-find-clear:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.memory-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px 22px;
+}
+
+.memory-trunc {
+  margin: var(--space-16) 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Rendered Markdown: the shared .doc styles, tightened to the memory mock's measurements. */
+.memory-doc {
+  max-width: 66ch;
+  overflow-wrap: anywhere;
+}
+
+.memory-doc > :first-child {
+  margin-top: 0;
+}
+
+.memory-doc h3,
+.memory-doc h4 {
+  margin: var(--space-14) 0 var(--space-4);
+}
+
+.memory-doc ul,
+.memory-doc ol {
+  padding-left: 18px;
+}
+
+.memory-doc pre code {
+  overflow-wrap: normal;
+}
+
+::highlight(memory-find) {
+  background-color: var(--warning-soft);
+  color: var(--ink);
+}
+
+.memory-group,
+.skills-panel .vlist {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.memory-group .memory-li {
+  height: 56px;
+}
+
+.memory-hits {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-4) 0 var(--space-16);
+}
+
+.memory-hits[aria-busy="true"] {
+  opacity: 0.6;
+}
+
+.memory-hitgroup + .memory-hitgroup {
+  margin-top: var(--space-8);
+}
+
+.memory-hit-doc {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16) var(--space-4);
+}
+
+.memory-hit-doc .b7 {
+  font-weight: 700;
+}
+
+.memory-hit {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-10);
+  width: 100%;
+  padding: 5px var(--space-16) 5px 40px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  min-width: 0;
+}
+
+.memory-hit:hover {
+  background: var(--hover);
+}
+
+.memory-hit:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.memory-hit-line {
+  width: 32px;
+  flex: none;
+  text-align: right;
+}
+
+.memory-hit mark {
+  background: var(--warning-soft);
+  color: var(--ink);
+  border-radius: 3px;
+}
