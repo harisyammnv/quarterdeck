@@ -61,6 +61,11 @@
   border-bottom: 1px solid var(--line);
 }
 
+/* Inside a section the zero state shares the section's 16px inset rather than adding its own. */
+.ui-insp-sect .qd-zero {
+  padding: var(--space-4) 0;
+}
+
 .ui-insp-sect:last-child {
   border-bottom: 0;
 }
