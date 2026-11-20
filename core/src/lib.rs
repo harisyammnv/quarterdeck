@@ -19,6 +19,7 @@
 //! `view(&HomeState)` projection or on-demand `list` and `read` readers.
 
 pub mod config;
+pub mod containers;
 pub mod engine;
 pub mod external;
 pub mod fleet;

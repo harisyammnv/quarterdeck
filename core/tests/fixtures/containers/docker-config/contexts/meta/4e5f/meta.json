@@ -1,0 +1,10 @@
+{
+  "Name": "remote",
+  "Metadata": {},
+  "Endpoints": {
+    "docker": {
+      "Host": "ssh://builder@engine.example.invalid",
+      "SkipTLSVerify": false
+    }
+  }
+}

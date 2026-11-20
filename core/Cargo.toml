@@ -19,6 +19,8 @@ tokio.workspace = true
 notify.workspace = true
 time.workspace = true
 specta = { workspace = true, optional = true }
+bollard.workspace = true
+futures-util.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

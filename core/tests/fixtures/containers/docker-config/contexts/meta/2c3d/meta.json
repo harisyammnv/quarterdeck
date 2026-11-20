@@ -1,0 +1,12 @@
+{
+  "Name": "desktop",
+  "Metadata": {
+    "Description": "Docker Desktop"
+  },
+  "Endpoints": {
+    "docker": {
+      "Host": "unix:///p/home/.docker/run/docker.sock",
+      "SkipTLSVerify": false
+    }
+  }
+}

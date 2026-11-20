@@ -1,0 +1,14 @@
+{
+  "Volumes": [
+    {
+      "Name": "login_pg",
+      "Driver": "local",
+      "Mountpoint": "/var/lib/docker/volumes/login_pg/_data",
+      "CreatedAt": "2026-11-20T10:00:00Z",
+      "Labels": {},
+      "Scope": "local",
+      "Options": {}
+    }
+  ],
+  "Warnings": []
+}

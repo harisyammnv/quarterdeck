@@ -19,6 +19,8 @@ pub const MAX_URL_LEN: usize = 2048;
 pub enum External {
     /// `/usr/bin/open <url>`: opens an `https` link in the default browser.
     OpenUrl(String),
+    /// `/usr/bin/open -b dev.kiri.app`: opens Kiri's own window. Takes no input at all.
+    KiriUi,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -80,7 +82,7 @@ impl External {
     /// The fixed binary.
     fn program(&self) -> &'static str {
         match self {
-            Self::OpenUrl(_) => "/usr/bin/open",
+            Self::OpenUrl(_) | Self::KiriUi => "/usr/bin/open",
         }
     }
 
@@ -91,6 +93,7 @@ impl External {
                 validate_url(url)?;
                 Ok(vec![url.clone()])
             }
+            Self::KiriUi => Ok(vec!["-b".into(), "dev.kiri.app".into()]),
         }
     }
 
@@ -145,6 +148,16 @@ mod tests {
         assert_eq!(
             e.args().unwrap(),
             vec!["https://forge.example.invalid/acme/app/pull/7".to_string()]
+        );
+    }
+
+    #[test]
+    fn kiri_ui_argv_is_fixed() {
+        let e = External::KiriUi;
+        assert_eq!(e.program(), "/usr/bin/open");
+        assert_eq!(
+            e.args().unwrap(),
+            vec!["-b".to_string(), "dev.kiri.app".to_string()]
         );
     }
 

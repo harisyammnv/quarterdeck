@@ -1,0 +1,208 @@
+[
+  {
+    "Id": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+    "Names": [
+      "/login-api-1"
+    ],
+    "Image": "ledger-api:dev",
+    "ImageID": "sha256:0909090909090909090909090909090909090909090909090909090909090909",
+    "Command": "run",
+    "Created": 1795170000,
+    "Ports": [
+      {
+        "IP": "0.0.0.0",
+        "PrivatePort": 8080,
+        "PublicPort": 8080,
+        "Type": "tcp"
+      },
+      {
+        "IP": "::",
+        "PrivatePort": 8080,
+        "PublicPort": 8080,
+        "Type": "tcp"
+      }
+    ],
+    "Labels": {
+      "com.docker.compose.project": "login",
+      "com.docker.compose.project.working_dir": "/p/example-app/fm-login",
+      "com.docker.compose.project.config_files": "/p/example-app/fm-login/compose.yaml",
+      "com.docker.compose.service": "api"
+    },
+    "State": "running",
+    "Status": "Up 18 minutes",
+    "HostConfig": {
+      "NetworkMode": "bridge"
+    },
+    "NetworkSettings": {
+      "Networks": {}
+    },
+    "Mounts": []
+  },
+  {
+    "Id": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+    "Names": [
+      "/login-db-1"
+    ],
+    "Image": "postgres:16",
+    "ImageID": "sha256:0909090909090909090909090909090909090909090909090909090909090909",
+    "Command": "run",
+    "Created": 1795170000,
+    "Ports": [
+      {
+        "IP": "127.0.0.1",
+        "PrivatePort": 5432,
+        "PublicPort": 55432,
+        "Type": "tcp"
+      }
+    ],
+    "Labels": {
+      "com.docker.compose.project": "login",
+      "com.docker.compose.project.working_dir": "/p/example-app/fm-login",
+      "com.docker.compose.project.config_files": "/p/example-app/fm-login/compose.yaml",
+      "com.docker.compose.service": "db"
+    },
+    "State": "running",
+    "Status": "Up 18 minutes",
+    "HostConfig": {
+      "NetworkMode": "bridge"
+    },
+    "NetworkSettings": {
+      "Networks": {}
+    },
+    "Mounts": [
+      {
+        "Type": "volume",
+        "Name": "login_pg",
+        "Source": "/var/lib/docker/volumes/login_pg/_data",
+        "Destination": "/var/lib/postgresql/data",
+        "Driver": "local",
+        "Mode": "z",
+        "RW": true,
+        "Propagation": ""
+      }
+    ]
+  },
+  {
+    "Id": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+    "Names": [
+      "/route-web"
+    ],
+    "Image": "node:22-slim",
+    "ImageID": "sha256:0909090909090909090909090909090909090909090909090909090909090909",
+    "Command": "run",
+    "Created": 1795169000,
+    "Ports": [
+      {
+        "PrivatePort": 3000,
+        "PublicPort": 3000,
+        "Type": "tcp",
+        "IP": "0.0.0.0"
+      }
+    ],
+    "Labels": {},
+    "State": "running",
+    "Status": "Up 41 minutes",
+    "HostConfig": {
+      "NetworkMode": "bridge"
+    },
+    "NetworkSettings": {
+      "Networks": {}
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/p/route-planner/fm-route-perf/web",
+        "Destination": "/app",
+        "Mode": "",
+        "RW": true,
+        "Propagation": "rprivate"
+      }
+    ]
+  },
+  {
+    "Id": "d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+    "Names": [
+      "/route-cache"
+    ],
+    "Image": "redis:7",
+    "ImageID": "sha256:0909090909090909090909090909090909090909090909090909090909090909",
+    "Command": "run",
+    "Created": 1795160000,
+    "Ports": [],
+    "Labels": {},
+    "State": "exited",
+    "Status": "Exited (0) 2 hours ago",
+    "HostConfig": {
+      "NetworkMode": "bridge"
+    },
+    "NetworkSettings": {
+      "Networks": {}
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/p/route-planner/fm-route-perf-2/data",
+        "Destination": "/data",
+        "Mode": "",
+        "RW": true,
+        "Propagation": "rprivate"
+      }
+    ]
+  },
+  {
+    "Id": "e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5",
+    "Names": [
+      "/portal-dash"
+    ],
+    "Image": "portal-web:profile",
+    "ImageID": "sha256:0909090909090909090909090909090909090909090909090909090909090909",
+    "Command": "run",
+    "Created": 1795165000,
+    "Ports": [
+      {
+        "PrivatePort": 8051,
+        "Type": "tcp"
+      }
+    ],
+    "Labels": {},
+    "State": "exited",
+    "Status": "Exited (1) 5 minutes ago",
+    "HostConfig": {
+      "NetworkMode": "bridge"
+    },
+    "NetworkSettings": {
+      "Networks": {}
+    },
+    "Mounts": [
+      {
+        "Type": "bind",
+        "Source": "/p/portal-web/fm-dash-profile",
+        "Destination": "/src",
+        "Mode": "",
+        "RW": false,
+        "Propagation": "rprivate"
+      }
+    ]
+  },
+  {
+    "Id": "f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6",
+    "Names": [
+      "/scratch-db"
+    ],
+    "Image": "mysql:8",
+    "ImageID": "sha256:0909090909090909090909090909090909090909090909090909090909090909",
+    "Command": "run",
+    "Created": 1794900000,
+    "Ports": [],
+    "Labels": {},
+    "State": "running",
+    "Status": "Up 3 days",
+    "HostConfig": {
+      "NetworkMode": "bridge"
+    },
+    "NetworkSettings": {
+      "Networks": {}
+    },
+    "Mounts": []
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "Id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "ParentId": "",
+    "RepoTags": [
+      "postgres:16",
+      "postgres:latest"
+    ],
+    "RepoDigests": [],
+    "Created": 1790000000,
+    "Size": 438000000,
+    "SharedSize": -1,
+    "VirtualSize": 438000000,
+    "Labels": {},
+    "Containers": 1
+  },
+  {
+    "Id": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "ParentId": "",
+    "RepoTags": [
+      "<none>:<none>"
+    ],
+    "RepoDigests": [],
+    "Created": 1789000000,
+    "Size": 12000000,
+    "SharedSize": -1,
+    "Labels": {},
+    "Containers": -1
+  }
+]
