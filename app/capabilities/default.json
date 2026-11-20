@@ -13,8 +13,12 @@
     "allow-fleet-view",
     "allow-home-pick",
     "allow-refresh-fleet",
+    "allow-report-history",
+    "allow-report-read",
+    "allow-reports-list",
     "allow-send-note",
     "allow-task-pr-open",
+    "allow-terminal-tail",
     "allow-url-open",
     "allow-view-rendered"
   ]
