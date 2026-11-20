@@ -324,7 +324,10 @@ fn write_cache(path: &Path, json: &str) -> std::io::Result<()> {
     let dir = path.parent().unwrap_or(Path::new("."));
     std::fs::create_dir_all(dir)?;
     std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
-    let tmp = dir.join(format!(".snapshot.{}.tmp", std::process::id()));
+    // A unique name per write, so two overlapping writes never share a temporary file.
+    static WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let tmp = dir.join(format!(".snapshot.{}.{n}.tmp", std::process::id()));
     // A leftover from a crashed write is removed, then the file is created exclusively, so a
     // planted link at that name is never followed.
     match std::fs::remove_file(&tmp) {

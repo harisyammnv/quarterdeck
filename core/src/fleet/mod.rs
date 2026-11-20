@@ -94,6 +94,51 @@ pub struct FleetView {
     pub cause: Option<UpdateCause>,
 }
 
+/// A task's state after laying its latest status event over the snapshot.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MergedState {
+    pub state: TaskState,
+    /// The state word as written, so unknown words are still shown honestly.
+    pub word: String,
+    pub source: StateSource,
+}
+
+/// Whether `event` is newer than a snapshot generated at `generated` (Unix seconds).
+fn newer_than(generated: Option<i64>, event: &StatusEvent) -> bool {
+    match (generated, event.at) {
+        (Some(generated), Some(at)) => at > generated,
+        // Without a usable stamp on the snapshot, a live event is the better guess.
+        (None, _) => true,
+        (Some(_), None) => false,
+    }
+}
+
+/// The one rule for a task's state, shared by every area that shows one.
+///
+/// The snapshot's word stands, unless the task's latest status event is newer than the
+/// snapshot, or the snapshot could not tell (`unknown`, for example while a runtime backend
+/// is unreachable): then the event is the best evidence there is, and the result says it came
+/// from the event, because a status line is a wake event and not current truth.
+pub fn merged_state(
+    snapshot_word: Option<&str>,
+    event: Option<&StatusEvent>,
+    generated: Option<i64>,
+) -> MergedState {
+    let word = snapshot_word.unwrap_or("unknown").to_string();
+    let snapshot_knows = TaskState::from_word(&word) != TaskState::Unknown;
+    let (word, source) = match event {
+        Some(e) if newer_than(generated, e) || !snapshot_knows => {
+            (e.word.clone(), StateSource::Event)
+        }
+        _ => (word, StateSource::Snapshot),
+    };
+    MergedState {
+        state: TaskState::from_word(&word),
+        word,
+        source,
+    }
+}
+
 /// The mutable model behind [`FleetView`].
 #[derive(Debug, Default)]
 pub struct FleetModel {
@@ -179,33 +224,23 @@ impl FleetModel {
     }
 
     fn newer_than_snapshot(&self, event: &StatusEvent) -> bool {
-        match (self.snapshot.as_ref().and_then(|s| s.generated), event.at) {
-            (Some(generated), Some(at)) => at > generated,
-            // Without a usable stamp on the snapshot, a live event is the better guess.
-            (None, _) => true,
-            (Some(_), None) => false,
-        }
+        newer_than(self.snapshot.as_ref().and_then(|s| s.generated), event)
     }
 
     fn row_from_snapshot(&self, r: &Task) -> FleetRow {
         let event = self.events.get(&r.id);
-        let word = r.state.clone().unwrap_or_else(|| "unknown".into());
-        // An event wins when it is newer than the snapshot, or when the snapshot could not tell
-        // (`unknown`, for example while a runtime backend is unreachable): then the latest
-        // event is the best evidence there is, and the row says where it came from.
-        let snapshot_knows = TaskState::from_word(&word) != TaskState::Unknown;
-        let (state_word, source) = match event {
-            Some(e) if self.newer_than_snapshot(e) || !snapshot_knows => {
-                (e.word.clone(), StateSource::Event)
-            }
-            _ => (word, StateSource::Snapshot),
-        };
+        let generated = self.snapshot.as_ref().and_then(|s| s.generated);
+        let MergedState {
+            state,
+            word: state_word,
+            source,
+        } = merged_state(r.state.as_deref(), event, generated);
         FleetRow {
             id: r.id.clone(),
             name: r.title.clone().unwrap_or_else(|| r.id.clone()),
             project: r.project_name(),
             kind: r.kind.clone(),
-            state: TaskState::from_word(&state_word),
+            state,
             state_word,
             source,
             doing: r.state_detail.clone(),
@@ -428,6 +463,35 @@ mod tests {
         assert_eq!(row.project.as_deref(), Some("example-ops"));
         assert_eq!(row.state, TaskState::NeedsDecision);
         assert_eq!(row.doing.as_deref(), Some("report ready, awaiting a pick"));
+    }
+
+    #[test]
+    fn merged_state_rule() {
+        let ev = |w: &str, at| StatusEvent {
+            word: w.into(),
+            at: Some(at),
+            key: None,
+            text: String::new(),
+        };
+        let m = merged_state(Some("working"), Some(&ev("blocked", 5)), Some(10));
+        assert_eq!(
+            (m.state, m.source),
+            (TaskState::Working, StateSource::Snapshot)
+        );
+        let m = merged_state(Some("working"), Some(&ev("blocked", 11)), Some(10));
+        assert_eq!(
+            (m.state, m.source),
+            (TaskState::Blocked, StateSource::Event)
+        );
+        let m = merged_state(Some("unknown"), Some(&ev("paused", 5)), Some(10));
+        assert_eq!((m.state, m.source), (TaskState::Paused, StateSource::Event));
+        let m = merged_state(None, None, Some(10));
+        assert_eq!((m.state, m.word.as_str()), (TaskState::Unknown, "unknown"));
+        let m = merged_state(Some("teleporting"), None, None);
+        assert_eq!(
+            (m.state, m.word.as_str()),
+            (TaskState::Unknown, "teleporting")
+        );
     }
 
     #[test]

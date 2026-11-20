@@ -35,10 +35,13 @@ export async function homePick(): Promise<AppInfo> {
   return commands.homePick();
 }
 
-/** Opens an https link in the default browser. Call only after the person confirmed the address. */
-export async function urlOpen(url: string): Promise<void> {
+/**
+ * Asks the core to open an https link. The core shows a native confirmation with the full
+ * address first; resolves true when the link was opened, false when the person cancelled.
+ */
+export async function urlOpen(url: string): Promise<boolean> {
   if (!inApp) throw new Error("Preview mode: links open from the app window.");
-  await commands.urlOpen(url);
+  return commands.urlOpen(url);
 }
 
 /** Opens a task's recorded pull request; the core takes the address from the snapshot. */

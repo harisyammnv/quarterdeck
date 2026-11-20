@@ -10,7 +10,7 @@ function sourceText(source: string | null | undefined): string {
     case "fm-home":
       return "Set by FM_HOME in the environment, which wins over a home chosen here.";
     case "chosen":
-      return "Chosen in this window and remembered in the app's own settings.";
+      return "Chosen in this window and remembered in the app's own settings. Quarterdeck runs this home's own read-only scripts.";
     default:
       return "No home is chosen yet.";
   }
