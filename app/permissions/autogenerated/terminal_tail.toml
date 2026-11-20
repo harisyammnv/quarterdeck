@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-terminal-tail"
+description = "Enables the terminal_tail command without any pre-configured scope."
+commands.allow = ["terminal_tail"]
+
+[[permission]]
+identifier = "deny-terminal-tail"
+description = "Denies the terminal_tail command without any pre-configured scope."
+commands.deny = ["terminal_tail"]

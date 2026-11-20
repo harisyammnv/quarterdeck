@@ -39,14 +39,32 @@ pub enum ConfigError {
 impl AppConfig {
     /// Reads the configuration in `dir`. A missing file is the default configuration.
     pub fn load(dir: &Path) -> Result<Self, ConfigError> {
-        let path = dir.join(CONFIG_FILE);
-        match std::fs::metadata(&path) {
-            Ok(m) if m.len() > MAX_CONFIG_BYTES => return Err(ConfigError::TooLarge),
-            Ok(_) => {}
+        use std::io::Read as _;
+        use std::os::unix::fs::OpenOptionsExt as _;
+        // Checked on the open handle (no symlink followed, no blocking on a FIFO), then read
+        // no further than the cap.
+        let file = match std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+            .open(dir.join(CONFIG_FILE))
+        {
+            Ok(f) => f,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Self::default()),
             Err(e) => return Err(ConfigError::Read(e)),
+        };
+        let meta = file.metadata().map_err(ConfigError::Read)?;
+        if !meta.is_file() {
+            return Err(ConfigError::Read(std::io::Error::other(
+                "not a regular file",
+            )));
         }
-        let text = std::fs::read_to_string(&path).map_err(ConfigError::Read)?;
+        if meta.len() > MAX_CONFIG_BYTES {
+            return Err(ConfigError::TooLarge);
+        }
+        let mut text = String::new();
+        file.take(MAX_CONFIG_BYTES)
+            .read_to_string(&mut text)
+            .map_err(ConfigError::Read)?;
         serde_json::from_str(&text).map_err(ConfigError::Parse)
     }
 
@@ -55,7 +73,9 @@ impl AppConfig {
     pub fn save(&self, dir: &Path) -> Result<(), ConfigError> {
         std::fs::create_dir_all(dir).map_err(ConfigError::Write)?;
         let json = serde_json::to_string_pretty(self).map_err(|e| ConfigError::Write(e.into()))?;
-        let tmp = dir.join(format!(".{CONFIG_FILE}.{}.tmp", std::process::id()));
+        static WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let tmp = dir.join(format!(".{CONFIG_FILE}.{}.{n}.tmp", std::process::id()));
         match std::fs::remove_file(&tmp) {
             Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
                 return Err(ConfigError::Write(e))

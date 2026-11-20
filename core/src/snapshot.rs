@@ -55,6 +55,8 @@ pub struct Task {
     pub pr_url: Option<String>,
     /// `backlog.title`, the task's name.
     pub title: Option<String>,
+    /// `remote` is set: the task runs on another host, so its terminal is not read from here.
+    pub remote: bool,
     /// `spawn_gen`, the worker's spawn stamp, such as `s1795176247.90164.19766`.
     pub spawn_gen: Option<String>,
 }
@@ -249,6 +251,7 @@ mod raw {
         #[serde(default)]
         pub backlog: TaskBacklog,
         #[serde(default)]
+        pub remote: Option<serde_json::Value>,
         pub spawn_gen: Option<String>,
     }
 
@@ -335,6 +338,7 @@ impl From<raw::Snapshot> for Snapshot {
                     endpoint_target: non_empty(t.endpoint.target),
                     pr_url: non_empty(t.pr.url),
                     title: non_empty(t.backlog.title),
+                    remote: t.remote.is_some_and(|r| !r.is_null()),
                     spawn_gen: non_empty(t.spawn_gen),
                 })
                 .collect(),

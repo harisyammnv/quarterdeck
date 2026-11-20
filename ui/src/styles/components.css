@@ -61,6 +61,11 @@
   border-bottom: 1px solid var(--line);
 }
 
+/* Inside a section the zero state shares the section's 16px inset rather than adding its own. */
+.ui-insp-sect .qd-zero {
+  padding: var(--space-4) 0;
+}
+
 .ui-insp-sect:last-child {
   border-bottom: 0;
 }
@@ -276,55 +281,15 @@
   box-shadow: none;
 }
 
-/* ---------- confirm dialog (system lacks one: built from panel tokens) ---------- */
+/* ---------- link errors in rendered documents ---------- */
 
-.confirm {
-  width: min(480px, calc(100vw - 48px));
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-card);
-  background: var(--panel);
-  color: var(--ink);
-  box-shadow: var(--tooltip);
-  --muted: var(--muted-panel);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-10);
-}
-
-.confirm:not([open]) {
-  display: none;
-}
-
-.confirm::backdrop {
-  background: rgba(0, 0, 0, 0.32);
-}
-
-.confirm-url {
-  display: block;
-  padding: var(--space-10) var(--space-12);
-  border-radius: var(--radius-inner);
-  background: var(--sunken);
-  border: 1px solid var(--line);
-  font-size: 12px;
-  word-break: break-all;
-  user-select: text;
-  -webkit-user-select: text;
-}
-
-.confirm-err {
+.ui-doc-err {
   display: flex;
   align-items: center;
   gap: var(--space-6);
   color: var(--danger);
   font-size: 12.5px;
-}
-
-.confirm-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-8);
-  margin-top: var(--space-4);
+  margin: 0 0 var(--space-8);
 }
 
 /* ---------- virtual list ---------- */

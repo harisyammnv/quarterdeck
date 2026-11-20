@@ -54,9 +54,10 @@ impl TerminalHandle {
     }
 }
 
-/// The terminal handle for `task`, when Orca runs it and a well-formed handle is on record.
+/// The terminal handle for `task`, when this machine's Orca runs it and a well-formed handle is
+/// on record. A remote task's handle belongs to another host's Orca, so it gets no target.
 pub fn handle_for(task: &Task) -> Option<TerminalHandle> {
-    if task.backend.as_deref() != Some("orca") {
+    if task.backend.as_deref() != Some("orca") || task.remote {
         return None;
     }
     task.endpoint_target
@@ -107,6 +108,11 @@ mod tests {
         assert_eq!(handle_for(&task("orca", None)), None);
         assert_eq!(handle_for(&task("orca", Some("--environment"))), None);
         assert_eq!(handle_for(&task("tmux", Some("term_a"))), None);
+        let remote = Task {
+            remote: true,
+            ..task("orca", Some("term_a"))
+        };
+        assert_eq!(handle_for(&remote), None);
     }
 
     #[test]

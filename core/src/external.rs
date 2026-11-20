@@ -118,7 +118,7 @@ pub async fn run(launch: &External) -> Result<(), ExternalError> {
     cmd.args(&args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::null())
         .kill_on_drop(true);
     let child = cmd
         .spawn()
@@ -127,12 +127,10 @@ pub async fn run(launch: &External) -> Result<(), ExternalError> {
         Ok(Ok(out)) if out.status.success() => Ok(()),
         Ok(Ok(out)) => Err(ExternalError::Failed(
             program,
-            String::from_utf8_lossy(&out.stderr)
-                .lines()
-                .last()
-                .unwrap_or("no error output")
-                .trim()
-                .to_string(),
+            // The program's own error text is not shown: only the exit status.
+            out.status
+                .code()
+                .map_or_else(|| "signal".to_string(), |c| c.to_string()),
         )),
         Ok(Err(e)) => Err(ExternalError::Spawn(program, e.to_string())),
         Err(_) => Err(ExternalError::Timeout(program)),
