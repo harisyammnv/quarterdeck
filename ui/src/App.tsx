@@ -55,6 +55,7 @@ export function App() {
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [live, setLive] = useState<Live>({ view: null, changed: new Map() });
   const [theme, setTheme] = useState<ThemePref>(readThemePref);
+  const [ipcError, setIpcError] = useState<string | null>(null);
   const now = useNow(1000);
   const { view, changed } = live;
 
@@ -64,13 +65,20 @@ export function App() {
 
   useEffect(() => {
     const stop = onFleetUpdated(accept);
-    void appInfo().then((i) => {
-      setInfo(i);
-      if (i.theme === "light" || i.theme === "dark") setTheme(i.theme);
-    });
-    void fleetView().then((v) => {
-      if (v) accept(v);
-    });
+    const fail = (e: unknown) => {
+      setIpcError(e instanceof Error ? e.message : String(e));
+    };
+    appInfo()
+      .then((i) => {
+        setInfo(i);
+        if (i.theme === "light" || i.theme === "dark") setTheme(i.theme);
+      })
+      .catch(fail);
+    fleetView()
+      .then((v) => {
+        if (v) accept(v);
+      })
+      .catch(fail);
     return stop;
   }, [accept]);
 
@@ -147,6 +155,14 @@ export function App() {
             </button>
           </div>
 
+          {ipcError && (
+            <div className="banner" role="status">
+              <WarningCircle size={16} />
+              <span className="trunc grow" title={ipcError}>
+                The window could not reach the core: {ipcError}
+              </span>
+            </div>
+          )}
           {view?.snapshot.error && (
             <div className="banner" role="status">
               <WarningCircle size={16} />
@@ -289,7 +305,7 @@ function StatePill({ row }: { row: FleetRow }) {
   const I = row.state === "done" ? Check : row.state === "paused" ? Pause : row.state === "unknown" ? Question : null;
   const title =
     row.source === "event"
-      ? "From the latest status event, newer than the snapshot"
+      ? "From the latest status event: newer than the snapshot, or the snapshot could not tell"
       : row.source === "bootstrap"
         ? "From the task's status record, before the first snapshot"
         : "From the fleet snapshot";
@@ -404,7 +420,12 @@ function Composer({ enabled }: { enabled: boolean }) {
         });
       }
     } catch (e) {
-      setHint({ tone: "err", text: `Not sent: ${e instanceof Error ? e.message : String(e)}` });
+      // The draft and its request id are kept: sending again replays the same note if the
+      // intake saved it, and can never create a second one.
+      setHint({
+        tone: "err",
+        text: `Firstmate's intake reported a problem: ${e instanceof Error ? e.message : String(e)}. Sending again is safe; it cannot create a second note.`,
+      });
     } finally {
       setBusy(false);
     }

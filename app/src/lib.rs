@@ -10,7 +10,6 @@ use quarterdeck_core::engine::{Engine, EngineConfig, EngineHandle, LatencySample
 use quarterdeck_core::{FleetView, FmHome, NoteReceipt};
 use serde::Serialize;
 use specta::Type;
-use tauri::Manager;
 use tauri_specta::{collect_commands, collect_events, Event};
 
 /// A new fleet view, pushed on every change.
@@ -154,13 +153,21 @@ pub fn run() {
         .filter(|t| t == "light" || t == "dark");
     let latency_log = std::env::var_os("QD_LATENCY_LOG").map(PathBuf::from);
 
+    // The engine starts before the window exists and its state is managed before `run`, so
+    // the UI can never call a command before the state it needs is in place.
+    let engine = start_engine();
+    let views = engine.as_ref().ok().map(EngineHandle::subscribe);
+
     tauri::Builder::default()
+        .manage(AppState {
+            engine,
+            theme,
+            latency_log,
+        })
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             builder.mount_events(app);
-            let engine = start_engine();
-            if let Ok(engine) = &engine {
-                let mut views = engine.subscribe();
+            if let Some(mut views) = views {
                 let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
                     while views.changed().await.is_ok() {
@@ -169,11 +176,6 @@ pub fn run() {
                     }
                 });
             }
-            app.manage(AppState {
-                engine,
-                theme,
-                latency_log,
-            });
             Ok(())
         })
         .run(tauri::generate_context!())

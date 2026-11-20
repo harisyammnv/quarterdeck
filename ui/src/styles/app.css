@@ -654,6 +654,11 @@ svg {
   cursor: text;
 }
 
+/* The pill draws the focus ring; the field inside it must not draw a second one. */
+.input input:focus-visible {
+  box-shadow: none;
+}
+
 .input input::placeholder {
   color: var(--muted-p);
 }
