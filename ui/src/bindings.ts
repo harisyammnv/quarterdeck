@@ -17,15 +17,15 @@ export const commands = {
 	/**  The UI reports that it painted view `seq`; completes a status-change latency sample. */
 	viewRendered: (seq: number, renderedMs: number | null, options?: InvokeOptions) => __TAURI_INVOKE<void>("view_rendered", { seq, renderedMs }, options),
 	/**
+	 *  Brings a task's terminal forward in Orca (`orca terminal switch`). The window sends the
+	 *  task id; the handle comes from the snapshot. qd-terminal's "open the real terminal" reuses it.
+	 */
+	orcaFocus: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("orca_focus", { taskId }, options),
+	/**
 	 *  A project's icon as a size-capped `data:` URL, or `None` for a monogram. The window sends
 	 *  the project's name; the core finds its clone or worktrees in the snapshot.
 	 */
 	projectIcon: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("project_icon", { name }, options),
-	/**
-	 *  Brings a task's terminal (or, without one, its worktree) forward in Orca. The window sends
-	 *  the task id; the handle or path comes from the snapshot.
-	 */
-	projectsFocusOrca: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("projects_focus_orca", { taskId }, options),
 	/**  The current projects view, or `None` when no home is configured. */
 	projectsView: (options?: InvokeOptions) => __TAURI_INVOKE<ProjectsView_Serialize | null>("projects_view", undefined, options),
 	appInfo: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo_Serialize>("app_info", undefined, options),

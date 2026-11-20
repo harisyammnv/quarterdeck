@@ -110,6 +110,7 @@ impl IconCache {
         if !super::is_plain_component(name) {
             return Err(IconError::BadName(name.to_string()));
         }
+        self.prune(state);
         for root in roots(state, name) {
             if let Some(url) = self.get(&root).await {
                 return Ok(Some(url));
@@ -135,6 +136,21 @@ impl IconCache {
         };
         self.lock().insert(root.to_path_buf(), entry);
         found.map(|(_, url)| url)
+    }
+
+    /// Forgets roots no task in the snapshot names any more, so worktrees that come and go
+    /// over a long session do not grow the cache.
+    fn prune(&self, state: &HomeState) {
+        let Some(snap) = state.snapshot.as_deref() else {
+            return;
+        };
+        let live: std::collections::HashSet<&Path> = snap
+            .tasks
+            .iter()
+            .flat_map(|t| [t.project.as_deref(), t.worktree.as_deref()])
+            .flatten()
+            .collect();
+        self.lock().retain(|root, _| live.contains(root.as_path()));
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<PathBuf, Entry>> {
