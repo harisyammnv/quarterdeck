@@ -35,6 +35,7 @@ fn fake_home() -> tempfile::TempDir {
     script(
         &root.join("bin/fm-inbox.sh"),
         r#"printf '%s\n' "$@" > "$FM_HOME/inbox-args"
+printf '%s' "${QD_LEAK_PROBE:-absent}" > "$FM_HOME/inbox-env"
 printf '{"schema":"fm-inbox-note.v1","outcome":"created","id":"n-7","request_id":"%s","saved":true,"announced":true,"acknowledged":false,"path":"x"}\n' "$3""#,
     );
     std::fs::write(
@@ -98,10 +99,10 @@ async fn bootstraps_then_reconciles_with_snapshot() {
     assert!(!v.snapshot.running);
     assert_eq!(v.snapshot.error, None);
     let row = v.rows.iter().find(|r| r.id == "app-login-fix").unwrap();
-    // The record's event predates the snapshot, so the snapshot's word stands.
+    // The snapshot could not tell this task's state, so the record's latest event stands in.
     assert_eq!(
         (row.state, row.source),
-        (TaskState::Unknown, StateSource::Snapshot)
+        (TaskState::Working, StateSource::Event)
     );
 }
 
@@ -176,12 +177,16 @@ async fn snapshot_failure_is_reported_not_fatal() {
 async fn note_goes_through_the_inbox_script_as_argv() {
     let dir = fake_home();
     let handle = Engine::start(FmHome::at(dir.path()).unwrap(), EngineConfig::default()).unwrap();
+    // A variable from the launching shell must not reach Firstmate's scripts.
+    std::env::set_var("QD_LEAK_PROBE", "leaked");
     let text = "--all; rm -rf / $(whoami) is just text";
     let receipt = handle.submit_note(text, "qd-test-1").await.unwrap();
     assert_eq!(receipt.outcome, NoteOutcome::Created);
     assert_eq!(receipt.id, "n-7");
     assert!(receipt.announced);
     let args = std::fs::read_to_string(dir.path().join("inbox-args")).unwrap();
+    let env = std::fs::read_to_string(dir.path().join("inbox-env")).unwrap();
+    assert_eq!(env, "absent");
     assert_eq!(
         args,
         format!("note\n--request-id\nqd-test-1\n--json\n--\n{text}\n")

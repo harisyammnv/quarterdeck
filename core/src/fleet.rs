@@ -162,8 +162,14 @@ impl FleetModel {
     fn row_from_snapshot(&self, r: &InFlight) -> FleetRow {
         let event = self.events.get(&r.id);
         let word = r.state.clone().unwrap_or_else(|| "unknown".into());
+        // An event wins when it is newer than the snapshot, or when the snapshot could not tell
+        // (`unknown`, for example while a runtime backend is unreachable): then the latest
+        // event is the best evidence there is, and the row says where it came from.
+        let snapshot_knows = TaskState::from_word(&word) != TaskState::Unknown;
         let (state_word, source) = match event {
-            Some(e) if self.newer_than_snapshot(e) => (e.word.clone(), StateSource::Event),
+            Some(e) if self.newer_than_snapshot(e) || !snapshot_knows => {
+                (e.word.clone(), StateSource::Event)
+            }
             _ => (word, StateSource::Snapshot),
         };
         FleetRow {
@@ -285,8 +291,33 @@ mod tests {
     }
 
     #[test]
-    fn older_event_does_not_override_snapshot() {
+    fn older_event_does_not_override_a_known_snapshot_state() {
         let mut m = model_with_snapshot();
+        m.set_event("qd-spike", ev(&format!("blocked [at={}]: x", GEN - 30)));
+        let row = m
+            .view(None)
+            .rows
+            .into_iter()
+            .find(|r| r.id == "qd-spike")
+            .unwrap();
+        assert_eq!(row.state, TaskState::Working);
+        assert_eq!(row.source, StateSource::Snapshot);
+        assert_eq!(row.latest_event.unwrap().text, "x");
+    }
+
+    #[test]
+    fn unknown_snapshot_state_falls_back_to_the_latest_event() {
+        let mut m = model_with_snapshot();
+        let row = m
+            .view(None)
+            .rows
+            .into_iter()
+            .find(|r| r.id == "app-login-fix")
+            .unwrap();
+        assert_eq!(
+            (row.state, row.source),
+            (TaskState::Unknown, StateSource::Snapshot)
+        );
         m.set_event(
             "app-login-fix",
             ev(&format!("working [at={}]: x", GEN - 30)),
@@ -297,9 +328,10 @@ mod tests {
             .into_iter()
             .find(|r| r.id == "app-login-fix")
             .unwrap();
-        assert_eq!(row.state, TaskState::Unknown);
-        assert_eq!(row.source, StateSource::Snapshot);
-        assert_eq!(row.latest_event.unwrap().text, "x");
+        assert_eq!(
+            (row.state, row.source),
+            (TaskState::Working, StateSource::Event)
+        );
     }
 
     #[test]
