@@ -8,8 +8,7 @@
 //!   ([`status`], [`meta`]),
 //! - merge both into one fleet list ([`fleet`]),
 //! - keep that list live with file events ([`engine`]),
-//! - submit one inbox note through `bin/fm-inbox.sh` ([`inbox`]),
-//! - read one worker up close: its terminal tail, report and status history ([`worker`]).
+//! - submit one inbox note through `bin/fm-inbox.sh` ([`inbox`]).
 //!
 //! It never writes into the Firstmate home itself. The only write path is the inbox note,
 //! and that goes through Firstmate's own script.
@@ -27,11 +26,12 @@ pub mod gateway;
 pub mod home;
 pub mod inbox;
 pub mod meta;
+pub mod reports;
 pub mod safe_read;
 pub mod snapshot;
 pub mod status;
+pub mod terminal;
 mod timefmt;
-pub mod worker;
 
 pub use config::{AppConfig, HomeSource};
 pub use engine::{Engine, EngineHandle, HomeState};

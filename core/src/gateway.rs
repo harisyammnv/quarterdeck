@@ -12,7 +12,7 @@ use std::time::Duration;
 use tokio::process::Command;
 
 use crate::home::FmHome;
-use crate::worker::TaskId;
+use crate::terminal::TaskId;
 
 /// The allow-listed entry points.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -23,7 +23,7 @@ pub enum Entry {
     InboxNote { request_id: String, text: String },
     /// `bin/fm-peek.sh <task-id> <lines>`: the bounded tail of a worker's terminal.
     /// The id is a validated, known task id, never an explicit backend target.
-    Peek { id: TaskId, lines: u16 },
+    Peek { task_id: TaskId, lines: u16 },
 }
 
 impl Entry {
@@ -47,7 +47,9 @@ impl Entry {
                 "--".into(),
                 text.into(),
             ],
-            Self::Peek { id, lines } => vec![id.as_str().into(), lines.to_string().into()],
+            Self::Peek { task_id, lines } => {
+                vec![task_id.as_str().into(), lines.to_string().into()]
+            }
         }
     }
 
@@ -56,7 +58,7 @@ impl Entry {
         match self {
             Self::FleetSnapshot => Duration::from_secs(90),
             Self::InboxNote { .. } => Duration::from_secs(30),
-            Self::Peek { .. } => Duration::from_secs(10),
+            Self::Peek { .. } => Duration::from_secs(20),
         }
     }
 }
