@@ -216,13 +216,6 @@
         "reported": "2026-11-19"
       },
       {
-        "id": null,
-        "structured": false,
-        "raw": "Free-form note line in the backlog",
-        "title": null,
-        "state": "queued"
-      },
-      {
         "id": "odd-row",
         "structured": true,
         "title": "A row from a newer schema",
@@ -244,7 +237,11 @@
         "state": "unknown",
         "source": "none"
       },
-      "pr": null,
+      "pr": {
+        "url": null,
+        "source": null,
+        "head": null
+      },
       "backlog": {
         "title": "Audit the auth middleware",
         "repo": "portal-web"

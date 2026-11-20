@@ -16,15 +16,15 @@
 
 use serde::Serialize;
 
+use crate::engine::HomeState;
 use crate::fleet::StateSource;
+use crate::snapshot::{BacklogRecord, Snapshot, Task};
 use crate::status::TaskState;
 use crate::timefmt::rfc3339_to_epoch;
 
 mod links;
-mod seam;
 
 pub use links::{safe_report_path, safe_web_url};
-pub use seam::{BacklogRecord, HomeState, Snapshot, Task};
 
 /// Longest prose passed to the UI, in characters. Hold reasons state a decision's options,
 /// so the cap is generous; it only stops a runaway record.
@@ -40,7 +40,7 @@ pub const MAX_DONE: usize = 40;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "kebab-case")]
-pub enum Column {
+pub enum BoardColumn {
     Queued,
     InFlight,
     Done,
@@ -76,7 +76,7 @@ impl HoldBucket {
 /// The live state of an in-flight card.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
-pub struct LiveState {
+pub struct BoardLiveState {
     pub state: TaskState,
     /// The state word as written, so unknown words are still shown honestly.
     pub word: String,
@@ -94,7 +94,7 @@ pub struct LiveState {
 pub struct BoardCard {
     pub id: String,
     pub title: String,
-    pub column: Column,
+    pub column: BoardColumn,
     pub project: Option<String>,
     pub kind: Option<String>,
     /// When the card entered its current place, Unix seconds: the hold time for a held card,
@@ -108,7 +108,7 @@ pub struct BoardCard {
     /// Unfinished work this card waits on.
     pub blocked_by: Vec<String>,
     /// In-flight cards only.
-    pub live: Option<LiveState>,
+    pub live: Option<BoardLiveState>,
     pub pr_url: Option<String>,
     /// Firstmate recorded a report for this task; the reports view opens it by id.
     pub has_report: bool,
@@ -153,7 +153,7 @@ pub struct Decisions {
 /// A record the projection could not place, shown so nothing disappears silently.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
-pub struct Unplaced {
+pub struct BoardUnplaced {
     pub id: String,
     pub why: String,
 }
@@ -177,7 +177,7 @@ pub struct BoardView {
     pub done_total: u32,
     pub decisions: Decisions,
     /// Records with a state or bucket this version does not know.
-    pub other: Vec<Unplaced>,
+    pub other: Vec<BoardUnplaced>,
 }
 
 impl BoardView {
@@ -212,10 +212,16 @@ fn text(s: Option<&String>, max: usize) -> Option<String> {
     s.map(|v| clip(v, max)).filter(|v| !v.is_empty())
 }
 
-fn days(d: Option<f64>) -> Option<u32> {
-    d.filter(|v| v.is_finite() && *v >= 0.0)
-        // Bounded and non-negative, so the cast cannot wrap.
-        .map(|v| v.min(f64::from(u32::MAX)).floor() as u32)
+fn days(d: Option<&serde_json::Number>) -> Option<u32> {
+    let d = d?;
+    match d.as_u64() {
+        Some(n) => Some(u32::try_from(n).unwrap_or(u32::MAX)),
+        None => d
+            .as_f64()
+            .filter(|v| v.is_finite() && *v >= 0.0)
+            // Bounded and non-negative, so the cast cannot wrap.
+            .map(|v| v.min(f64::from(u32::MAX)).floor() as u32),
+    }
 }
 
 fn ids(list: &[String]) -> Vec<String> {
@@ -258,7 +264,7 @@ fn oldest_first(a: Option<i64>, b: Option<i64>) -> std::cmp::Ordering {
 }
 
 /// The live state of an in-flight task, by main's merge rule.
-fn live_state(state: &HomeState, snap: &Snapshot, task: Option<&Task>, id: &str) -> LiveState {
+fn live_state(state: &HomeState, snap: &Snapshot, task: Option<&Task>, id: &str) -> BoardLiveState {
     let event = state.events.get(id);
     let word = task
         .and_then(|t| t.state.clone())
@@ -274,7 +280,7 @@ fn live_state(state: &HomeState, snap: &Snapshot, task: Option<&Task>, id: &str)
         Some(e) if newer(e.at) || !snapshot_knows => (e.word.clone(), StateSource::Event),
         _ => (word, StateSource::Snapshot),
     };
-    LiveState {
+    BoardLiveState {
         state: TaskState::from_word(&word),
         word: clip(&word, 40),
         source,
@@ -301,7 +307,7 @@ pub fn view(state: &HomeState) -> BoardView {
         if id.is_empty() {
             continue;
         }
-        let unplaced = |why: String| Unplaced {
+        let unplaced = |why: String| BoardUnplaced {
             id: clip(id, 120),
             why,
         };
@@ -323,9 +329,9 @@ pub fn view(state: &HomeState) -> BoardView {
             continue;
         }
         let column = match rec.state.as_deref() {
-            Some("queued") => Column::Queued,
-            Some("in_flight") => Column::InFlight,
-            Some("done") => Column::Done,
+            Some("queued") => BoardColumn::Queued,
+            Some("in_flight") => BoardColumn::InFlight,
+            Some("done") => BoardColumn::Done,
             other => {
                 v.other.push(unplaced(format!(
                     "unknown state {:?}",
@@ -335,10 +341,10 @@ pub fn view(state: &HomeState) -> BoardView {
             }
         };
         let task = snap.tasks.iter().find(|t| t.id == id);
-        let pr_url = rec
-            .pr_url
-            .as_deref()
-            .or_else(|| task.and_then(|t| t.pr_url.as_deref()))
+        // Same precedence as the shell's `task_pr_open`: the task row, else the record.
+        let pr_url = task
+            .and_then(|t| t.pr_url.as_deref())
+            .or(rec.pr_url.as_deref())
             .and_then(safe_web_url);
         let hold_set = rec.hold_set.as_deref().and_then(rfc3339_to_epoch);
         let filed = rec.since.as_deref().and_then(date_to_epoch);
@@ -362,7 +368,7 @@ pub fn view(state: &HomeState) -> BoardView {
                 kind: kind.clone(),
                 bucket,
                 until: until.clone(),
-                age_days: days(rec.hold_age_days),
+                age_days: days(rec.hold_age_days.as_ref()),
                 blocked_by: blocked_by.clone(),
                 raised_at: hold_set.or(filed),
                 links: other_links(rec, pr_url.as_ref()),
@@ -378,7 +384,7 @@ pub fn view(state: &HomeState) -> BoardView {
         }
 
         let since = match column {
-            Column::Done => rec
+            BoardColumn::Done => rec
                 .merged
                 .as_deref()
                 .or(rec.reported.as_deref())
@@ -397,14 +403,14 @@ pub fn view(state: &HomeState) -> BoardView {
             hold: bucket,
             until,
             blocked_by,
-            live: (column == Column::InFlight).then(|| live_state(state, snap, task, id)),
+            live: (column == BoardColumn::InFlight).then(|| live_state(state, snap, task, id)),
             pr_url,
             has_report: report,
         };
         match column {
-            Column::Queued => v.queued.push(card),
-            Column::InFlight => v.in_flight.push(card),
-            Column::Done => done.push(card),
+            BoardColumn::Queued => v.queued.push(card),
+            BoardColumn::InFlight => v.in_flight.push(card),
+            BoardColumn::Done => done.push(card),
         }
     }
     v.decisions

@@ -1,181 +1,198 @@
-import { memo, useMemo } from "react";
-import { ArrowSquareOutIcon, FileTextIcon, KanbanIcon, WarningIcon } from "@phosphor-icons/react";
-import { openLink, openReport } from "./bridge";
+import { memo } from "react";
+import {
+  ArrowSquareOutIcon as ArrowSquareOut,
+  CircleDashedIcon as CircleDashed,
+  FileTextIcon as FileText,
+  KanbanIcon as Kanban,
+  WarningCircleIcon as WarningCircle,
+} from "@phosphor-icons/react";
+import { Banner, Count, Panel, PanelHead, StateDot, Tag, VirtualList, Zero, ago, useNow, type DotKind } from "../../ui";
+import { useApp } from "../../state/app";
+import { DecisionsStrip } from "../decisions/Strip";
+import { openPullRequest } from "./bridge";
 import { age, firstLine, prNumber } from "./format";
-import { decisionTag, HoldPill, StateChip, Tile } from "./parts";
+import { reportsArea, requestDecision } from "./nav";
+import { CallPill, decisionTag, LiveChip, Tile } from "./parts";
 import type { BoardCard, BoardView, Decision } from "./types";
-import { useBoard, useNow } from "./useBoard";
+import { useBoard } from "./useBoard";
 import "./board.css";
 
+/** One card's slot in a lane: the card plus the gap below it. Cards have a fixed height. */
+const CARD_SLOT = 136;
+
 /** The board: Queued, In flight, Waiting on you and Done, over the backlog. Read-only. */
-export default function BoardViewPanel() {
+export default function BoardArea() {
   const load = useBoard();
-  const now = useNow();
-  if (load.status === "loading") {
-    return <BoardShell><Zero title="Reading the backlog" text="The first snapshot takes a few seconds." /></BoardShell>;
+  const now = useNow(30_000);
+  if (load.status !== "ready") {
+    return (
+      <Panel as="main" className="fill" label="Board">
+        <PanelHead title="Board" />
+        <div className="board-state">
+          {load.status === "error" ? (
+            <Zero icon={WarningCircle} title="The board could not be read" dashed={false}>
+              {load.message}
+            </Zero>
+          ) : load.status === "no-home" ? (
+            <Zero icon={Kanban} title="No Firstmate home" dashed={false}>
+              Choose a home in Settings to see its backlog.
+            </Zero>
+          ) : (
+            <Zero icon={CircleDashed} title="Reading the backlog" dashed={false}>
+              The board appears with the first fleet snapshot.
+            </Zero>
+          )}
+        </div>
+      </Panel>
+    );
   }
-  if (load.status === "error") {
-    return <BoardShell><Zero warn title="The board could not be read" text={load.message} /></BoardShell>;
-  }
-  const v = load.view;
-  if (!v.ready) {
-    return <BoardShell><Zero title="Waiting for the first snapshot" text="Cards appear as soon as Firstmate's fleet snapshot lands." /></BoardShell>;
-  }
-  return <Board v={v} now={now} />;
-}
-
-function BoardShell({ children, meta }: { children: React.ReactNode; meta?: React.ReactNode }) {
-  return (
-    <section className="panel board" aria-labelledby="board-title">
-      <div className="phead">
-        <span className="ptitle" id="board-title">Board</span>
-        {meta}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Zero({ title, text, warn = false }: { title: string; text: string; warn?: boolean }) {
-  return (
-    <div className="zero board-zero" role={warn ? "alert" : "status"}>
-      <span className="zi">{warn ? <WarningIcon size={16} /> : <KanbanIcon size={16} />}</span>
-      <span>
-        <b>{title}</b>
-        <span className="t12">{text}</span>
-      </span>
-    </div>
-  );
+  return <Board v={load.view} now={now} />;
 }
 
 function Board({ v, now }: { v: BoardView; now: number }) {
   const live = v.decisions.live;
   const doneMore = v.done_total - v.done.length;
-  const meta = (
-    <>
-      <span className="mut board-meta tn">
-        {v.queued.length} queued, {v.in_flight.length} in flight, {live.length} waiting on you
-      </span>
-      <span className="grow" />
-      {v.other.length > 0 && (
-        <span className="pill warning" title={v.other.map((o) => `${o.id}: ${o.why}`).join("\n")}>
-          {v.other.length} not placed
-        </span>
-      )}
-      {v.generated_at !== null && <span className="mut board-meta tn">Snapshot {age(v.generated_at, now)} ago</span>}
-    </>
-  );
   return (
-    <BoardShell meta={meta}>
-      <div className="board-cols">
-        <Lane title="Queued" count={v.queued.length} dot="idle" empty="Nothing queued.">
-          {v.queued.map((c) => <Card key={c.id} card={c} now={now} />)}
-        </Lane>
-        <Lane title="In flight" count={v.in_flight.length} dot="working" empty="No task is running.">
-          {v.in_flight.map((c) => <Card key={c.id} card={c} now={now} />)}
-        </Lane>
-        <Lane title="Waiting on you" count={live.length} dot="waiting" empty="Nothing needs your call.">
-          {live.map((d) => <CallCard key={d.id} d={d} now={now} />)}
-        </Lane>
-        <Lane
-          title="Done"
-          count={v.done_total}
-          dot=""
-          empty="Nothing finished yet."
-          foot={doneMore > 0 ? `${String(doneMore)} older not shown` : undefined}
-        >
-          {v.done.map((c) => <Card key={c.id} card={c} now={now} />)}
-        </Lane>
-      </div>
-    </BoardShell>
+    <>
+      <DecisionsStrip />
+      <Panel as="main" className="fill board" label="Board">
+        <PanelHead title="Board" meta={v.ready ? `${String(v.queued.length)} queued, ${String(v.in_flight.length)} in flight, ${String(live.length)} waiting on you` : undefined}>
+          {v.generated_at !== null && <span className="meta tn">Snapshot {ago(v.generated_at * 1000, now)}</span>}
+        </PanelHead>
+        {v.other.length > 0 && (
+          <Banner title={v.other.map((o) => `${o.id}: ${o.why}`).join("\n")}>
+            {v.other.length === 1 ? "One backlog record" : `${String(v.other.length)} backlog records`} could not be placed on the board: {v.other.map((o) => o.id).join(", ")}
+          </Banner>
+        )}
+        {!v.ready ? (
+          <div className="board-state">
+            <Zero icon={CircleDashed} title="Reading the backlog" dashed={false}>
+              The board appears with the first fleet snapshot.
+            </Zero>
+          </div>
+        ) : (
+          <div className="board-cols">
+            <Lane title="Queued" dot="idle" count={v.queued.length} empty="Nothing queued.">
+              <Cards label="Queued" items={v.queued} now={now} />
+            </Lane>
+            <Lane title="In flight" dot="working" count={v.in_flight.length} empty="No task is running.">
+              <Cards label="In flight" items={v.in_flight} now={now} />
+            </Lane>
+            <Lane title="Waiting on you" dot="waiting" count={live.length} empty="Nothing needs your call.">
+              <VirtualList label="Waiting on you" className="board-cards" items={live} rowHeight={CARD_SLOT} rowKey={(d) => d.id} render={(d) => <CallCard d={d} now={now} />} />
+            </Lane>
+            <Lane title="Done" dot={null} count={v.done_total} empty="Nothing finished yet." foot={doneMore > 0 ? `${String(doneMore)} older not shown` : undefined}>
+              <Cards label="Done" items={v.done} now={now} />
+            </Lane>
+          </div>
+        )}
+      </Panel>
+    </>
   );
 }
 
-function Lane({
-  title,
-  count,
-  dot,
-  empty,
-  foot,
-  children,
-}: {
-  title: string;
-  count: number;
-  dot: "idle" | "working" | "waiting" | "";
-  empty: string;
-  foot?: string;
-  children: React.ReactNode[];
-}) {
+function Cards({ label, items, now }: { label: string; items: BoardCard[]; now: number }) {
+  return <VirtualList label={label} className="board-cards" items={items} rowHeight={CARD_SLOT} rowKey={(c) => c.id} render={(c) => <Card card={c} now={now} />} />;
+}
+
+function Lane({ title, dot, count, empty, foot, children }: { title: string; dot: DotKind | null; count: number; empty: string; foot?: string; children: React.ReactNode }) {
   const id = `board-lane-${title.toLowerCase().replace(/\s+/g, "-")}`;
   return (
     <section className="board-lane" aria-labelledby={id}>
       <header className="board-lane-h">
-        {dot ? <span className={`dot ${dot}`} aria-hidden="true" /> : <span className="board-lane-check" aria-hidden="true" />}
-        <span className="board-lane-t" id={id}>{title}</span>
-        <span className="count tn">{count}</span>
+        {dot ? <StateDot kind={dot} /> : <span className="board-lane-ring" aria-hidden="true" />}
+        <h2 className="board-lane-t" id={id}>
+          {title}
+        </h2>
+        <Count n={count} label={`${String(count)} ${title.toLowerCase()}`} />
       </header>
-      {children.length === 0 ? (
-        <p className="board-empty mut">{empty}</p>
-      ) : (
-        <ul className="board-cards">{children}</ul>
-      )}
-      {foot && <p className="board-foot mut">{foot}</p>}
+      {count === 0 ? <p className="board-empty">{empty}</p> : children}
+      {foot && <p className="board-foot">{foot}</p>}
     </section>
   );
 }
 
-const Card = memo(function Card({ card, now }: { card: BoardCard; now: number }) {
-  const pr = prNumber(card.pr_url);
-  const latest = card.live?.latest;
+function Top({ project, since, now }: { project: string | null; since: number | null; now: number }) {
   return (
-    <li className="board-card">
-      <div className="row board-card-top">
-        <Tile name={card.project} />
-        <span className="mut trunc board-proj">{card.project ?? "No project"}</span>
-        <span className="grow" />
-        <span className="mut tn board-age" title={card.since !== null ? new Date(card.since * 1000).toLocaleString() : undefined}>
-          {age(card.since, now)}
-        </span>
+    <div className="row board-card-top">
+      <Tile name={project} />
+      <span className="trunc board-proj">{project ?? "No project"}</span>
+      <span className="grow" />
+      <span className="tn board-age" title={since !== null ? new Date(since * 1000).toLocaleString() : undefined}>
+        {age(since, now)}
+      </span>
+    </div>
+  );
+}
+
+const Card = memo(function Card({ card, now }: { card: BoardCard; now: number }) {
+  const { setArea, setSelectedTask } = useApp();
+  const pr = prNumber(card.pr_url);
+  const latest = card.live?.latest ?? null;
+  const hold = card.hold;
+  const reports = reportsArea;
+  return (
+    <article className="board-card" aria-label={card.title}>
+      <Top project={card.project} since={card.since} now={now} />
+      <div className="board-title" title={card.title}>
+        {card.title}
       </div>
-      <div className="board-title">{card.title}</div>
-      {latest && <div className="mut trunc board-latest" title={latest}>{latest}</div>}
+      <div className={`trunc board-sub${latest ? "" : " mono"}`} title={latest ?? card.id}>
+        {latest ?? card.id}
+      </div>
       <div className="row board-chips">
-        <StateChip card={card} />
-        <HoldPill card={card} />
-        {card.kind && <span className="pill neutral">{card.kind}</span>}
+        <LiveChip card={card} />
+        {(hold || card.blocked_by.length > 0) && <CallPill bucket={hold} until={card.until} blockedBy={card.blocked_by} ageDays={null} />}
+        {card.kind && <Tag>{card.kind}</Tag>}
         <span className="grow" />
-        {card.has_report && (
-          <button type="button" className="board-ib" aria-label={`Read the report for ${card.title}`} title="Read the report" onClick={() => { openReport(card.id); }}>
-            <FileTextIcon size={14} />
+        {card.has_report && reports && (
+          <button
+            type="button"
+            className="board-ib"
+            aria-label={`Read the report for ${card.title}`}
+            title="Read the report"
+            onClick={() => {
+              setSelectedTask(card.id);
+              setArea(reports);
+            }}
+          >
+            <FileText size={14} />
           </button>
         )}
         {card.pr_url && (
-          <button type="button" className="board-link mono" title={card.pr_url} aria-label={`Open pull request ${card.pr_url}`} onClick={() => void openLink(card.pr_url ?? "")}>
-            {pr ?? "PR"}
-            <ArrowSquareOutIcon size={12} />
+          <button type="button" className="board-link" title={card.pr_url} aria-label={`Open pull request ${card.pr_url}`} onClick={() => void openPullRequest(card.id).catch(() => undefined)}>
+            <span className="mono">{pr ?? "PR"}</span>
+            <ArrowSquareOut size={12} />
           </button>
         )}
       </div>
-    </li>
+    </article>
   );
 });
 
 const CallCard = memo(function CallCard({ d, now }: { d: Decision; now: number }) {
-  const summary = useMemo(() => firstLine(d.detail), [d.detail]);
+  const { setArea } = useApp();
   return (
-    <li className="board-card board-call">
-      <div className="row board-card-top">
-        <Tile name={d.project} />
-        <span className="mut trunc board-proj">{d.project ?? "No project"}</span>
-        <span className="grow" />
-        <span className="mut tn board-age">{age(d.raised_at, now)}</span>
+    <article className="board-card board-call" aria-label={d.question}>
+      <Top project={d.project} since={d.raised_at} now={now} />
+      <button
+        type="button"
+        className="board-title board-title-btn"
+        title={d.question}
+        onClick={() => {
+          requestDecision(d.id);
+          setArea("decisions");
+        }}
+      >
+        {d.question}
+      </button>
+      <div className="trunc board-sub" title={firstLine(d.detail)}>
+        {firstLine(d.detail) || "No reason recorded."}
       </div>
-      <div className="board-title">{d.question}</div>
-      {summary && <div className="mut trunc board-latest" title={summary}>{summary}</div>}
       <div className="row board-chips">
-        <span className="pill warning">Needs you</span>
-        <span className="pill neutral">{decisionTag(d)}</span>
+        <CallPill bucket="live" until={null} blockedBy={[]} ageDays={null} />
+        <Tag>{decisionTag(d)}</Tag>
       </div>
-    </li>
+    </article>
   );
 });

@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use super::*;
+use crate::engine::HomeState;
+use crate::snapshot::{BacklogRecord, Snapshot, Task};
 use crate::status::parse_line;
 
 const FIXTURE: &str = include_str!("../../tests/fixtures/board/fleet-snapshot.json");
@@ -61,23 +63,23 @@ fn places_every_record_exactly_once() {
     assert_eq!(v.done_total, 2);
     assert_eq!(
         v.other,
-        [Unplaced {
+        [BoardUnplaced {
             id: "odd-row".into(),
             why: "unknown state \"parked\"".into()
         }]
     );
-    // 13 backlog lines: one free-form note is not a task, the other 12 land once each.
+    // 12 backlog records, each placed exactly once.
     let placed = v.queued.len() + v.in_flight.len() + v.live_count() + v.done.len() + v.other.len();
     assert_eq!(placed, 12);
     assert!(v
         .queued
         .iter()
-        .all(|c| c.column == Column::Queued && c.live.is_none()));
+        .all(|c| c.column == BoardColumn::Queued && c.live.is_none()));
     assert!(v
         .in_flight
         .iter()
-        .all(|c| c.column == Column::InFlight && c.live.is_some()));
-    assert!(v.done.iter().all(|c| c.column == Column::Done));
+        .all(|c| c.column == BoardColumn::InFlight && c.live.is_some()));
+    assert!(v.done.iter().all(|c| c.column == BoardColumn::Done));
 }
 
 #[test]
@@ -323,6 +325,7 @@ fn view_is_fast_on_a_large_home() {
     let state = HomeState {
         snapshot: Some(Arc::new(snap)),
         events,
+        ..HomeState::default()
     };
     let runs = 5;
     let start = std::time::Instant::now();

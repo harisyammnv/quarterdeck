@@ -80,6 +80,13 @@ The gateway runs a fixed list of scripts with an argument vector, never through 
 Scripts get a short allow-list of environment variables and the `PATH` of the user's login shell, plus Homebrew and Orca's bundled CLI.
 The note body always follows `--`, so text that looks like a flag is still body text.
 
+## Board and decisions
+
+The Board shows the backlog from the fleet snapshot in four lanes: Queued, In flight, Waiting on you and Done.
+The teal "Needs your call" strip and the decisions view list only the holds Firstmate marks `captain_actionable`, uncapped and oldest first; dated, blocked and aged holds are shown apart, with the reason Firstmate gives.
+Nothing is classified from prose: the core sorts on `state` and `hold_bucket` alone, and a record it cannot place is shown as such rather than dropped.
+A reply is an inbox note about the task; pull requests open by task id, and other links only after the full address is confirmed.
+
 ## Design
 
 The look is direction A, version 2 of the design mocks: a fog grey frame, floating white blocks, a black labelled icon rail, pill buttons and DM Sans.
