@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Button, Kbd, Tag, useHotkey } from "../../ui";
+import { Button, Keycap, Tag, useHotkey } from "../../ui";
 import { useApp } from "../../state/app";
 import { openPullRequest } from "../board/bridge";
 import { firstLine, prNumber } from "../board/format";
@@ -15,8 +15,8 @@ const STRIP_CARDS = 3;
 /**
  * The teal "Needs your call" room. It shows only live calls (`captain_actionable`), oldest
  * first, and renders nothing when there are none. J moves focus to the next call card.
- * Self-contained. The design system allows one teal room per window, on Fleet only, so it is
- * mounted once, at the top of the Fleet view: `<DecisionsStrip />`.
+ * Self-contained. The design system allows one teal room per window, on Fleet only; the
+ * registry mounts it in the Fleet view's top slot (`fleetTop`).
  */
 export function DecisionsStrip() {
   const load = useBoard();
@@ -42,15 +42,15 @@ export function DecisionsStrip() {
   const shown = live.slice(0, STRIP_CARDS);
   const more = live.length - shown.length;
   return (
-    <section className="decisions-strip" aria-labelledby="decisions-strip-t" ref={ref}>
-      <div className="row">
+    <section className="qd-room" aria-labelledby="decisions-strip-t" ref={ref}>
+      <div className="qd-room__head">
         <h2 className="decisions-strip-t" id="decisions-strip-t">
           Needs your call
         </h2>
-        <span className="decisions-strip-n tn" aria-label={`${String(live.length)} live`}>
+        <span className="qd-room__n" aria-label={`${String(live.length)} live`}>
           {live.length}
         </span>
-        <span className="grow" />
+        <span className="decisions-strip-grow" />
         {more > 0 && (
           <button
             type="button"
@@ -63,10 +63,10 @@ export function DecisionsStrip() {
           </button>
         )}
         <span className="decisions-strip-hint row">
-          Jump to next <Kbd>J</Kbd>
+          Jump to next <Keycap>J</Keycap>
         </span>
       </div>
-      <div className="decisions-cards">
+      <div className="qd-room__grid">
         {shown.map((d) => (
           <CallCard key={d.id} d={d} open={open} />
         ))}
@@ -96,17 +96,16 @@ function CallCard({ d, open }: { d: Decision; open: (id: string | null, reply?: 
           },
         };
   return (
-    <article className="decisions-dcard" data-call tabIndex={-1} aria-label={d.question}>
-      <div className="row gap6">
+    <article className="qd-dcard decisions-dcard" data-call tabIndex={-1} aria-label={d.question}>
+      <div className="qd-dcard__meta">
         <Tile name={d.project} />
-        <span className="trunc decisions-dcard-proj">{d.project ?? "No project"}</span>
-        {pr && <span className="mono decisions-dcard-pr">{pr}</span>}
-        <span className="grow" />
+        <span className="qd-trunc qd-dcard__proj">{d.project ?? "No project"}</span>
+        {pr && <span className="decisions-dcard-pr">{pr}</span>}
         <Tag>{decisionTag(d)}</Tag>
       </div>
       <button
         type="button"
-        className="decisions-dcard-t trunc"
+        className="qd-dcard__t decisions-dcard-t"
         title={d.question}
         onClick={() => {
           open(d.id);
@@ -114,7 +113,7 @@ function CallCard({ d, open }: { d: Decision; open: (id: string | null, reply?: 
       >
         {d.question}
       </button>
-      <div className="trunc decisions-dcard-sub">{firstLine(d.detail) || "No reason recorded."}</div>
+      <div className="qd-trunc decisions-dcard-sub">{firstLine(d.detail) || "No reason recorded."}</div>
       <div className="row decisions-dcard-acts">
         <Button size="sm" variant="primary" onClick={primary.run}>
           {primary.label}
@@ -131,3 +130,5 @@ function CallCard({ d, open }: { d: Decision; open: (id: string | null, reply?: 
     </article>
   );
 }
+
+export default DecisionsStrip;

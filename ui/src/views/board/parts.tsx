@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Banner, ProjectTile, StatePill, StatusPill, Tag } from "../../ui";
+import { Banner, ProjectTile, StatePill, StatusChip, Tag } from "../../ui";
 import { useApp } from "../../state/app";
 import { shortDate } from "./format";
 import type { BoardCard, Decision, HoldBucket } from "./types";
@@ -34,10 +34,10 @@ export function holdWords(
 
 /** The chip that says where a call stands: Needs you, Deferred to a date, Waiting on work. */
 export function CallPill({ bucket, until, blockedBy, ageDays }: { bucket: HoldBucket | null; until: string | null; blockedBy: string[]; ageDays: number | null }) {
-  if (bucket === "live") return <StatusPill tone="warning">Needs you</StatusPill>;
+  if (bucket === "live") return <StatusChip tone="warning">Needs you</StatusChip>;
   const w = holdWords(bucket, until, blockedBy, ageDays);
   if (!w) return null;
-  return w.warn ? <StatusPill tone="warning">{w.text}</StatusPill> : <Tag>{w.text}</Tag>;
+  return w.warn ? <StatusChip tone="warning">{w.text}</StatusChip> : <Tag>{w.text}</Tag>;
 }
 
 export const LiveChip = memo(function LiveChip({ card }: { card: BoardCard }) {

@@ -165,6 +165,7 @@ export function previewBoard(): BoardView {
     generated_at: now - 14,
     queued,
     queued_total: queued.length,
+    queued_held: queued.filter((c) => c.hold !== null).length,
     in_flight,
     done,
     done_total: 27,

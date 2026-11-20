@@ -10,8 +10,8 @@ import {
   InfoIcon as Info,
   WarningCircleIcon as WarningCircle,
 } from "@phosphor-icons/react";
-import { Button, Composer, ConfirmLink, Kbd, Panel, PanelHead, Tabs, Tag, VirtualList, Zero, useHotkey, useNow } from "../../ui";
-import { inApp } from "../../bridge";
+import { Button, Composer, Keycap, Panel, PanelHead, SegmentedTabs, Tag, VirtualList, ZeroState, useHotkey, useNow } from "../../ui";
+import { inApp, urlOpen } from "../../bridge";
 import { useApp } from "../../state/app";
 import { age, firstLine, prNumber } from "../board/format";
 import { reportsArea, takeDecisionRequest } from "../board/nav";
@@ -80,13 +80,13 @@ export default function DecisionsArea() {
         <PanelHead title="Needs your call" />
         <div className="decisions-state">
           {load.status === "error" ? (
-            <Zero icon={WarningCircle} title="Decisions could not be read" dashed={false}>
+            <ZeroState icon={WarningCircle} title="Decisions could not be read">
               {load.message}
-            </Zero>
+            </ZeroState>
           ) : (
-            <Zero icon={CircleDashed} title={load.status === "no-home" ? "No Firstmate home" : "Reading the open decisions"} dashed={false}>
+            <ZeroState icon={CircleDashed} title={load.status === "no-home" ? "No Firstmate home" : "Reading the open decisions"}>
               {load.status === "no-home" ? "Choose a home in Settings to see its decisions." : "They appear with the first fleet snapshot."}
-            </Zero>
+            </ZeroState>
           )}
         </div>
       </Panel>
@@ -98,16 +98,16 @@ export default function DecisionsArea() {
       <Panel as="main" className="fill decisions-list" label="Needs your call">
         <div className="phead">
           <h1 className="ptitle">Needs your call</h1>
-          <span className="pill accent tn">{live.length} live</span>
+          <span className="qd-count">{live.length} live</span>
           <span className="grow" />
           <span className="decisions-keys row" aria-hidden="true">
-            Move <Kbd>J</Kbd>
-            <Kbd>K</Kbd> Open <Kbd>↵</Kbd> Reply <Kbd>R</Kbd>
+            Move <Keycap>J</Keycap>
+            <Keycap>K</Keycap> Open <Keycap>↵</Keycap> Reply <Keycap>R</Keycap>
           </span>
         </div>
         <SnapshotBanner />
         <div className="decisions-tabs">
-          <Tabs
+          <SegmentedTabs
             label="Decisions"
             value={effectiveTab}
             onChange={(t) => {
@@ -147,20 +147,20 @@ export default function DecisionsArea() {
             </button>
           )}
           {effectiveTab === "deferred" && load.view.decisions.deferred_total > deferred.length && (
-            <Zero icon={Clock} title={`${String(load.view.decisions.deferred_total - deferred.length)} newer holds not shown`}>
+            <ZeroState icon={Clock} title={`${String(load.view.decisions.deferred_total - deferred.length)} newer holds not shown`}>
               The oldest {deferred.length} are listed; Firstmate keeps the rest in the backlog.
-            </Zero>
+            </ZeroState>
           )}
           {items.length === 0 ? (
-            <Zero icon={CheckCircle} title={effectiveTab === "live" ? "Nothing needs your call" : "Nothing is set aside"}>
+            <ZeroState icon={CheckCircle} title={effectiveTab === "live" ? "Nothing needs your call" : "Nothing is set aside"}>
               {effectiveTab === "live" ? "Firstmate adds a call here when a task waits on you." : "Dated, blocked and aged holds show here with their reason."}
-            </Zero>
+            </ZeroState>
           ) : (
             effectiveTab === "live" &&
             items.length < 8 && (
-              <Zero icon={CheckCircle} title="That is everything for now">
+              <ZeroState end icon={CheckCircle} title="That is everything for now">
                 A new call appears here as soon as Firstmate records it.
-              </Zero>
+              </ZeroState>
             )
           )}
         </div>
@@ -196,7 +196,7 @@ const Row = memo(function Row({ d, sel, onSelect, onOpen, now }: { d: Decision; 
       <Tile name={d.project} size={24} />
       <span className="decisions-li-main">
         <span className="decisions-li-t trunc">{d.question}</span>
-        <span className="row gap6 decisions-li-sub">
+        <span className="row decisions-li-sub">
           <span className="trunc decisions-li-proj">{d.project ?? "No project"}</span>
           {sub && <span className="trunc">{sub}</span>}
         </span>
@@ -211,15 +211,15 @@ const Row = memo(function Row({ d, sel, onSelect, onOpen, now }: { d: Decision; 
 
 function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRef: React.RefObject<HTMLElement | null> }) {
   const { info, setArea, setSelectedTask } = useApp();
-  const [confirm, setConfirm] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const [prError, setPrError] = useState<string | null>(null);
   if (!d) {
     return (
       <Panel as="aside" className="decisions-detail" label="Decision">
         <div className="decisions-state">
-          <Zero icon={CheckCircle} title="No call selected" dashed={false}>
+          <ZeroState icon={CheckCircle} title="No call selected">
             Pick one on the left to read it.
-          </Zero>
+          </ZeroState>
         </div>
       </Panel>
     );
@@ -227,7 +227,7 @@ function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRe
   const pr = prNumber(d.pr_url);
   const reports = reportsArea;
   return (
-    <aside className="panel decisions-detail" aria-labelledby="decisions-q" ref={panelRef}>
+    <aside className="qd-panel ui-panel decisions-detail" aria-labelledby="decisions-q" ref={panelRef}>
       <div className="phead">
         <Tile name={d.project} size={22} />
         <h1 className="decisions-q trunc" id="decisions-q" title={d.question}>
@@ -286,7 +286,11 @@ function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRe
                     className="decisions-linkbtn"
                     title={u}
                     onClick={() => {
-                      setConfirm(u);
+                      setLinkError(null);
+                      // The core shows the full address in a native confirmation before it opens.
+                      urlOpen(u).catch((e: unknown) => {
+                        setLinkError(e instanceof Error ? e.message : String(e));
+                      });
                     }}
                   >
                     <span className="mono trunc">{u}</span>
@@ -325,6 +329,11 @@ function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRe
             )}
           </div>
         )}
+        {linkError && (
+          <p className="decisions-err" role="alert">
+            {linkError}
+          </p>
+        )}
         {prError && (
           <p className="decisions-err" role="alert">
             {prError}
@@ -332,14 +341,6 @@ function Detail({ d, now, panelRef }: { d: Decision | null; now: number; panelRe
         )}
       </div>
       <Composer enabled={inApp && !info?.home_error} about={d.id} placeholder="Write your answer for Firstmate" initialHint="Your answer goes to Firstmate as a note about this task." />
-      {confirm && (
-        <ConfirmLink
-          url={confirm}
-          onClose={() => {
-            setConfirm(null);
-          }}
-        />
-      )}
     </aside>
   );
 }

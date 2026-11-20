@@ -1,27 +1,20 @@
 //! Link checks for anything the board passes to the UI to open.
 //!
 //! Recorded URLs and paths come from records workers write, so they are untrusted. A link
-//! the UI may open is an `https://` URL with a host and no whitespace or control characters;
-//! a report path is relative to the home, stays inside `data/`, and has no `..`.
+//! the UI may show is one the core's opener accepts; a report path is relative to the home,
+//! stays inside `data/`, and has no `..`.
 
-/// Longest URL kept, in bytes.
-const MAX_URL: usize = 2048;
 /// Longest report path kept, in bytes.
 const MAX_PATH: usize = 512;
 
-/// The URL when it is a plain `https://` link, else `None`.
+/// The URL when the core's opener would accept it (`external::validate_url`: https, a host,
+/// no credentials, no whitespace or control characters, a length cap), else `None`. Using the
+/// opener's own check means a link the board shows is a link that can be opened.
 pub fn safe_web_url(raw: &str) -> Option<String> {
     let url = raw.trim();
-    if url.len() > MAX_URL || url.chars().any(|c| c.is_whitespace() || c.is_control()) {
-        return None;
-    }
-    let rest = url.strip_prefix("https://")?;
-    let host = rest.split(['/', '?', '#']).next().unwrap_or_default();
-    // A userinfo part (`user@host`) can disguise the real host; refuse it.
-    if host.is_empty() || host.contains('@') || host.starts_with('.') || host.starts_with(':') {
-        return None;
-    }
-    Some(url.to_string())
+    crate::external::validate_url(url)
+        .ok()
+        .map(|()| url.to_string())
 }
 
 /// The path when it is a relative path under `data/` with no parent steps, else `None`.
@@ -60,6 +53,8 @@ mod tests {
             Some("https://forge.example.invalid/acme/app/pull/7")
         );
         assert!(safe_web_url("https://forge.example.invalid").is_some());
+        assert!(safe_web_url("HTTPS://forge.example.invalid/x").is_some());
+        assert!(safe_web_url("https://forge.example.invalid:8443/x").is_some());
     }
 
     #[test]
@@ -68,7 +63,6 @@ mod tests {
             "http://forge.example.invalid/x",
             "javascript:alert(1)",
             "file:///etc/passwd",
-            "HTTPS://forge.example.invalid/x",
             "https://",
             "https:///x",
             "https://user@evil.example.invalid/x",

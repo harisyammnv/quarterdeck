@@ -62,6 +62,7 @@ fn places_every_record_exactly_once() {
     assert_eq!(ids_of(&v.done), ["infra-sync", "pin-update"]);
     assert_eq!(v.done_total, 2);
     assert_eq!(v.queued_total, 5);
+    assert_eq!(v.queued_held, 3);
     assert_eq!(
         v.other,
         [BoardUnplaced {
@@ -344,9 +345,11 @@ fn view_is_fast_on_a_large_home() {
     );
     let v = view(&state);
     assert_eq!(v.live_count(), 400);
-    assert_eq!(v.queued.len(), MAX_QUEUED);
+    // 400 live calls and 400 in-flight cards fill most of the payload budget, so the capped
+    // lists are trimmed further; their totals stay exact.
+    assert!(v.queued.len() <= MAX_QUEUED);
     assert_eq!(v.queued_total, 800);
-    assert_eq!(v.decisions.deferred.len(), MAX_DEFERRED);
+    assert!(v.decisions.deferred.len() <= MAX_DEFERRED);
     assert_eq!(v.decisions.deferred_total, 400);
 }
 
@@ -398,4 +401,59 @@ fn parses_dates() {
     assert_eq!(date_to_epoch("1970-01-01T00:00:10Z"), Some(10));
     assert_eq!(date_to_epoch("2026-13-01"), None);
     assert_eq!(date_to_epoch("yesterday"), None);
+}
+
+#[test]
+fn worst_case_payload_fits_the_budget() {
+    // Every capped list full and every text and link at its limit.
+    let long = |n: usize| "x".repeat(n + 50);
+    let rec = |id: String, state: &str, bucket: Option<&str>| BacklogRecord {
+        id,
+        title: Some(long(MAX_TITLE)),
+        repo: Some(long(120)),
+        kind: Some(long(40)),
+        state: Some(state.into()),
+        hold_bucket: bucket.map(Into::into),
+        captain_actionable: bucket == Some("live"),
+        hold_until: bucket.map(|_| "2026-12-02".into()),
+        hold_reason: bucket.map(|_| long(MAX_TEXT)),
+        unresolved_blocker_ids: vec!["blocker-id".into(); MAX_LINKS + 2],
+        pr_url: Some(format!(
+            "https://forge.example.invalid/{}",
+            "p".repeat(1500)
+        )),
+        links: vec![format!("https://forge.example.invalid/{}", "l".repeat(1500)); MAX_LINKS + 2],
+        since: Some("2026-11-01".into()),
+        ..BacklogRecord::default()
+    };
+    let mut snap = Snapshot {
+        generated: Some(GEN),
+        ..Snapshot::default()
+    };
+    for i in 0..(MAX_QUEUED + 50) {
+        snap.backlog.push(rec(format!("q-{i:04}"), "queued", None));
+    }
+    for i in 0..(MAX_DEFERRED + 50) {
+        snap.backlog
+            .push(rec(format!("d-{i:04}"), "queued", Some("dated")));
+    }
+    for i in 0..(MAX_DONE + 10) {
+        snap.backlog.push(rec(format!("f-{i:04}"), "done", None));
+    }
+    for i in 0..20 {
+        snap.backlog
+            .push(rec(format!("l-{i:04}"), "queued", Some("live")));
+    }
+    let v = view(&HomeState {
+        snapshot: Some(Arc::new(snap)),
+        ..HomeState::default()
+    });
+    let bytes = serde_json::to_vec(&v).unwrap().len();
+    assert!(bytes <= PAYLOAD_BUDGET, "board payload is {bytes} bytes");
+    // Live calls are never dropped, and every total stays exact.
+    assert_eq!(v.live_count(), 20);
+    assert_eq!(v.queued_total as usize, MAX_QUEUED + 50 + MAX_DEFERRED + 50);
+    assert_eq!(v.decisions.deferred_total as usize, MAX_DEFERRED + 50);
+    assert_eq!(v.done_total as usize, MAX_DONE + 10);
+    assert!(v.done.is_empty() && v.queued.len() < MAX_QUEUED);
 }

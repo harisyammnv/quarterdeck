@@ -189,6 +189,8 @@ export type BoardView_Deserialize = {
 	queued: BoardCard_Deserialize[],
 	/**  How many queued records there are in all. */
 	queued_total: number,
+	/**  How many of those are deferred holds (also listed in `decisions.deferred`). */
+	queued_held: number,
 	/**  In-flight work in backlog order. */
 	in_flight: BoardCard_Deserialize[],
 	/**  Finished work, newest first, at most [`MAX_DONE`]. */
@@ -210,6 +212,8 @@ export type BoardView_Serialize = {
 	queued: BoardCard_Serialize[],
 	/**  How many queued records there are in all. */
 	queued_total: number,
+	/**  How many of those are deferred holds (also listed in `decisions.deferred`). */
+	queued_held: number,
 	/**  In-flight work in backlog order. */
 	in_flight: BoardCard_Serialize[],
 	/**  Finished work, newest first, at most [`MAX_DONE`]. */

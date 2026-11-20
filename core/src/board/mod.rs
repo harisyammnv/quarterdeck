@@ -17,7 +17,7 @@
 use serde::Serialize;
 
 use crate::engine::HomeState;
-use crate::fleet::StateSource;
+use crate::fleet::{merged_state, StateSource};
 use crate::snapshot::{BacklogRecord, Snapshot, Task};
 use crate::status::TaskState;
 use crate::timefmt::rfc3339_to_epoch;
@@ -26,13 +26,15 @@ mod links;
 
 pub use links::{safe_report_path, safe_web_url};
 
-/// Longest prose passed to the UI, in characters. Hold reasons state a decision's options,
-/// so the cap is generous; it only stops a runaway record.
-const MAX_TEXT: usize = 4000;
+/// Longest hold reason passed for a live call, in characters. Hold reasons state a
+/// decision's options, so the cap is generous; it only stops a runaway record.
+const MAX_TEXT: usize = 2000;
+/// Longest hold reason passed for a deferred hold, in characters.
+const MAX_DEFERRED_TEXT: usize = 500;
 /// Longest title passed to the UI, in characters.
 const MAX_TITLE: usize = 300;
 /// Most links or blocker ids kept per card.
-const MAX_LINKS: usize = 8;
+const MAX_LINKS: usize = 4;
 /// Most done cards sent; the total is sent alongside.
 pub const MAX_DONE: usize = 40;
 /// Most queued cards sent, from the head of the backlog order; the total is sent alongside.
@@ -41,6 +43,12 @@ pub const MAX_QUEUED: usize = 200;
 /// Most deferred decisions sent, oldest first; the total is sent alongside. Live calls are
 /// never capped.
 pub const MAX_DEFERRED: usize = 150;
+/// The most one board payload may take, in bytes, under the contract's 256 KiB. When the
+/// capped lists still exceed it (very long titles or links everywhere), done, then queued,
+/// then deferred lose rows from their tails until it fits; their totals stay exact, so the
+/// window says how many are not shown. Live calls are never dropped, so only a home whose
+/// live calls alone exceed this can go over it.
+pub const PAYLOAD_BUDGET: usize = 240 * 1024;
 
 /// Which column a card sits in.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -180,6 +188,8 @@ pub struct BoardView {
     pub queued: Vec<BoardCard>,
     /// How many queued records there are in all.
     pub queued_total: u32,
+    /// How many of those are deferred holds (also listed in `decisions.deferred`).
+    pub queued_held: u32,
     /// In-flight work in backlog order.
     pub in_flight: Vec<BoardCard>,
     /// Finished work, newest first, at most [`MAX_DONE`].
@@ -274,27 +284,19 @@ fn oldest_first(a: Option<i64>, b: Option<i64>) -> std::cmp::Ordering {
     }
 }
 
-/// The live state of an in-flight task, by main's merge rule.
+/// The live state of an in-flight task, by the shared fleet rule ([`merged_state`]).
 fn live_state(state: &HomeState, snap: &Snapshot, task: Option<&Task>, id: &str) -> BoardLiveState {
     let event = state.events.get(id);
-    let word = task
-        .and_then(|t| t.state.clone())
-        .filter(|w| !w.trim().is_empty())
-        .unwrap_or_else(|| "unknown".into());
-    let snapshot_knows = TaskState::from_word(&word) != TaskState::Unknown;
-    let newer = |at: Option<i64>| match (snap.generated, at) {
-        (Some(generated), Some(at)) => at > generated,
-        (None, _) => true,
-        (Some(_), None) => false,
-    };
-    let (word, source) = match event {
-        Some(e) if newer(e.at) || !snapshot_knows => (e.word.clone(), StateSource::Event),
-        _ => (word, StateSource::Snapshot),
-    };
+    let merged = merged_state(
+        task.and_then(|t| t.state.as_deref())
+            .filter(|w| !w.trim().is_empty()),
+        event,
+        snap.generated,
+    );
     BoardLiveState {
-        state: TaskState::from_word(&word),
-        word: clip(&word, 40),
-        source,
+        state: merged.state,
+        word: clip(&merged.word, 40),
+        source: merged.source,
         latest: event
             .map(|e| clip(&e.text, MAX_TITLE))
             .filter(|t| !t.is_empty()),
@@ -375,8 +377,15 @@ pub fn view(state: &HomeState) -> BoardView {
             let decision = Decision {
                 id: clip(id, 120),
                 question: title.clone(),
-                detail: text(rec.hold_reason.as_ref(), MAX_TEXT)
-                    .or_else(|| text(rec.blocked_reason.as_ref(), MAX_TEXT)),
+                detail: {
+                    let max = if bucket == HoldBucket::Live {
+                        MAX_TEXT
+                    } else {
+                        MAX_DEFERRED_TEXT
+                    };
+                    text(rec.hold_reason.as_ref(), max)
+                        .or_else(|| text(rec.blocked_reason.as_ref(), max))
+                },
                 project: project.clone(),
                 kind: kind.clone(),
                 bucket,
@@ -437,11 +446,44 @@ pub fn view(state: &HomeState) -> BoardView {
     // Newest finished first; stable, so equal dates keep backlog order.
     done.sort_by(|a, b| oldest_first(b.since, a.since));
     v.queued_total = u32::try_from(v.queued.len()).unwrap_or(u32::MAX);
+    v.queued_held =
+        u32::try_from(v.queued.iter().filter(|c| c.hold.is_some()).count()).unwrap_or(u32::MAX);
     v.queued.truncate(MAX_QUEUED);
     v.done_total = u32::try_from(done.len()).unwrap_or(u32::MAX);
     done.truncate(MAX_DONE);
     v.done = done;
+    fit_budget(&mut v);
     v
+}
+
+fn json_len<T: Serialize>(value: &T) -> usize {
+    serde_json::to_vec(value).map_or(0, |b| b.len())
+}
+
+/// Trims rows from the tails of done, queued and deferred until the payload fits
+/// [`PAYLOAD_BUDGET`]. Each row's size is measured once; the totals are left as they are.
+fn fit_budget(v: &mut BoardView) {
+    let mut size = json_len(v);
+    if size <= PAYLOAD_BUDGET {
+        return;
+    }
+    // One byte more per row for the comma between array items.
+    while size > PAYLOAD_BUDGET {
+        let Some(c) = v.done.pop() else { break };
+        size = size.saturating_sub(json_len(&c) + 1);
+    }
+    while size > PAYLOAD_BUDGET {
+        let Some(c) = v.queued.pop() else { break };
+        size = size.saturating_sub(json_len(&c) + 1);
+    }
+    while size > PAYLOAD_BUDGET {
+        let Some(d) = v.decisions.deferred.pop() else {
+            break;
+        };
+        size = size.saturating_sub(json_len(&d) + 1);
+    }
+    v.queued_held =
+        u32::try_from(v.queued.iter().filter(|c| c.hold.is_some()).count()).unwrap_or(u32::MAX);
 }
 
 #[cfg(test)]

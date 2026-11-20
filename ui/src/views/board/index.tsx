@@ -6,7 +6,7 @@ import {
   KanbanIcon as Kanban,
   WarningCircleIcon as WarningCircle,
 } from "@phosphor-icons/react";
-import { Banner, Count, Panel, PanelHead, StateDot, Tag, VirtualList, Zero, ago, useNow, type DotKind } from "../../ui";
+import { Banner, Count, Panel, PanelHead, StateDot, Tag, VirtualList, ZeroState, ago, useNow, type DotKind } from "../../ui";
 import { useApp } from "../../state/app";
 import { openPullRequest } from "./bridge";
 import { age, firstLine, prNumber } from "./format";
@@ -29,17 +29,17 @@ export default function BoardArea() {
         <PanelHead title="Board" />
         <div className="board-state">
           {load.status === "error" ? (
-            <Zero icon={WarningCircle} title="The board could not be read" dashed={false}>
+            <ZeroState icon={WarningCircle} title="The board could not be read">
               {load.message}
-            </Zero>
+            </ZeroState>
           ) : load.status === "no-home" ? (
-            <Zero icon={Kanban} title="No Firstmate home" dashed={false}>
+            <ZeroState icon={Kanban} title="No Firstmate home">
               Choose a home in Settings to see its backlog.
-            </Zero>
+            </ZeroState>
           ) : (
-            <Zero icon={CircleDashed} title="Reading the backlog" dashed={false}>
+            <ZeroState icon={CircleDashed} title="Reading the backlog">
               The board appears with the first fleet snapshot.
-            </Zero>
+            </ZeroState>
           )}
         </div>
       </Panel>
@@ -51,7 +51,6 @@ export default function BoardArea() {
 function Board({ v, now }: { v: BoardView; now: number }) {
   const live = v.decisions.live;
   const doneMore = v.done_total - v.done.length;
-  const queuedMore = v.queued_total - v.queued.length;
   return (
     <>
       <Panel as="main" className="fill board" label="Board">
@@ -66,13 +65,13 @@ function Board({ v, now }: { v: BoardView; now: number }) {
         )}
         {!v.ready ? (
           <div className="board-state">
-            <Zero icon={CircleDashed} title="Reading the backlog" dashed={false}>
+            <ZeroState icon={CircleDashed} title="Reading the backlog">
               The board appears with the first fleet snapshot.
-            </Zero>
+            </ZeroState>
           </div>
         ) : (
           <div className="board-cols">
-            <Lane title="Queued" dot="idle" count={v.queued_total} empty="Nothing queued." foot={queuedMore > 0 ? `${String(queuedMore)} further down the backlog not shown` : undefined}>
+            <Lane title="Queued" dot="idle" count={v.queued_total} empty="Nothing queued." foot={queuedFoot(v)}>
               <Cards label="Queued" items={v.queued} now={now} />
             </Lane>
             <Lane title="In flight" dot="working" count={v.in_flight.length} empty="No task is running.">
@@ -89,6 +88,15 @@ function Board({ v, now }: { v: BoardView; now: number }) {
       </Panel>
     </>
   );
+}
+
+/** What the Queued lane holds beyond plain queued work, and what it leaves out. */
+function queuedFoot(v: BoardView): string | undefined {
+  const parts: string[] = [];
+  if (v.queued_held > 0) parts.push(`Includes ${String(v.queued_held)} deferred ${v.queued_held === 1 ? "hold" : "holds"}, also under Needs your call`);
+  const more = v.queued_total - v.queued.length;
+  if (more > 0) parts.push(`${String(more)} further down the backlog not shown`);
+  return parts.length > 0 ? parts.join(". ") + "." : undefined;
 }
 
 function Cards({ label, items, now }: { label: string; items: BoardCard[]; now: number }) {
