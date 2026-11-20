@@ -100,32 +100,89 @@ pub async fn read_report(data: &Path, id: &TaskId) -> Result<Option<ReportDoc>, 
             Err(e) => return Err(ReportError::Read(e.kind().to_string())),
         }
     }
-    let capped = match safe_read::read_text_capped(data, &rel, MAX_BYTES).await {
-        Ok(c) => c,
+    let real = match safe_read::resolve_under(data, &rel).await {
+        Ok(p) => p,
         Err(ReadError::NotFound) => return Ok(None),
         Err(ReadError::Escapes) => return Err(ReportError::Outside),
         Err(ReadError::NotAFile) => return Err(ReportError::NotFile),
         Err(ReadError::Io(e)) => return Err(ReportError::Read(e.kind().to_string())),
     };
-    let mut markdown = capped.content;
-    if capped.truncated {
-        // Cut on a line so a half-read table row or list item is not shown.
-        if let Some(nl) = markdown.rfind('\n') {
-            markdown.truncate(nl + 1);
-        }
-    }
-    let modified = tokio::fs::metadata(data.join(&rel))
+    let (markdown, truncated, modified) = tokio::task::spawn_blocking(move || read_handle(&real))
         .await
-        .ok()
-        .and_then(|m| m.modified().ok())
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .and_then(|d| i64::try_from(d.as_secs()).ok());
+        .map_err(|e| ReportError::Read(e.to_string()))??;
     Ok(Some(ReportDoc {
         task_id: id.to_string(),
         markdown,
-        truncated: capped.truncated,
+        truncated,
         modified,
     }))
+}
+
+/// Opens the path `safe_read` proved to be inside the data directory, and reads from that
+/// handle only: the final component must not be a link (`O_NOFOLLOW`), the handle must be a
+/// regular file, and it must be the very file that was checked (same device and inode), so a
+/// file swapped in after the check is refused instead of read.
+fn read_handle(real: &Path) -> Result<(String, bool, Option<i64>), ReportError> {
+    use std::io::Read;
+    use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
+
+    // Values from <fcntl.h> and <errno.h>; std exposes custom_flags but not the constants.
+    #[cfg(target_os = "macos")]
+    const O_NOFOLLOW: i32 = 0x0100;
+    #[cfg(target_os = "macos")]
+    const O_NONBLOCK: i32 = 0x0004;
+    #[cfg(target_os = "macos")]
+    const ELOOP: i32 = 62;
+    #[cfg(not(target_os = "macos"))]
+    const O_NOFOLLOW: i32 = 0o400_000;
+    #[cfg(not(target_os = "macos"))]
+    const O_NONBLOCK: i32 = 0o4000;
+    #[cfg(not(target_os = "macos"))]
+    const ELOOP: i32 = 40;
+
+    let io = |e: std::io::Error| ReportError::Read(e.kind().to_string());
+    let checked = std::fs::symlink_metadata(real).map_err(io)?;
+    let mut f = std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(O_NOFOLLOW | O_NONBLOCK)
+        .open(real)
+        .map_err(|e| {
+            if e.raw_os_error() == Some(ELOOP) {
+                ReportError::Link
+            } else {
+                io(e)
+            }
+        })?;
+    let meta = f.metadata().map_err(io)?;
+    if !meta.is_file() {
+        return Err(ReportError::NotFile);
+    }
+    if (checked.dev(), checked.ino()) != (meta.dev(), meta.ino()) {
+        return Err(ReportError::Outside);
+    }
+    let mut buf = Vec::new();
+    (&mut f)
+        .take(MAX_BYTES + 1)
+        .read_to_end(&mut buf)
+        .map_err(io)?;
+    let truncated = buf.len() as u64 > MAX_BYTES;
+    if truncated {
+        // Cut on a line so a half-read character, table row or list item is not shown.
+        buf.truncate(usize::try_from(MAX_BYTES).unwrap_or(usize::MAX));
+        if let Some(nl) = buf.iter().rposition(|b| *b == b'\n') {
+            buf.truncate(nl + 1);
+        }
+    }
+    let modified = meta
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .and_then(|d| i64::try_from(d.as_secs()).ok());
+    Ok((
+        String::from_utf8_lossy(&buf).into_owned(),
+        truncated,
+        modified,
+    ))
 }
 
 /// The status history of task `id`, newest first.
@@ -214,6 +271,21 @@ mod tests {
         assert!(matches!(
             read_report(d.path(), &id()).await,
             Err(ReportError::Link)
+        ));
+    }
+
+    #[tokio::test]
+    async fn refuses_a_fifo_without_blocking() {
+        let d = data();
+        let fifo = task_dir(&d).join("report.md");
+        let made = std::process::Command::new("mkfifo")
+            .arg(&fifo)
+            .status()
+            .unwrap();
+        assert!(made.success());
+        assert!(matches!(
+            read_report(d.path(), &id()).await,
+            Err(ReportError::NotFile)
         ));
     }
 
