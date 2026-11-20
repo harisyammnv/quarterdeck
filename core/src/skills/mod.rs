@@ -101,9 +101,9 @@ pub struct SkillSources {
 
 struct Root {
     scope: SkillScope,
-    /// The folder every skill file under this root must resolve inside. The user's own
-    /// folders allow links between them (one install shown in two places); Firstmate's and
-    /// a project's skills must stay inside the home or the project.
+    /// The folder every skill file under this root must resolve inside: the user's home for
+    /// the user's folders (so links between them keep working, one install shown in two
+    /// places), the Firstmate home, or the project.
     contain: Option<PathBuf>,
     /// Stable part of the id, such as `user:agents`.
     key: String,
@@ -130,7 +130,7 @@ impl SkillSources {
                 roots.push(Root {
                     scope: SkillScope::User,
                     key: format!("user:{key}"),
-                    contain: None,
+                    contain: Some(home.clone()),
                     label: format!("~/{rel}"),
                     dir: home.join(rel),
                     project: None,
@@ -156,6 +156,40 @@ impl SkillSources {
     }
 }
 
+/// A skill folder found by [walk]: which root (by position), its folder name, its path and
+/// its resolved path.
+struct Found {
+    root: usize,
+    folder: String,
+    dir: PathBuf,
+    real: PathBuf,
+}
+
+/// Lists the folders holding a `SKILL.md` under each root, in root order, and whether any
+/// root held more than [MAX_PER_ROOT]. Blocking; run it off the async runtime.
+fn walk(dirs: &[PathBuf]) -> (Vec<Found>, bool) {
+    let mut found = Vec::new();
+    let mut capped = false;
+    for (root, base) in dirs.iter().enumerate() {
+        let names = fsread::child_dirs(base, MAX_PER_ROOT + 1);
+        capped |= names.len() > MAX_PER_ROOT;
+        for folder in names.into_iter().take(MAX_PER_ROOT) {
+            let dir = base.join(&folder);
+            if fsread::file_meta(&dir.join("SKILL.md")).is_none() {
+                continue;
+            }
+            let real = fsread::real_path(&dir).unwrap_or_else(|| dir.clone());
+            found.push(Found {
+                root,
+                folder,
+                dir,
+                real,
+            });
+        }
+    }
+    (found, capped)
+}
+
 /// A scanned list plus the private id-to-path map behind it.
 #[derive(Clone, Debug, Default)]
 pub struct SkillIndex {
@@ -178,22 +212,31 @@ impl SkillIndex {
             Some(home) => read_lock(home).await,
             None => HashMap::new(),
         };
+        let roots = sources.roots();
+        // Listing folders and resolving links is blocking file system work: keep it off the
+        // async runtime. Only the capped SKILL.md reads below are async.
+        let walk = {
+            let dirs: Vec<PathBuf> = roots.iter().map(|r| r.dir.clone()).collect();
+            tokio::task::spawn_blocking(move || walk(&dirs)).await
+        };
+        let (found, capped) = walk.unwrap_or_default();
         let mut index = Self::default();
+        index.view.capped = capped;
         let mut by_real: HashMap<PathBuf, usize> = HashMap::new();
-        for root in sources.roots() {
-            let dirs = fsread::child_dirs(&root.dir, MAX_PER_ROOT + 1);
-            if dirs.len() > MAX_PER_ROOT {
-                index.view.capped = true;
-            }
-            for folder in dirs.into_iter().take(MAX_PER_ROOT) {
-                let dir = root.dir.join(&folder);
+        for Found {
+            root,
+            folder,
+            dir,
+            real,
+        } in found
+        {
+            let Some(root) = roots.get(root) else {
+                continue;
+            };
+            {
                 let file = dir.join("SKILL.md");
-                if fsread::file_meta(&file).is_none() {
-                    continue;
-                }
                 // The same folder reached twice (a user skill linked from ~/.claude/skills to
                 // ~/.agents/skills) is one skill installed in two places.
-                let real = fsread::real_path(&dir).unwrap_or_else(|| dir.clone());
                 if let Some(&at) = by_real.get(&real) {
                     let item = &mut index.view.items[at];
                     if !item.locations.contains(&root.label) {
@@ -623,6 +666,39 @@ mod tests {
             .items
             .iter()
             .find(|i| i.id == "project:ledger-api:claude:evil")
+            .unwrap();
+        assert!(item.malformed);
+        assert!(matches!(
+            idx.read(&item.id).await,
+            Err(SkillError::Unreadable(
+                _,
+                crate::safe_read::ReadError::Escapes
+            ))
+        ));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn a_user_skill_linking_out_of_the_home_is_refused() {
+        let f = fixture();
+        let outside = tempfile::tempdir().unwrap();
+        std::fs::create_dir(outside.path().join("far")).unwrap();
+        std::fs::write(
+            outside.path().join("far/SKILL.md"),
+            "---\nname: far\n---\nsecret",
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(
+            outside.path().join("far"),
+            f.dir.path().join("user/.agents/skills/far"),
+        )
+        .unwrap();
+        let idx = SkillIndex::scan(&f.sources()).await;
+        let item = idx
+            .view()
+            .items
+            .iter()
+            .find(|i| i.id == "user:agents:far")
             .unwrap();
         assert!(item.malformed);
         assert!(matches!(
