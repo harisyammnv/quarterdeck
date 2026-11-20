@@ -28,14 +28,19 @@
 
 .titlebar .crumb {
   color: var(--muted2);
-  max-width: 280px;
+  max-width: calc(50vw - 230px - min(210px, 18vw));
 }
 
+/* The search sits at the centre of the window, whatever the crumb's width. */
 .tb-mid {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, 36vw);
+}
+
+.tb-spacer {
   flex: 1;
-  min-width: 0;
-  display: flex;
-  justify-content: center;
 }
 
 .tb-right {
@@ -47,8 +52,7 @@
 
 .cmdwrap {
   position: relative;
-  width: 420px;
-  max-width: 100%;
+  width: 100%;
 }
 
 .cmd {
@@ -411,7 +415,8 @@
 }
 
 .evt .tm {
-  width: 52px;
+  min-width: 52px;
+  white-space: nowrap;
   flex: none;
   color: var(--muted);
   font-variant-numeric: tabular-nums;

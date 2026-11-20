@@ -32,7 +32,7 @@ export default function FleetViewArea() {
     {
       key: "task",
       header: "Task",
-      width: "36%",
+      width: "33%",
       cell: (r) => (
         <span className="row">
           <span className="task trunc" title={r.name}>
@@ -45,7 +45,7 @@ export default function FleetViewArea() {
     {
       key: "project",
       header: "Project",
-      width: "19%",
+      width: "18%",
       cell: (r) => (
         <span className="row">
           <ProjectTile name={r.project ?? r.id} />
@@ -53,11 +53,11 @@ export default function FleetViewArea() {
         </span>
       ),
     },
-    { key: "kind", header: "Kind", width: "10%", cell: (r) => <Tag icon={r.kind === "scout" ? Binoculars : r.kind === "ship" ? Sailboat : CircleDashed}>{r.kind ?? "task"}</Tag> },
+    { key: "kind", header: "Kind", width: "12%", cell: (r) => <Tag icon={r.kind === "scout" ? Binoculars : r.kind === "ship" ? Sailboat : CircleDashed}>{r.kind ?? "task"}</Tag> },
     {
       key: "state",
       header: "State",
-      width: "13%",
+      width: "15%",
       cell: (r) => <StatePill state={r.state} word={r.state === "unknown" && r.state_word !== "unknown" ? r.state_word : undefined} title={sourceTitle(r)} />,
     },
     {

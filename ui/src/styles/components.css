@@ -387,6 +387,11 @@
   text-overflow: ellipsis;
 }
 
+.dtable th:first-child,
+.dtable td:first-child {
+  padding-left: 16px;
+}
+
 .dtable .num {
   text-align: right;
   font-variant-numeric: tabular-nums;

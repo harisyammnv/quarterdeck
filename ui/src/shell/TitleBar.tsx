@@ -35,6 +35,7 @@ function ThemeSwitch() {
 export function TitleBar() {
   const { area, info, live, selectedTask, inspectorOpen, toggleInspector } = useApp();
   const def = viewById(area);
+  const framed = def.layout.inspector && !(info !== null && info.home === null && (def.needsHome ?? true));
   const task = def.layout.projects ? live.view?.rows.find((r) => r.id === selectedTask) : undefined;
   const crumb = task ? `${task.project ?? "unknown project"} / ${task.id}` : def.crumb;
   return (
@@ -45,7 +46,8 @@ export function TitleBar() {
       <span className="crumb trunc" data-tauri-drag-region title={info?.home ?? undefined}>
         {crumb}
       </span>
-      <span className="tb-mid" data-tauri-drag-region>
+      <span className="tb-spacer" data-tauri-drag-region />
+      <span className="tb-mid">
         <CommandMenu />
       </span>
       <span className="tb-right">
@@ -53,8 +55,8 @@ export function TitleBar() {
         <IconButton
           icon={SidebarSimple}
           label={inspectorOpen ? "Hide the inspector (⌘\\)" : "Show the inspector (⌘\\)"}
-          pressed={def.layout.inspector && inspectorOpen}
-          disabled={!def.layout.inspector}
+          pressed={framed && inspectorOpen}
+          disabled={!framed}
           onClick={toggleInspector}
         />
       </span>
