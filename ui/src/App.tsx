@@ -180,7 +180,7 @@ export function App() {
 
           <div className="fleet">
             {info?.home_error ? (
-              <Zero icon={WarningCircle} title="No Firstmate home" text={info.home_error} />
+              <Zero icon={WarningCircle} title="No Firstmate home" text={sentence(info.home_error)} />
             ) : !view ? (
               <Zero icon={CircleDashed} title="Reading the fleet" text="Looking at the home's records." />
             ) : rows.length === 0 ? (
@@ -232,6 +232,11 @@ function nextLive(cur: Live, next: FleetView): Live {
     if (was !== undefined && was !== r.state_word) changed.set(r.id, next.seq);
   }
   return { view: next, changed };
+}
+
+/** Capitalises the first letter, for messages that come from the core in lower case. */
+function sentence(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function taskCount(n: number): string {
@@ -444,7 +449,13 @@ function Composer({ enabled }: { enabled: boolean }) {
         <input
           value={text}
           disabled={!enabled}
-          placeholder={enabled ? "Leave a note for Firstmate" : "Notes are sent from the app window"}
+          placeholder={
+            enabled
+              ? "Leave a note for Firstmate"
+              : inApp
+                ? "Notes need a Firstmate home to go to"
+                : "Notes are sent from the app window"
+          }
           maxLength={4000}
           onChange={(e) => {
             setText(e.target.value);

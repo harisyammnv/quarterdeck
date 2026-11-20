@@ -35,7 +35,8 @@ fn fake_home() -> tempfile::TempDir {
     script(
         &root.join("bin/fm-inbox.sh"),
         r#"printf '%s\n' "$@" > "$FM_HOME/inbox-args"
-printf '%s' "${QD_LEAK_PROBE:-absent}" > "$FM_HOME/inbox-env"
+printf '%s' "${CARGO_MANIFEST_DIR:-absent}" > "$FM_HOME/inbox-env"
+printf '%s' "$PATH" > "$FM_HOME/inbox-path"
 printf '{"schema":"fm-inbox-note.v1","outcome":"created","id":"n-7","request_id":"%s","saved":true,"announced":true,"acknowledged":false,"path":"x"}\n' "$3""#,
     );
     std::fs::write(
@@ -177,8 +178,9 @@ async fn snapshot_failure_is_reported_not_fatal() {
 async fn note_goes_through_the_inbox_script_as_argv() {
     let dir = fake_home();
     let handle = Engine::start(FmHome::at(dir.path()).unwrap(), EngineConfig::default()).unwrap();
-    // A variable from the launching shell must not reach Firstmate's scripts.
-    std::env::set_var("QD_LEAK_PROBE", "leaked");
+    // Cargo sets CARGO_MANIFEST_DIR for this test; as a variable from the launching
+    // environment it must not reach Firstmate's scripts.
+    assert!(std::env::var_os("CARGO_MANIFEST_DIR").is_some());
     let text = "--all; rm -rf / $(whoami) is just text";
     let receipt = handle.submit_note(text, "qd-test-1").await.unwrap();
     assert_eq!(receipt.outcome, NoteOutcome::Created);
@@ -187,6 +189,9 @@ async fn note_goes_through_the_inbox_script_as_argv() {
     let args = std::fs::read_to_string(dir.path().join("inbox-args")).unwrap();
     let env = std::fs::read_to_string(dir.path().join("inbox-env")).unwrap();
     assert_eq!(env, "absent");
+    let path = std::fs::read_to_string(dir.path().join("inbox-path")).unwrap();
+    eprintln!("script PATH: {path}");
+    assert!(path.split(':').any(|d| d == "/usr/bin"));
     assert_eq!(
         args,
         format!("note\n--request-id\nqd-test-1\n--json\n--\n{text}\n")
