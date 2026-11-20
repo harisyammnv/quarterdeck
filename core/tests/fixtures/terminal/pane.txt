@@ -1,0 +1,4 @@
+ledger-api/login-flake $ uv run pytest -q
+[32m.......[0m[33ms[0m [2m[100%][22m
+]0;window title]52;c;aGVsbG8=[32m107 passed[0m, [33m1 skipped[0m in 41.8s
+[2J[H]8;;https://example.invalid/pr\open the pull request]8;;\

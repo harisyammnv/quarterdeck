@@ -18,6 +18,18 @@ export const commands = {
 	sendNote: (text: string, requestId: string, options?: InvokeOptions) => __TAURI_INVOKE<NoteReceipt>("send_note", { text, requestId }, options),
 	/**  The UI reports that it painted view `seq`; completes a status-change latency sample. */
 	viewRendered: (seq: number, renderedMs: number | null, options?: InvokeOptions) => __TAURI_INVOKE<void>("view_rendered", { seq, renderedMs }, options),
+	/**  Task `task_id`'s recent status events, newest first. */
+	reportHistory: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<ReportHistory_Serialize>("report_history", { taskId }, options),
+	/**
+	 *  Task `task_id`'s report, or `None` when it has not written one. The Markdown is
+	 *  untrusted; the UI renders it through its sanitizing Markdown component.
+	 */
+	reportRead: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<ReportDoc_Serialize | null>("report_read", { taskId }, options),
+	/**
+	 *  The reports the fleet snapshot lists, newest first and bounded: task ids, titles, kinds and
+	 *  times only, never paths. Open one with `report_read`.
+	 */
+	reportsList: (options?: InvokeOptions) => __TAURI_INVOKE<ReportsList_Serialize>("reports_list", undefined, options),
 	appInfo: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo_Serialize>("app_info", undefined, options),
 	/**
 	 *  Opens the system folder picker, and when a valid Firstmate home is picked, remembers it
@@ -39,6 +51,12 @@ export const commands = {
 	 *  when the link was opened and `false` when the person cancelled.
 	 */
 	urlOpen: (url: string, options?: InvokeOptions) => __TAURI_INVOKE<boolean>("url_open", { url }, options),
+	/**
+	 *  The last lines of task `task_id`'s terminal, read through `bin/fm-peek.sh`, sanitized and
+	 *  styled in the core. The id must name a task in the current snapshot; a remote task is
+	 *  refused rather than read over the network.
+	 */
+	terminalTail: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<TerminalTail>("terminal_tail", { taskId }, options),
 };
 
 /** Events */
@@ -428,6 +446,90 @@ export type NoteReceipt = {
 	acknowledged: boolean,
 };
 
+/**  A report as read from disk. */
+export type ReportDoc = ReportDoc_Serialize | ReportDoc_Deserialize;
+
+/**  A report as read from disk. */
+export type ReportDoc_Deserialize = {
+	task_id: string,
+	/**  The Markdown source, untrusted. Render it only through the shared Markdown component. */
+	markdown: string,
+	/**  True when the file was longer than [`MAX_BYTES`] and only its start is here. */
+	truncated: boolean,
+	/**  Last modified, in Unix seconds, when the file system says. */
+	modified?: number | null,
+};
+
+/**  A report as read from disk. */
+export type ReportDoc_Serialize = {
+	task_id: string,
+	/**  The Markdown source, untrusted. Render it only through the shared Markdown component. */
+	markdown: string,
+	/**  True when the file was longer than [`MAX_BYTES`] and only its start is here. */
+	truncated: boolean,
+	/**  Last modified, in Unix seconds, when the file system says. */
+	modified: number | null,
+};
+
+/**  A task's recent status events. */
+export type ReportHistory = ReportHistory_Serialize | ReportHistory_Deserialize;
+
+/**  A task's recent status events. */
+export type ReportHistory_Deserialize = {
+	task_id: string,
+	/**  Newest first, at most [`HISTORY_MAX_EVENTS`]. */
+	events: StatusEvent_Deserialize[],
+};
+
+/**  A task's recent status events. */
+export type ReportHistory_Serialize = {
+	task_id: string,
+	/**  Newest first, at most [`HISTORY_MAX_EVENTS`]. */
+	events: StatusEvent_Serialize[],
+};
+
+/**  One report in the cross-task list. Ids and labels only; no path reaches the UI. */
+export type ReportItem = ReportItem_Serialize | ReportItem_Deserialize;
+
+/**  One report in the cross-task list. Ids and labels only; no path reaches the UI. */
+export type ReportItem_Deserialize = {
+	task_id: string,
+	/**  The task's title from the backlog or the task row, when the snapshot has one. */
+	title?: string | null,
+	/**  The report's kind from the snapshot, such as `scout`. */
+	kind?: string | null,
+	/**  Last modified, in Unix seconds, when the file system says. */
+	modified?: number | null,
+};
+
+/**  One report in the cross-task list. Ids and labels only; no path reaches the UI. */
+export type ReportItem_Serialize = {
+	task_id: string,
+	/**  The task's title from the backlog or the task row, when the snapshot has one. */
+	title: string | null,
+	/**  The report's kind from the snapshot, such as `scout`. */
+	kind: string | null,
+	/**  Last modified, in Unix seconds, when the file system says. */
+	modified: number | null,
+};
+
+/**  The reports the snapshot lists, newest first, at most [`MAX_LISTED`]. */
+export type ReportsList = ReportsList_Serialize | ReportsList_Deserialize;
+
+/**  The reports the snapshot lists, newest first, at most [`MAX_LISTED`]. */
+export type ReportsList_Deserialize = {
+	items: ReportItem_Deserialize[],
+	/**  True when more reports exist than are listed. */
+	truncated: boolean,
+};
+
+/**  The reports the snapshot lists, newest first, at most [`MAX_LISTED`]. */
+export type ReportsList_Serialize = {
+	items: ReportItem_Serialize[],
+	/**  True when more reports exist than are listed. */
+	truncated: boolean,
+};
+
 export type SnapshotInfo = SnapshotInfo_Serialize | SnapshotInfo_Deserialize;
 
 export type SnapshotInfo_Deserialize = {
@@ -450,6 +552,13 @@ export type SnapshotInfo_Serialize = {
 	error: string | null,
 	/**  The snapshot shown came from the on-disk cache of an earlier run, not from this one. */
 	cached: boolean,
+};
+
+/**  A run of text with one style. */
+export type Span = {
+	text: string,
+	tone: Tone,
+	bold: boolean,
 };
 
 /**  Where a row's state came from. */
@@ -490,6 +599,24 @@ export type StatusEvent_Serialize = {
 
 /**  The live state of a task, as a closed set the UI can style. */
 export type TaskState = "working" | "needs-decision" | "blocked" | "paused" | "done" | "failed" | "unknown";
+
+/**  A captured tail. */
+export type TerminalTail = {
+	task_id: string,
+	/**  The captured lines, oldest first, as styled plain-text spans. */
+	lines: Span[][],
+	/**  The line count that was asked for. */
+	requested: number,
+	/**  True when the capture was longer than the byte or line bound and its start was cut. */
+	truncated: boolean,
+	/**  A fingerprint of the content, so the UI can skip repainting an unchanged tail. */
+	digest: string,
+	/**  When the capture finished, in Unix seconds. */
+	captured_at: number | null,
+};
+
+/**  A colour from the closed set the UI styles. Terminal colours collapse onto these. */
+export type Tone = "default" | "dim" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan";
 
 /**  What caused a view update, for the status-change latency probe. */
 export type UpdateCause = {

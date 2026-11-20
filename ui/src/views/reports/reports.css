@@ -1,0 +1,80 @@
+/* Reports and status history. Measurements follow the A2 main mock and a2.css. */
+
+.reports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  min-height: 0;
+  flex: 1;
+}
+
+.reports-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  font-size: 12px;
+}
+
+.reports-doc {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-inner);
+  padding: var(--space-16) 22px 18px;
+  overscroll-behavior: contain;
+}
+
+.reports-doc:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.reports .qd-zero,
+.reports .banner {
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.reports-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.reports-events.all {
+  max-height: 320px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.reports-evt {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reports-word {
+  font-weight: 700;
+  margin-right: 6px;
+  color: var(--muted);
+}
+
+.reports-word.warn {
+  color: var(--warning);
+}
+
+.reports-word.ok {
+  color: var(--success);
+}
+
+.reports-more {
+  align-self: flex-start;
+}
+
+.reports-note {
+  font-size: 12px;
+}
