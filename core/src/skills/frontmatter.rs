@@ -85,19 +85,26 @@ fn parse(yaml: &str) -> FrontMatter {
     }
 }
 
-/// True when the YAML uses an alias, or cannot be parsed at all.
+/// True when the YAML uses an alias in any document, holds more than one document, or cannot
+/// be parsed at all. Every document is scanned, because the loader loads them all.
 fn has_alias(yaml: &str) -> bool {
-    struct Aliases(bool);
-    impl EventReceiver for Aliases {
+    #[derive(Default)]
+    struct Scan {
+        alias: bool,
+        documents: u32,
+    }
+    impl EventReceiver for Scan {
         fn on_event(&mut self, ev: Event) {
-            if matches!(ev, Event::Alias(_)) {
-                self.0 = true;
+            match ev {
+                Event::Alias(_) => self.alias = true,
+                Event::DocumentStart => self.documents += 1,
+                _ => {}
             }
         }
     }
-    let mut seen = Aliases(false);
-    let parsed = Parser::new_from_str(yaml).load(&mut seen, false);
-    parsed.is_err() || seen.0
+    let mut seen = Scan::default();
+    let parsed = Parser::new_from_str(yaml).load(&mut seen, true);
+    parsed.is_err() || seen.alias || seen.documents > 1
 }
 
 /// A string, or a number or boolean written where a string was meant.
@@ -181,6 +188,9 @@ mod tests {
         assert!(fm.malformed);
         assert_eq!(fm.name, None);
         assert!(start.elapsed() < std::time::Duration::from_secs(2));
+        // A second document is refused whatever it holds (split ends the block at the first
+        // closing line, so this guards the parser call itself).
+        assert!(has_alias("name: a\n---\nname: b\n"));
         // Anchors alone are harmless.
         assert!(!split("---\nname: &n ok\n---\n").0.malformed);
     }
