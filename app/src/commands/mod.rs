@@ -8,8 +8,10 @@
 
 pub mod fleet;
 pub mod memory;
+pub mod reports;
 pub mod shell;
 pub mod skills;
+pub mod terminal;
 
 use std::sync::Arc;
 

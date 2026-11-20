@@ -8,6 +8,7 @@ import {
   ScalesIcon as Scales,
   ShieldCheckIcon as ShieldCheck,
   SparkleIcon as Sparkle,
+  TerminalWindowIcon as TerminalWindow,
   type Icon,
 } from "@phosphor-icons/react";
 import type { FleetView } from "./bridge";
@@ -69,8 +70,9 @@ export const views: ViewDef[] = [
   { id: "security", label: "Security", description: "Findings and dependency rollups", crumb: "Security", icon: ShieldCheck, rail: true, component: placeholder("Security", ShieldCheck, "Findings, dependency rollups and scanner jobs for every project, gathered in one place.", "Phase 2"), layout: { projects: false, inspector: false } },
   { id: "council", label: "Council", description: "Independent reviews of a pull request", crumb: "Council", icon: Scales, rail: true, component: placeholder("Council", Scales, "Independent reviewers read a pull request through separate lenses and agree on a verdict.", "Phase 3"), layout: { projects: false, inspector: false } },
   { id: "containers", label: "Containers", description: "Docker containers by worktree", crumb: "Containers", icon: Cube, rail: true, component: placeholder("Containers", Cube, "Containers, images, volumes and networks from the local Docker engine, grouped by worktree. Read-only."), layout: { projects: false, inspector: false } },
-  { id: "memory", label: "Memory", description: "Preferences, learnings, briefs and project guides", crumb: "Memory and skills", icon: Brain, rail: true, component: lazy(() => import("./views/memory")), layout: { projects: false, inspector: false } },
+  { id: "memory", label: "Memory", description: "Preferences, learnings, briefs, reports and project guides", crumb: "Memory and skills", icon: Brain, rail: true, component: lazy(() => import("./views/memory")), layout: { projects: false, inspector: false } },
   { id: "skills", label: "Skills", description: "Every installed skill and where it comes from", crumb: "Skills", icon: Sparkle, rail: true, component: lazy(() => import("./views/skills")), layout: { projects: false, inspector: false } },
+  { id: "terminal", label: "Terminal and report", description: "A task's terminal tail and report", crumb: "Task", icon: TerminalWindow, rail: false, component: lazy(() => import("./views/terminal")), layout: { projects: true, inspector: true } },
 ];
 
 /** Settings, at the foot of the rail, bound to ⌘,. */
@@ -79,6 +81,8 @@ export const settingsView: ViewDef = { id: "settings", label: "Settings", descri
 /** Inspector sections, one line per area, in `order`. */
 export const inspectorSections: SectionDef[] = [
   { id: "task", order: 10, component: lazy(() => import("./views/fleet/TaskSection")) },
+  { id: "terminal", order: 20, component: lazy(() => import("./views/terminal/OpenSection")) },
+  { id: "reports", order: 30, component: lazy(() => import("./views/reports/HistorySection")) },
 ];
 
 /** Above the Fleet panel: the "Needs your call" room (the one teal room, Fleet only). */
