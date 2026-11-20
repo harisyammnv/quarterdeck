@@ -1,0 +1,92 @@
+/* Reports and status history. Measurements follow .evt and .insp section in a2.css. */
+
+.reports {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+}
+
+.reports-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.reports-doc {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-inner);
+  padding: 18px 22px;
+  overscroll-behavior: contain;
+}
+
+.reports-doc:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.reports-src {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.reports-zero {
+  flex: 1;
+}
+
+.reports-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reports-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reports-events.all {
+  max-height: 320px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.reports-evt {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reports-word {
+  font-weight: 700;
+  margin-right: 6px;
+  color: var(--muted);
+}
+
+.reports-word.warn {
+  color: var(--warning);
+}
+
+.reports-word.ok {
+  color: var(--success);
+}
+
+.reports-more {
+  align-self: flex-start;
+}
+
+.reports-note {
+  font-size: 12px;
+}

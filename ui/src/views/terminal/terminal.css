@@ -1,0 +1,99 @@
+/*
+ * Terminal tail. Measurements follow .term in fm-ui-a-polish/a2.css.
+ * The --term-* tokens are the A2 terminal palette; until tokens.css carries them, the
+ * fallbacks below are the A2 values (the same in light and dark except the edge).
+ */
+
+.terminal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  flex: 1;
+}
+
+.terminal-pre {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  background: var(--term-bg, #000000);
+  color: var(--term-ink, #ffffff);
+  border: 1px solid var(--term-line, #000000);
+  border-radius: var(--r-inner);
+  padding: 14px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.62;
+  letter-spacing: 0;
+  white-space: pre;
+  tab-size: 8;
+  overscroll-behavior: contain;
+}
+
+:root[data-theme="dark"] .terminal-pre {
+  border-color: var(--term-line, var(--line));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .terminal-pre {
+    border-color: var(--term-line, var(--line));
+  }
+}
+
+.terminal-pre:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.terminal-line {
+  display: block;
+  min-height: 1.62em;
+}
+
+.terminal-dim {
+  color: var(--term-muted, #a3a3a3);
+}
+
+.terminal-green {
+  color: var(--term-green, #7ad694);
+}
+
+.terminal-yellow {
+  color: var(--term-amber, #f2c35b);
+}
+
+.terminal-blue {
+  color: var(--term-blue, #8ab4ff);
+}
+
+.terminal-red {
+  color: var(--term-red, #ff8591);
+}
+
+.terminal-magenta {
+  color: var(--term-magenta, #e0a3ff);
+}
+
+.terminal-cyan {
+  color: var(--term-cyan, #7fd8e0);
+}
+
+.terminal-bold {
+  font-weight: 700;
+}
+
+.terminal-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.terminal-foot .gap6 {
+  gap: 6px;
+}
+
+.terminal-zero {
+  flex: 1;
+}
