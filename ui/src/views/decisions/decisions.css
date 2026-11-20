@@ -1,0 +1,450 @@
+/* Decisions: the teal strip and the decisions view. Tokens only; classes prefixed decisions-. */
+
+/* ---- strip: the teal room ---- */
+
+.decisions-strip {
+  background: var(--teal);
+  color: #fff;
+  border-radius: var(--r-card);
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: none;
+}
+
+.decisions-strip-t {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.decisions-strip-n {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: var(--r-pill);
+  background: #fff;
+  color: #000;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.decisions-strip-hint {
+  font-size: 12px;
+  gap: 6px;
+}
+
+.decisions-strip .kbd {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.75);
+  color: #fff;
+}
+
+.decisions-strip-more {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  color: #fff;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.decisions-strip-more:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--teal), 0 0 0 4px #fff;
+}
+
+.decisions-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* The cards are paper on teal in both themes, as in the mocks. */
+.decisions-dcard {
+  background: #fff;
+  color: #000;
+  border-radius: var(--r-inner);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  --muted: #5c5c5c;
+  --line: #e2e2e2;
+  --panel: #fff;
+  --ink: #000;
+  --action: #000;
+  --on-action: #fff;
+  --sunken: #f3f3f3;
+}
+
+.decisions-dcard:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--teal), 0 0 0 4px #fff;
+}
+
+.decisions-dcard .pill.neutral {
+  color: #5c5c5c;
+  border-color: #e2e2e2;
+}
+
+.decisions-dcard-proj {
+  font-size: 12px;
+}
+
+.decisions-dcard-pr {
+  font-size: 11.5px;
+  flex: none;
+}
+
+.decisions-dcard-t {
+  all: unset;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  display: block;
+}
+
+.decisions-dcard-t:focus-visible {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000;
+  border-radius: 4px;
+}
+
+.decisions-dcard-sub {
+  font-size: 12px;
+}
+
+.decisions-dcard-acts {
+  margin-top: 2px;
+}
+
+/* ---- decisions view ---- */
+
+.decisions {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.decisions-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.decisions-keys .kbd + .kbd {
+  margin-left: -2px;
+}
+
+.decisions-tabs {
+  padding: 0 16px 10px;
+  flex: none;
+}
+
+.decisions-tabs .tab {
+  font: inherit;
+  cursor: pointer;
+  background: transparent;
+}
+
+.decisions-tabs .tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.decisions-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+
+.decisions-ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.decisions-li {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+  cursor: pointer;
+  position: relative;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 58px;
+}
+
+.decisions-li:hover {
+  background: var(--hover);
+  --muted: var(--muted2);
+}
+
+.decisions-li.sel {
+  background: var(--sunken);
+  --muted: var(--muted2);
+}
+
+.decisions-li.sel::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.decisions-li:focus-visible {
+  box-shadow: inset var(--focus);
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+
+.decisions-li-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.decisions-li-t {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.decisions-li-proj {
+  flex: none;
+  max-width: 40%;
+}
+
+.decisions-li-age {
+  width: 74px;
+  text-align: right;
+  flex: none;
+}
+
+.decisions-chev {
+  color: var(--muted);
+  flex: none;
+}
+
+.decisions-grp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 16px;
+  background: var(--sunken);
+  border-bottom: 1px solid var(--line);
+  font-weight: 500;
+  --muted: var(--muted2);
+  min-width: 0;
+}
+
+.decisions-grp > svg,
+.decisions-grp > span:nth-child(2) {
+  flex: none;
+}
+
+.decisions-grp .t12 {
+  font-weight: 400;
+}
+
+.decisions-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 16px;
+  padding: 16px;
+  border: 1px dashed var(--edge-soft);
+  border-radius: var(--r-inner);
+  color: var(--muted);
+}
+
+.decisions-end .zi {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sunken);
+  color: var(--ink);
+  flex: none;
+}
+
+.decisions-end b {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.decisions-end .t12 {
+  display: block;
+}
+
+.decisions-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  flex: none;
+}
+
+.decisions-detail {
+  width: 440px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.decisions-q {
+  font-weight: 700;
+  flex: 0 1 auto;
+}
+
+.decisions-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.decisions-facts {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.decisions-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.decisions-inner {
+  border: 1px solid var(--line);
+  border-radius: var(--r-inner);
+  background: var(--sunken);
+  padding: 10px 12px;
+}
+
+.decisions-inner-t {
+  font-weight: 700;
+}
+
+.decisions-url {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.decisions-sect {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.decisions-detail-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.decisions-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.decisions-linkbtn {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.decisions-linkbtn:hover {
+  text-decoration: underline;
+}
+
+.decisions-linkbtn:focus-visible {
+  box-shadow: var(--focus);
+}
+
+.decisions-compose {
+  border-top: 1px solid var(--line);
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: none;
+}
+
+.decisions-reply {
+  font: inherit;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-inner);
+  padding: 10px 14px;
+  resize: vertical;
+  min-height: 44px;
+  max-height: 200px;
+}
+
+.decisions-reply::placeholder {
+  color: var(--muted);
+}
+
+.decisions-reply:focus-visible {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: var(--focus);
+}
+
+.decisions-compose .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.decisions-ok {
+  margin: 0;
+  color: var(--success);
+}
+
+.decisions-err {
+  margin: 0;
+  color: var(--danger);
+}
