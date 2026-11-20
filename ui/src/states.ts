@@ -12,7 +12,7 @@ export const STATE_LOOK: Record<TaskState, { word: string; tone: "success" | "wa
   unknown: { word: "Unknown", tone: "neutral", dot: "idle" },
 };
 
-/** Monogram fills from the product palette. Teal is reserved for the brand disc. */
+/** Monogram fills from the product palette. Teal is reserved for the Needs your call room. */
 const TILE_FILLS = ["#5d49d9", "#0025ff", "#8a5a00", "#5c5c5c"] as const;
 
 export function tileFill(name: string): string {

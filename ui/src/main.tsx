@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "@fontsource-variable/dm-sans";
-import "./styles/tokens.css";
+import "./design-system/tokens.css";
+import "./design-system/components.css";
 import "./styles/base.css";
 import "./styles/components.css";
 import "./styles/shell.css";

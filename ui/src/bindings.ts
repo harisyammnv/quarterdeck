@@ -139,6 +139,11 @@ export type FleetView_Deserialize = {
 	/**  Short label of the home, such as `orca/firstmate`. */
 	home: string,
 	rows: FleetRow_Deserialize[],
+	/**
+	 *  Decisions waiting on a person now: backlog records the snapshot marks
+	 *  `captain_actionable`. Uncapped; 0 until the first snapshot lands.
+	 */
+	decisions: number,
 	snapshot: SnapshotInfo_Deserialize,
 	cause?: UpdateCause | null,
 };
@@ -150,6 +155,11 @@ export type FleetView_Serialize = {
 	/**  Short label of the home, such as `orca/firstmate`. */
 	home: string,
 	rows: FleetRow_Serialize[],
+	/**
+	 *  Decisions waiting on a person now: backlog records the snapshot marks
+	 *  `captain_actionable`. Uncapped; 0 until the first snapshot lands.
+	 */
+	decisions: number,
 	snapshot: SnapshotInfo_Serialize,
 	cause: UpdateCause | null,
 };

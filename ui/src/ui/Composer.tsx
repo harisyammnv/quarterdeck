@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { PaperPlaneTiltIcon as PaperPlaneTilt } from "@phosphor-icons/react";
 import { inApp, sendNote } from "../bridge";
+import { NoteField } from "./NoteField";
 
 function newRequestId(): string {
   return `qd-${crypto.randomUUID()}`;
@@ -9,7 +9,7 @@ function newRequestId(): string {
 type Hint = { tone: "" | "ok" | "err"; text: string };
 
 /**
- * The one write path: a note to Firstmate through its inbox. `about` names a task, which is
+ * Composer: the NoteField plus its receipt line. The one write path: a note to Firstmate through its inbox. `about` names a task, which is
  * prefixed to the note so Firstmate knows what it refers to. One request id per draft, so a
  * retried send replays the same note instead of creating a second one.
  */
@@ -57,34 +57,18 @@ export function Composer({ enabled, about, placeholder, initialHint }: { enabled
         void send();
       }}
     >
-      <label className="input">
-        <span className="sr-only">Note for Firstmate</span>
-        <input
-          ref={field}
-          value={text}
-          disabled={!enabled}
-          placeholder={enabled ? (placeholder ?? "Leave a note for Firstmate") : inApp ? "Notes need a Firstmate home to go to" : "Notes are sent from the app window"}
-          maxLength={4000}
-          onChange={(e) => {
-            setText(e.target.value);
-            requestId.current = null;
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.metaKey) e.preventDefault();
-            if (e.key === "Enter" && e.metaKey) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-        />
-        <button type="submit" className="btn sm primary" disabled={!enabled || busy || !text.trim()}>
-          <PaperPlaneTilt size={14} weight="bold" />
-          {busy ? "Sending" : "Send note"}
-          <span className="kbd" aria-hidden="true">
-            ⌘↵
-          </span>
-        </button>
-      </label>
+      <NoteField
+        inputRef={field}
+        value={text}
+        disabled={!enabled}
+        busy={busy}
+        placeholder={enabled ? (placeholder ?? "Leave a note for Firstmate") : inApp ? "Notes need a Firstmate home to go to" : "Notes are sent from the app window"}
+        onChange={(v) => {
+          setText(v);
+          requestId.current = null;
+        }}
+        onSend={() => void send()}
+      />
       <span className={`hint ${hint.tone}`} role="status">
         {hint.text}
       </span>

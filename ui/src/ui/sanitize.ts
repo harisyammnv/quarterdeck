@@ -38,7 +38,11 @@ function hook(): void {
       node.setAttribute("rel", "noreferrer noopener");
       node.removeAttribute("target");
     }
-    if (node.tagName === "INPUT") node.setAttribute("disabled", "");
+    if (node.tagName === "INPUT") {
+      // Only task-list checkboxes survive, read-only.
+      node.setAttribute("type", "checkbox");
+      node.setAttribute("disabled", "");
+    }
   });
 }
 
