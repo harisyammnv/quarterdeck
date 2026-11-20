@@ -14,6 +14,7 @@ use std::time::Duration;
 use serde::Serialize;
 use tokio::sync::Semaphore;
 
+use crate::engine::HomeState;
 use crate::gateway::{self, Entry};
 use crate::home::FmHome;
 use ansi::{sanitize, spans, Span};
@@ -26,8 +27,6 @@ pub const MAX_BYTES: usize = 64 * 1024;
 pub const PEEK_TIMEOUT: Duration = Duration::from_secs(20);
 /// At most this many peeks run at once, whatever the UI asks for.
 const MAX_CONCURRENT: usize = 2;
-/// The longest task id accepted.
-const MAX_ID_LEN: usize = 128;
 
 /// A validated task id: a safe name that the current fleet knows.
 ///
@@ -39,16 +38,7 @@ pub struct TaskId(String);
 impl TaskId {
     /// Checks the shape of `raw` only. Use [`TaskId::known`] before reading anything.
     pub fn parse(raw: &str) -> Result<Self, TerminalError> {
-        let ok = raw.len() <= MAX_ID_LEN
-            && raw
-                .chars()
-                .next()
-                .is_some_and(|c| c.is_ascii_alphanumeric())
-            && !raw.contains("..")
-            && raw
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
-        if ok {
+        if gateway::valid_task_id(raw) && !raw.contains("..") {
             Ok(Self(raw.to_string()))
         } else {
             Err(TerminalError::BadId)
@@ -116,6 +106,25 @@ pub enum TerminalError {
     PeekFailed(String),
     #[error("the terminal did not answer within {} s", PEEK_TIMEOUT.as_secs())]
     TimedOut,
+}
+
+/// Reads the tail of task `id`'s terminal. The id must name a task in the current snapshot;
+/// a task the snapshot marks as remote is refused without running anything.
+pub async fn read(
+    home: &FmHome,
+    state: &HomeState,
+    id: &str,
+) -> Result<TerminalTail, TerminalError> {
+    let snapshot = state.snapshot.as_deref();
+    let task = TaskId::parse(id)
+        .ok()
+        .and_then(|_| snapshot.and_then(|s| s.task(id)));
+    let id = TaskId::known(id, |_| task.is_some())?;
+    let target = PeekTarget {
+        id,
+        remote: task.is_some_and(|t| t.remote),
+    };
+    tail(home, &target, MAX_LINES).await
 }
 
 /// Clamps a requested line count to `1..=MAX_LINES`, with 0 meaning the most.
@@ -228,7 +237,7 @@ mod tests {
         for d in ["state", "bin", "data"] {
             std::fs::create_dir_all(dir.path().join(d)).unwrap();
         }
-        std::fs::write(dir.path().join("bin/fm-bearings-snapshot.sh"), "").unwrap();
+        std::fs::write(dir.path().join("bin/fm-fleet-snapshot.sh"), "").unwrap();
         std::fs::write(dir.path().join("bin/fm-inbox.sh"), "").unwrap();
         let home = FmHome::at(dir.path()).unwrap();
         (dir, home)
@@ -254,7 +263,7 @@ mod tests {
         for ok in ["a", "app-login-fix", "qd.terminal_2", "9lives"] {
             assert!(TaskId::parse(ok).is_ok(), "{ok}");
         }
-        assert!(TaskId::parse(&"a".repeat(MAX_ID_LEN)).is_ok());
+        assert!(TaskId::parse(&"a".repeat(128)).is_ok());
     }
 
     #[test]
@@ -276,7 +285,7 @@ mod tests {
         ] {
             assert_eq!(TaskId::parse(bad), Err(TerminalError::BadId), "{bad:?}");
         }
-        assert!(TaskId::parse(&"a".repeat(MAX_ID_LEN + 1)).is_err());
+        assert!(TaskId::parse(&"a".repeat(129)).is_err());
     }
 
     #[test]
