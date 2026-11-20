@@ -103,6 +103,13 @@ Files are read through `core::safe_read`, which refuses anything outside its roo
 Untrusted Markdown renders through `ui/src/ui/Markdown.tsx` (sanitized, raw HTML dropped, links confirmed before they open).
 Shared primitives live in `ui/src/ui/`; areas compose them rather than restyling them.
 
+## Board and decisions
+
+The Board shows the backlog from the fleet snapshot in four lanes: Queued, In flight, Waiting on you and Done.
+The teal "Needs your call" strip and the decisions view list only the holds Firstmate marks `captain_actionable`, uncapped and oldest first; dated, blocked and aged holds are shown apart, with the reason Firstmate gives.
+Nothing is classified from prose: the core sorts on `state` and `hold_bucket` alone, and a record it cannot place is shown as such rather than dropped.
+A reply is an inbox note about the task; pull requests open by task id, and other links only after the full address is confirmed.
+
 ## Containers
 
 The Containers view reads the local Docker engine over the Unix socket of the active Docker context (`DOCKER_HOST` when it is `unix://`, else `currentContext` in `~/.docker/config.json`); a TCP or SSH context is reported as not supported and never dialled.

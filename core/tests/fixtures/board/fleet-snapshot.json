@@ -1,0 +1,268 @@
+{
+  "schema": "fm-fleet-snapshot.v1",
+  "generated": "2026-11-20T10:00:00Z",
+  "fm_home": "/p/firstmate",
+  "backlog": {
+    "path": "data/backlog.md",
+    "present": true,
+    "records": [
+      {
+        "id": "login-flake",
+        "structured": true,
+        "title": "Fix the login test flake",
+        "state": "in_flight",
+        "kind": "ship",
+        "repo": "ledger-api",
+        "since": "2026-11-19",
+        "hold_bucket": null,
+        "captain_actionable": false,
+        "unresolved_blocker_ids": [],
+        "links": [],
+        "pr_url": null,
+        "report_path": null,
+        "completion": {
+          "verb": null,
+          "date": null
+        }
+      },
+      {
+        "id": "auth-audit",
+        "structured": true,
+        "title": "Audit the auth middleware",
+        "state": "in_flight",
+        "kind": "scout",
+        "repo": "portal-web",
+        "since": "2026-11-20",
+        "hold_bucket": null,
+        "captain_actionable": false,
+        "unresolved_blocker_ids": [],
+        "links": [],
+        "pr_url": null,
+        "report_path": "data/auth-audit/report.md"
+      },
+      {
+        "id": "deps-rollup",
+        "structured": true,
+        "title": "Merge the dependency rollup?",
+        "state": "queued",
+        "kind": "captain",
+        "repo": "ledger-api",
+        "since": "2026-11-18",
+        "hold_bucket": "live",
+        "captain_actionable": true,
+        "hold_kind": "captain",
+        "hold_set": "2026-11-20T09:38:00Z",
+        "hold_age_days": 0,
+        "hold_reason": "Rollup PR green 13/13. Options: (1) merge now [rec]; (2) hold until the actions update is fixed too; (3) decide later.",
+        "unresolved_blocker_ids": [],
+        "links": [
+          "https://forge.example.invalid/acme/ledger-api/pull/1207",
+          "javascript:alert(1)",
+          "https://forge.example.invalid/acme/ledger-api/actions/runs/1"
+        ],
+        "pr_url": "https://forge.example.invalid/acme/ledger-api/pull/1207",
+        "report_path": null
+      },
+      {
+        "id": "visual-pick",
+        "structured": true,
+        "title": "Pick a visual direction for the desktop app",
+        "state": "queued",
+        "kind": "decision",
+        "repo": "firstmate",
+        "since": "2026-11-17",
+        "hold_bucket": "live",
+        "captain_actionable": true,
+        "hold_kind": "captain",
+        "hold_set": "2026-11-20T09:56:00Z",
+        "hold_age_days": 0,
+        "hold_reason": "Two mock directions, light and dark. See the report.",
+        "unresolved_blocker_ids": [],
+        "links": [],
+        "pr_url": null,
+        "report_path": "data/visual-pick/report.md"
+      },
+      {
+        "id": "python-bump",
+        "structured": true,
+        "title": "Bump the Python image to 3.15?",
+        "state": "queued",
+        "kind": "captain",
+        "repo": "portal-web",
+        "since": "2026-11-10",
+        "hold_bucket": "dated",
+        "captain_actionable": false,
+        "hold_kind": "captain",
+        "hold_until": "2026-12-02",
+        "hold_set": "2026-11-10T08:00:00Z",
+        "hold_age_days": 10,
+        "hold_reason": "No wheels yet for two packages.",
+        "unresolved_blocker_ids": [],
+        "links": [],
+        "pr_url": null,
+        "report_path": null
+      },
+      {
+        "id": "cache-plan",
+        "structured": true,
+        "title": "Approve the caching plan",
+        "state": "queued",
+        "kind": "task",
+        "repo": "route-planner",
+        "since": "2026-10-30",
+        "hold_bucket": "aged",
+        "captain_actionable": false,
+        "hold_kind": "captain",
+        "hold_set": null,
+        "hold_age_days": 21,
+        "hold_reason": "Report ready, three options.",
+        "unresolved_blocker_ids": [],
+        "links": [],
+        "pr_url": null,
+        "report_path": "../../etc/passwd"
+      },
+      {
+        "id": "browser-pin",
+        "structured": true,
+        "title": "Allow the new browser runner after the clock fix",
+        "state": "queued",
+        "kind": "captain",
+        "repo": "route-planner",
+        "since": "2026-11-19",
+        "hold_bucket": "blocked",
+        "captain_actionable": false,
+        "hold_kind": "captain",
+        "hold_set": "2026-11-19T12:00:00Z",
+        "hold_age_days": 1,
+        "hold_reason": "13 of 15 end-to-end tests pass.",
+        "unresolved_blocker_ids": [
+          "clock-fix"
+        ],
+        "links": [],
+        "pr_url": null,
+        "report_path": null
+      },
+      {
+        "id": "clock-fix",
+        "structured": true,
+        "title": "Fix the fake clock in the test harness",
+        "state": "queued",
+        "kind": "ship",
+        "repo": "route-planner",
+        "since": "2026-11-19",
+        "hold_bucket": null,
+        "captain_actionable": false,
+        "unresolved_blocker_ids": [],
+        "links": [],
+        "pr_url": null,
+        "report_path": null
+      },
+      {
+        "id": "storage-move",
+        "structured": true,
+        "title": "Move uploads to own storage",
+        "state": "queued",
+        "kind": "ship",
+        "repo": "portal-web",
+        "since": "2026-11-01",
+        "hold_bucket": null,
+        "captain_actionable": false,
+        "unresolved_blocker_ids": [
+          "api-cutover"
+        ],
+        "blocked_by": "api-cutover",
+        "links": [],
+        "pr_url": null,
+        "report_path": null
+      },
+      {
+        "id": "pin-update",
+        "structured": true,
+        "title": "Platform pin to 4.14.4",
+        "state": "done",
+        "kind": "ship",
+        "repo": "route-planner",
+        "since": "2026-11-15",
+        "hold_bucket": null,
+        "captain_actionable": false,
+        "unresolved_blocker_ids": [],
+        "links": [],
+        "pr_url": "https://forge.example.invalid/acme/route-planner/pull/58",
+        "report_path": null,
+        "completion": {
+          "verb": "merged",
+          "date": "2026-11-18"
+        },
+        "merged": "2026-11-18"
+      },
+      {
+        "id": "infra-sync",
+        "structured": true,
+        "title": "Sync the deploy templates",
+        "state": "done",
+        "kind": "ship",
+        "repo": "firstmate",
+        "since": "2026-11-12",
+        "hold_bucket": null,
+        "captain_actionable": false,
+        "unresolved_blocker_ids": [],
+        "links": [],
+        "pr_url": "http://forge.example.invalid/insecure",
+        "report_path": null,
+        "completion": {
+          "verb": "reported",
+          "date": "2026-11-19"
+        },
+        "reported": "2026-11-19"
+      },
+      {
+        "id": "odd-row",
+        "structured": true,
+        "title": "A row from a newer schema",
+        "state": "parked",
+        "kind": "ship",
+        "repo": "ledger-api",
+        "hold_bucket": null,
+        "captain_actionable": false,
+        "unresolved_blocker_ids": []
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "auth-audit",
+      "kind": "scout",
+      "project": "/p/portal-web",
+      "current_state": {
+        "state": "unknown",
+        "source": "none"
+      },
+      "pr": {
+        "url": null,
+        "source": null,
+        "head": null
+      },
+      "backlog": {
+        "title": "Audit the auth middleware",
+        "repo": "portal-web"
+      }
+    },
+    {
+      "id": "login-flake",
+      "kind": "ship",
+      "project": "/p/ledger-api",
+      "current_state": {
+        "state": "working",
+        "source": "harness"
+      },
+      "pr": {
+        "url": "https://forge.example.invalid/acme/ledger-api/pull/1215",
+        "source": "meta"
+      },
+      "backlog": {
+        "title": "Fix the login test flake",
+        "repo": "ledger-api"
+      }
+    }
+  ]
+}

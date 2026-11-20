@@ -8,6 +8,8 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 
 /** Commands */
 export const commands = {
+	/**  The current board and open decisions, or `None` when no home is configured. */
+	boardView: (options?: InvokeOptions) => __TAURI_INVOKE<BoardView_Serialize | null>("board_view", undefined, options),
 	/**
 	 *  Start and finish times and exit code of one container from the last listing, by short
 	 *  id. The container is inspected alone; nothing else from the inspect response is sent.
@@ -77,6 +79,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	boardUpdated: makeEvent<BoardUpdated_Serialize, BoardUpdated_Deserialize>("board-updated"),
 	fleetUpdated: makeEvent<FleetUpdated_Serialize, FleetUpdated_Deserialize>("fleet-updated"),
 	homeChanged: makeEvent<HomeChanged_Serialize, HomeChanged_Deserialize>("home-changed"),
 };
@@ -109,6 +112,153 @@ export type AppInfo_Serialize = {
 	/**  `light` or `dark` from `QD_THEME`, to pin the theme regardless of the system. */
 	theme: string | null,
 	version: string,
+};
+
+/**  One card on the board. Live captain holds are not cards: they are [`Decisions::live`]. */
+export type BoardCard = BoardCard_Serialize | BoardCard_Deserialize;
+
+/**  One card on the board. Live captain holds are not cards: they are [`Decisions::live`]. */
+export type BoardCard_Deserialize = {
+	id: string,
+	title: string,
+	column: BoardColumn,
+	project?: string | null,
+	kind?: string | null,
+	/**
+	 *  When the card entered its current place, Unix seconds: the hold time for a held card,
+	 *  the completion date for done work, the filed date otherwise.
+	 */
+	since?: number | null,
+	/**  Set for a deferred captain hold (dated, blocked or aged). */
+	hold?: HoldBucket | null,
+	/**  The deferral date as written (`YYYY-MM-DD`), for dated holds. */
+	until?: string | null,
+	/**  Unfinished work this card waits on. */
+	blocked_by: string[],
+	/**  In-flight cards only. */
+	live?: BoardLiveState_Deserialize | null,
+	pr_url?: string | null,
+	/**  Firstmate recorded a report for this task; the reports view opens it by id. */
+	has_report: boolean,
+};
+
+/**  One card on the board. Live captain holds are not cards: they are [`Decisions::live`]. */
+export type BoardCard_Serialize = {
+	id: string,
+	title: string,
+	column: BoardColumn,
+	project: string | null,
+	kind: string | null,
+	/**
+	 *  When the card entered its current place, Unix seconds: the hold time for a held card,
+	 *  the completion date for done work, the filed date otherwise.
+	 */
+	since: number | null,
+	/**  Set for a deferred captain hold (dated, blocked or aged). */
+	hold: HoldBucket | null,
+	/**  The deferral date as written (`YYYY-MM-DD`), for dated holds. */
+	until: string | null,
+	/**  Unfinished work this card waits on. */
+	blocked_by: string[],
+	/**  In-flight cards only. */
+	live: BoardLiveState_Serialize | null,
+	pr_url: string | null,
+	/**  Firstmate recorded a report for this task; the reports view opens it by id. */
+	has_report: boolean,
+};
+
+/**  Which column a card sits in. */
+export type BoardColumn = "queued" | "in-flight" | "done";
+
+/**  The live state of an in-flight card. */
+export type BoardLiveState = BoardLiveState_Serialize | BoardLiveState_Deserialize;
+
+/**  The live state of an in-flight card. */
+export type BoardLiveState_Deserialize = {
+	state: TaskState,
+	/**  The state word as written, so unknown words are still shown honestly. */
+	word: string,
+	source: StateSource,
+	/**  The latest status event's text, when there is one. */
+	latest?: string | null,
+	/**  The latest status event's time, Unix seconds. */
+	latest_at?: number | null,
+};
+
+/**  The live state of an in-flight card. */
+export type BoardLiveState_Serialize = {
+	state: TaskState,
+	/**  The state word as written, so unknown words are still shown honestly. */
+	word: string,
+	source: StateSource,
+	/**  The latest status event's text, when there is one. */
+	latest: string | null,
+	/**  The latest status event's time, Unix seconds. */
+	latest_at: number | null,
+};
+
+/**  A record the projection could not place, shown so nothing disappears silently. */
+export type BoardUnplaced = {
+	id: string,
+	why: string,
+};
+
+/**  A new board, pushed only when it differs from the last one sent. */
+export type BoardUpdated = BoardUpdated_Serialize | BoardUpdated_Deserialize;
+
+/**  A new board, pushed only when it differs from the last one sent. */
+export type BoardUpdated_Deserialize = BoardView_Deserialize;
+
+/**  A new board, pushed only when it differs from the last one sent. */
+export type BoardUpdated_Serialize = BoardView_Serialize;
+
+/**  Everything the board view and the decisions strip render. */
+export type BoardView = BoardView_Serialize | BoardView_Deserialize;
+
+/**  Everything the board view and the decisions strip render. */
+export type BoardView_Deserialize = {
+	/**  False until the first snapshot lands; the UI then shows a loading state. */
+	ready: boolean,
+	/**  The snapshot's `generated` time, Unix seconds. */
+	generated_at?: number | null,
+	/**  Queued work in backlog order, deferred holds included, at most [`MAX_QUEUED`]. */
+	queued: BoardCard_Deserialize[],
+	/**  How many queued records there are in all. */
+	queued_total: number,
+	/**  How many of those are deferred holds (also listed in `decisions.deferred`). */
+	queued_held: number,
+	/**  In-flight work in backlog order. */
+	in_flight: BoardCard_Deserialize[],
+	/**  Finished work, newest first, at most [`MAX_DONE`]. */
+	done: BoardCard_Deserialize[],
+	/**  How many done records there are in all. */
+	done_total: number,
+	decisions: Decisions_Deserialize,
+	/**  Records with a state or bucket this version does not know. */
+	other: BoardUnplaced[],
+};
+
+/**  Everything the board view and the decisions strip render. */
+export type BoardView_Serialize = {
+	/**  False until the first snapshot lands; the UI then shows a loading state. */
+	ready: boolean,
+	/**  The snapshot's `generated` time, Unix seconds. */
+	generated_at: number | null,
+	/**  Queued work in backlog order, deferred holds included, at most [`MAX_QUEUED`]. */
+	queued: BoardCard_Serialize[],
+	/**  How many queued records there are in all. */
+	queued_total: number,
+	/**  How many of those are deferred holds (also listed in `decisions.deferred`). */
+	queued_held: number,
+	/**  In-flight work in backlog order. */
+	in_flight: BoardCard_Serialize[],
+	/**  Finished work, newest first, at most [`MAX_DONE`]. */
+	done: BoardCard_Serialize[],
+	/**  How many done records there are in all. */
+	done_total: number,
+	decisions: Decisions_Serialize,
+	/**  Records with a state or bucket this version does not know. */
+	other: BoardUnplaced[],
 };
 
 /**
@@ -299,6 +449,84 @@ export type Counts = {
 	networks: number,
 };
 
+/**  One open captain decision. */
+export type Decision = Decision_Serialize | Decision_Deserialize;
+
+/**  One open captain decision. */
+export type Decision_Deserialize = {
+	/**  The task id. A reply note carries it. */
+	id: string,
+	/**  The question: the held task's title. */
+	question: string,
+	/**  The hold reason as Firstmate recorded it, which states the options. Plain text. */
+	detail?: string | null,
+	project?: string | null,
+	kind?: string | null,
+	bucket: HoldBucket,
+	until?: string | null,
+	/**  The hold's age in whole days, when Firstmate could compute it. */
+	age_days?: number | null,
+	blocked_by: string[],
+	/**  When the hold was set, Unix seconds, when known. */
+	raised_at?: number | null,
+	pr_url?: string | null,
+	has_report: boolean,
+	/**  Other https links recorded on the task. */
+	links: string[],
+};
+
+/**  One open captain decision. */
+export type Decision_Serialize = {
+	/**  The task id. A reply note carries it. */
+	id: string,
+	/**  The question: the held task's title. */
+	question: string,
+	/**  The hold reason as Firstmate recorded it, which states the options. Plain text. */
+	detail: string | null,
+	project: string | null,
+	kind: string | null,
+	bucket: HoldBucket,
+	until: string | null,
+	/**  The hold's age in whole days, when Firstmate could compute it. */
+	age_days: number | null,
+	blocked_by: string[],
+	/**  When the hold was set, Unix seconds, when known. */
+	raised_at: number | null,
+	pr_url: string | null,
+	has_report: boolean,
+	/**  Other https links recorded on the task. */
+	links: string[],
+};
+
+/**  The open decisions, split the way the strip and the decisions view show them. */
+export type Decisions = Decisions_Serialize | Decisions_Deserialize;
+
+/**  The open decisions, split the way the strip and the decisions view show them. */
+export type Decisions_Deserialize = {
+	/**  Waiting on you now (`captain_actionable`), oldest first. Never capped. */
+	live: Decision_Deserialize[],
+	/**
+	 *  Set aside: dated, blocked or aged holds, each with the reason Firstmate gives, oldest
+	 *  first, at most [`MAX_DEFERRED`].
+	 */
+	deferred: Decision_Deserialize[],
+	/**  How many deferred holds there are in all. */
+	deferred_total: number,
+};
+
+/**  The open decisions, split the way the strip and the decisions view show them. */
+export type Decisions_Serialize = {
+	/**  Waiting on you now (`captain_actionable`), oldest first. Never capped. */
+	live: Decision_Serialize[],
+	/**
+	 *  Set aside: dated, blocked or aged holds, each with the reason Firstmate gives, oldest
+	 *  first, at most [`MAX_DEFERRED`].
+	 */
+	deferred: Decision_Serialize[],
+	/**  How many deferred holds there are in all. */
+	deferred_total: number,
+};
+
 /**  Whether the engine could be read. */
 export type EngineStatus = 
 /**  Listed successfully. */
@@ -404,6 +632,17 @@ export type FleetView_Serialize = {
 	snapshot: SnapshotInfo_Serialize,
 	cause: UpdateCause | null,
 };
+
+/**  Firstmate's classification of a captain hold (`hold_bucket`). */
+export type HoldBucket = 
+/**  Waiting on you now. */
+"live" | 
+/**  Deferred until a date. */
+"dated" | 
+/**  Waiting on other work. */
+"blocked" | 
+/**  Undated and old enough that Firstmate set it aside. */
+"aged";
 
 /**  The home changed: a new home was chosen in the window. */
 export type HomeChanged = HomeChanged_Serialize | HomeChanged_Deserialize;

@@ -10,6 +10,7 @@
     "core:event:allow-unlisten",
     "core:window:allow-start-dragging",
     "allow-app-info",
+    "allow-board-view",
     "allow-container-inspect",
     "allow-container-logs",
     "allow-container-stats",
