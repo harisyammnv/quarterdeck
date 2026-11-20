@@ -6,7 +6,7 @@ import {
   TerminalWindowIcon as TerminalWindow,
   WarningCircleIcon as WarningCircle,
 } from "@phosphor-icons/react";
-import { Banner, Button, Zero } from "../../ui";
+import { Banner, Button, ZeroState } from "../../ui";
 import { terminalTail, type Span, type TerminalTail } from "./bridge";
 
 export interface TerminalTailProps {
@@ -84,35 +84,35 @@ export function TerminalTailView({ taskId, eventKey = null }: TerminalTailProps)
 
   return (
     <div className="terminal">
-      {load.kind === "error" && load.last !== null && <Banner title={load.message}>Showing the last capture. {load.message}</Banner>}
+      {load.kind === "error" && load.last !== null && <Banner>Showing the last capture. {load.message}</Banner>}
       {load.kind === "loading" ? (
-        <Zero icon={CircleDashed} title="Reading the terminal" dashed={false}>
+        <ZeroState icon={CircleDashed} title="Reading the terminal">
           Asking Firstmate for the latest output.
-        </Zero>
+        </ZeroState>
       ) : load.kind === "error" && tail === null ? (
-        <Zero icon={WarningCircle} title="Terminal not available" dashed={false}>
+        <ZeroState icon={WarningCircle} title="Terminal not available">
           {load.message}
-        </Zero>
+        </ZeroState>
       ) : tail === null ? (
-        <Zero icon={TerminalWindow} title="No terminal output" dashed={false}>
+        <ZeroState icon={TerminalWindow} title="No terminal output">
           The terminal tail is shown here when it can be read.
-        </Zero>
+        </ZeroState>
       ) : tail.lines.length === 0 ? (
-        <Zero icon={TerminalWindow} title="No output yet" dashed={false}>
+        <ZeroState icon={TerminalWindow} title="No output yet">
           The terminal is open but has not printed anything.
-        </Zero>
+        </ZeroState>
       ) : (
         <TailPre tail={tail} taskId={taskId} />
       )}
       {!(tail && tail.lines.length > 0) && <span className="grow" />}
       <div className="terminal-foot">
-        <span className="mut row gap6">
+        <span className="qd-muted qd-row terminal-caption">
           <Eye size={14} />
           Recent output, read when the task reports. Read-only in this version.
         </span>
         <span className="grow" />
         {tail && (
-          <span className="mut tn" title={tail.captured_at === null ? undefined : `Captured at ${clock(tail.captured_at)}`}>
+          <span className="qd-muted tn" title={tail.captured_at === null ? undefined : `Captured at ${clock(tail.captured_at)}`}>
             {tail.truncated ? `Last ${tail.lines.length} lines` : lineCount(tail.lines.length)}
           </span>
         )}
@@ -169,11 +169,27 @@ function TailPre({ tail, taskId }: { tail: TerminalTail; taskId: string }) {
   );
 }
 
+/** The design system's Terminal classes: d (prompts, paths), g (passes), y (skips), b (narration). */
+const TONE: Record<Span["tone"], string> = {
+  default: "",
+  dim: "d",
+  green: "g",
+  yellow: "y",
+  blue: "b",
+  magenta: "b",
+  cyan: "b",
+  red: "terminal-red",
+};
+
+function toneClass(s: Span): string | undefined {
+  return [TONE[s.tone], s.bold ? "terminal-bold" : ""].filter(Boolean).join(" ") || undefined;
+}
+
 const Line = memo(function Line({ spans }: { spans: Span[] }) {
   return (
     <span className="terminal-line">
       {spans.map((s, i) => (
-        <span key={i} className={`terminal-${s.tone}${s.bold ? " terminal-bold" : ""}`}>
+        <span key={i} className={toneClass(s)}>
           {s.text}
         </span>
       ))}

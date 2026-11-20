@@ -15,12 +15,12 @@ export function StatusBar() {
   const view = live.view;
   const rows = view?.rows ?? [];
   const workers = rows.filter((r) => r.state !== "done").length;
-  const decisions = rows.filter((r) => r.state === "needs-decision").length;
+  const decisions = view?.decisions ?? 0;
   const snap = view?.snapshot;
   const home = info?.home ?? null;
   const items = views.flatMap((v) => (v.statusItem ? [v.statusItem] : []));
   return (
-    <footer className="statusbar">
+    <footer className="qd-status ui-status">
       <span className="row">
         <StateDot kind={!home ? "idle" : snap?.error ? "blocked" : view ? "working" : "idle"} />
         {home ? `Watching ${home}` : "No Firstmate home"}

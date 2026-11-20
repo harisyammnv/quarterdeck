@@ -3,7 +3,7 @@ import {
   FileTextIcon as FileText,
   WarningCircleIcon as WarningCircle,
 } from "@phosphor-icons/react";
-import { Banner, Markdown, Zero } from "../../ui";
+import { Banner, Markdown, ZeroState } from "../../ui";
 import { reportRead, type ReportDoc } from "./bridge";
 import { useLoad } from "./load";
 import "./reports.css";
@@ -23,17 +23,17 @@ export function ReportView({ taskId, eventKey = null }: ReportViewProps) {
   return (
     <div className="reports">
       {load.kind === "loading" ? (
-        <Zero icon={CircleDashed} title="Reading the report" dashed={false}>
+        <ZeroState icon={CircleDashed} title="Reading the report">
           Opening the task's report.
-        </Zero>
+        </ZeroState>
       ) : load.kind === "error" ? (
-        <Zero icon={WarningCircle} title="Report not available" dashed={false}>
+        <ZeroState icon={WarningCircle} title="Report not available">
           {load.message}
-        </Zero>
+        </ZeroState>
       ) : load.value === null ? (
-        <Zero icon={FileText} title="No report yet" dashed={false}>
+        <ZeroState icon={FileText} title="No report yet">
           The task writes its report when it finishes; it appears here.
-        </Zero>
+        </ZeroState>
       ) : (
         <ReportBody doc={load.value} />
       )}
@@ -44,7 +44,7 @@ export function ReportView({ taskId, eventKey = null }: ReportViewProps) {
 function ReportBody({ doc }: { doc: ReportDoc }) {
   return (
     <>
-      <div className="reports-meta mut tn">
+      <div className="reports-meta qd-muted tn">
         <FileText size={14} />
         <span>report.md</span>
         {doc.modified !== null && (

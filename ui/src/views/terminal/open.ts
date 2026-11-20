@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
+import { useApp } from "../../state/app";
 
 /** The two read-only panes of a task. */
 export type TaskTab = "terminal" | "report";
@@ -27,3 +28,19 @@ export function useTaskTab(): TaskTab {
 
 /** The area id of the task view in the registry. */
 export const TASK_AREA = "terminal";
+
+/**
+ * Opens a task on its terminal or its report, from any area (a fleet row, a decision card,
+ * the inspector). Other slices import this rather than naming the view.
+ */
+export function useOpenTask(): (taskId: string, tab: TaskTab) => void {
+  const { setArea, setSelectedTask } = useApp();
+  return useCallback(
+    (taskId: string, tab: TaskTab) => {
+      setSelectedTask(taskId);
+      setTaskTab(tab);
+      setArea(TASK_AREA);
+    },
+    [setArea, setSelectedTask],
+  );
+}

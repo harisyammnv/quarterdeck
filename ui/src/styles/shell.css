@@ -1,53 +1,63 @@
-/* The window frame (ui/src/shell): title bar, rail, project list, inspector, status bar. */
+/* The window frame (ui/src/shell): layout around the design system's qd-titlebar, qd-rail
+   and qd-status. Every value is a token. */
 
 .app {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: var(--frame);
 }
 
 /* ---------- title bar ---------- */
 
-.titlebar {
-  height: var(--titlebar-h);
+.ui-titlebar {
   flex: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  /* Room for the macOS traffic lights drawn over the overlay title bar. */
-  padding: 0 14px 0 84px;
   position: relative;
   z-index: 10;
+  /* Room for the macOS traffic lights drawn over the overlay title bar. */
+  padding-left: 84px;
 }
 
-.titlebar .wtitle {
+.ui-wtitle {
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: -0.01em;
   flex: none;
 }
 
-.titlebar .crumb {
-  color: var(--muted2);
+.ui-crumb {
+  color: var(--muted-strong);
   max-width: calc(50vw - 230px - min(210px, 18vw));
 }
 
+.ui-tb-spacer {
+  flex: 1;
+}
+
 /* The search sits at the centre of the window, whatever the crumb's width. */
-.tb-mid {
+.ui-tb-mid {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
   width: min(420px, 36vw);
 }
 
-.tb-spacer {
-  flex: 1;
-}
-
-.tb-right {
+.ui-tb-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
   flex: none;
+}
+
+.ui-theme__tab {
+  height: 22px;
+  padding: 0 9px;
+}
+
+.ui-theme__tab[aria-pressed="true"] {
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--ink);
 }
 
 .cmdwrap {
@@ -55,48 +65,29 @@
   width: 100%;
 }
 
-.cmd {
-  height: 28px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 6px 0 12px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: var(--r-pill);
-  color: var(--muted2);
-  font-size: 12.5px;
-  transition: border-color var(--t-fast) var(--ease-out);
+.cmdwrap .qd-cmd {
+  width: 100%;
 }
 
-.cmd:hover {
-  border-color: var(--edge-soft);
-}
-
-.cmd:focus-within {
-  border-color: var(--ink);
-  box-shadow: var(--focus);
-}
-
-.cmd input {
+.qd-cmd input {
   flex: 1;
   min-width: 0;
   border: 0;
   outline: none;
   background: transparent;
-  font-size: 12.5px;
+  font: inherit;
   color: var(--ink);
   user-select: text;
   -webkit-user-select: text;
   cursor: text;
 }
 
-.cmd input:focus-visible {
+.qd-cmd input:focus-visible {
   box-shadow: none;
 }
 
-.cmd input::placeholder {
-  color: var(--muted2);
+.qd-cmd input::placeholder {
+  color: var(--muted-strong);
 }
 
 .cmdlist {
@@ -105,34 +96,34 @@
   left: 0;
   right: 0;
   margin: 0;
-  padding: 6px;
+  padding: var(--space-6);
   list-style: none;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: var(--r-inner);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-inner);
+  box-shadow: var(--tooltip);
   z-index: 30;
 }
 
 .cmdlist li {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10);
   height: 32px;
-  padding: 0 10px;
-  border-radius: var(--r-row);
+  padding: 0 var(--space-10);
+  border-radius: var(--radius-row);
   font-size: 13px;
-  --muted: var(--muted-p);
+  --muted: var(--muted-panel);
 }
 
 .cmdlist li.on {
-  background: var(--hover);
-  --muted: var(--muted2);
+  background: var(--selected);
+  --muted: var(--muted-strong);
 }
 
 .cmdlist .cmd-ic {
   width: 16px;
-  color: var(--muted2);
+  color: var(--muted-strong);
   flex: none;
 }
 
@@ -152,8 +143,8 @@
   flex: 1;
   min-height: 0;
   display: flex;
-  gap: 8px;
-  padding: 0 8px;
+  gap: var(--space-8);
+  padding: 0 var(--space-8);
 }
 
 .main {
@@ -162,185 +153,36 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-8);
 }
 
 /* ---------- rail ---------- */
 
-.rail {
-  width: var(--rail-w);
+.ui-rail {
   flex: none;
-  background: var(--rail);
-  border-radius: 34px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 10px 0;
   position: relative;
   z-index: 5;
 }
 
-.rail .brand {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--teal);
-  color: #ffffff;
-  display: grid;
-  place-items: center;
-  margin-bottom: 10px;
-  flex: none;
-}
-
-.rail .sp {
-  flex: 1;
-}
-
-.rail .ri {
-  width: 64px;
+.ui-rail .ui-tipwrap {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 3px 0 5px;
-  color: var(--on-rail-muted);
-  background: none;
+}
+
+.ui-rail__item {
   border: 0;
-  border-radius: 12px;
-  position: relative;
-  flex: none;
+  background: none;
+  font: inherit;
+  cursor: default;
 }
 
-.rail .ri .ic {
-  width: 44px;
-  height: 30px;
-  border-radius: 15px;
-  display: grid;
-  place-items: center;
-  position: relative;
+.ui-rail__item .qd-rail__icon {
   transition: background-color var(--t-fast) var(--ease-out);
-}
-
-.rail .ri .lb {
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0;
-  line-height: 1.1;
-}
-
-.rail .ri:hover,
-.rail .ri[aria-current="page"] {
-  color: var(--on-rail);
-}
-
-.rail .ri:hover .ic {
-  background: var(--rail-hover);
-}
-
-.rail .ri[aria-current="page"] .ic {
-  background: var(--rail-active);
-}
-
-.rail .ri:focus-visible {
-  box-shadow: none;
-}
-
-.rail .ri:focus-visible .ic {
-  box-shadow: 0 0 0 2px var(--on-rail);
-}
-
-.rail .badge {
-  position: absolute;
-  top: -3px;
-  right: 1px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 2px;
-  border-radius: 99px;
-  background: var(--on-rail);
-  color: var(--rail);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0;
-  display: grid;
-  place-items: center;
-  border: 2px solid var(--rail);
-  box-sizing: content-box;
-}
-
-/* Tooltip with the shortcut, after a short hover. */
-.rail .tip {
-  position: absolute;
-  left: 72px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: none;
-  padding: 7px 10px;
-  background: #000000;
-  color: #ffffff;
-  border: 1px solid #000000;
-  border-radius: 12px;
-  white-space: nowrap;
-  font-size: 12px;
-  z-index: 20;
-  pointer-events: none;
-}
-
-:root[data-theme="dark"] .rail .tip {
-  border-color: #3a3a3a;
-}
-
-.rail .tip b {
-  font-weight: 700;
-  font-size: 12.5px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.rail .tip .tk {
-  font-size: 11px;
-  font-weight: 500;
-  border: 1px solid #5c5c5c;
-  border-bottom-width: 1.5px;
-  border-radius: 5px;
-  padding: 0 4px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  color: #d0d0d0;
-}
-
-.rail .tip::before {
-  content: "";
-  position: absolute;
-  left: -5px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  background: #000000;
-  transform: translateY(-50%) rotate(45deg);
-}
-
-@keyframes tip-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.rail .ri:hover .tip {
-  display: flex;
-  animation: tip-in var(--t-fast) var(--ease-out) 450ms both;
 }
 
 /* ---------- project list and inspector frames ---------- */
 
 .side {
-  width: 232px;
+  width: var(--size-sidebar);
   flex: none;
 }
 
@@ -348,7 +190,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 12px 8px 16px;
+  padding: var(--space-14) var(--space-12) var(--space-8) var(--space-16);
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);
@@ -356,87 +198,61 @@
 }
 
 .side .tree {
-  padding: 0 8px;
+  padding: 0 var(--space-8);
 }
 
 .side-empty {
   display: flex;
-  gap: 10px;
+  gap: var(--space-10);
   align-items: flex-start;
-  padding: 8px;
+  padding: var(--space-8);
   color: var(--muted);
   font-size: 12.5px;
 }
 
 .side-foot {
   flex: none;
-  padding: 12px 16px 14px;
+  padding: var(--space-12) var(--space-16) var(--space-14);
   border-top: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-8);
   font-size: 12px;
 }
 
 .legend {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px 8px;
+  gap: var(--space-4) var(--space-8);
   color: var(--muted);
 }
 
 .legend .row {
-  gap: 6px;
+  gap: var(--space-6);
 }
 
 .insp {
-  width: 292px;
+  width: var(--size-inspector);
   flex: none;
   overflow: auto;
 }
 
-.insp section {
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-bottom: 1px solid var(--line);
-}
-
-.insp section:last-child {
-  border-bottom: 0;
-}
-
-.evt {
-  display: flex;
-  gap: 8px;
-  font-size: 12.5px;
-  align-items: baseline;
-}
-
-.evt .tm {
-  min-width: 52px;
-  white-space: nowrap;
-  flex: none;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-}
-
 /* ---------- status bar ---------- */
 
-.statusbar {
-  height: var(--statusbar-h);
+.ui-status {
   flex: none;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 0 14px;
-  font-size: 12px;
-  color: var(--muted2);
   white-space: nowrap;
+  color: var(--muted-strong);
 }
 
-.statusbar .row {
-  gap: 6px;
+.ui-status .row {
+  gap: var(--space-6);
+}
+
+/* Below 1280px the inspector gives its width to the main column; the task's facts stay
+   reachable from the row itself. */
+@media (max-width: 1279px) {
+  .insp {
+    display: none;
+  }
 }

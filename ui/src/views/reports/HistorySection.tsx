@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ListBulletsIcon as ListBullets, WarningCircleIcon as WarningCircle } from "@phosphor-icons/react";
-import { Button } from "../../ui";
+import { Button, InspectorSection } from "../../ui";
 import { useApp } from "../../state/app";
 import { reportHistory, type ReportHistory, type StatusEvent } from "./bridge";
 import { useLoad } from "./load";
@@ -25,25 +25,24 @@ function History({ taskId, eventKey }: { taskId: string; eventKey: string | null
   const load = useLoad(reportHistory, taskId, eventKey);
   const [all, setAll] = useState(false);
   return (
-    <section aria-label="Status history">
-      <h2 className="h2">Status history</h2>
+    <InspectorSection title="Status history">
       {load.kind === "loading" ? (
-        <span className="mut t12">Reading the status record.</span>
+        <span className="qd-muted reports-note">Reading the status record.</span>
       ) : load.kind === "error" ? (
-        <span className="mut t12 row gap6">
+        <span className="qd-muted reports-note qd-row">
           <WarningCircle size={14} />
           {load.message}
         </span>
       ) : load.value.events.length === 0 ? (
-        <span className="mut t12 row gap6">
+        <span className="qd-muted reports-note qd-row">
           <ListBullets size={14} />
           No status events yet.
         </span>
       ) : (
         <HistoryList history={load.value} all={all} onAll={setAll} />
       )}
-      <span className="mut t12">An event is a moment, not the current state.</span>
-    </section>
+      <span className="qd-muted reports-note">An event is a moment, not the current state.</span>
+    </InspectorSection>
   );
 }
 
@@ -70,7 +69,7 @@ function HistoryList({ history, all, onAll }: { history: ReportHistory; all: boo
           {all ? "Show fewer" : `Show ${more} more`}
         </Button>
       )}
-      {all && history.events.length > MOST && <span className="mut t12">Older events are in the task's status record.</span>}
+      {all && history.events.length > MOST && <span className="qd-muted reports-note">Older events are in the task's status record.</span>}
     </>
   );
 }
@@ -78,11 +77,11 @@ function HistoryList({ history, all, onAll }: { history: ReportHistory; all: boo
 function EventRow({ event }: { event: StatusEvent }) {
   const word = event.word.toLowerCase();
   return (
-    <li className="evt" title={event.at === null ? undefined : new Date(event.at * 1000).toLocaleString()}>
-      <span className="tm">{event.at === null ? "" : hhmm(event.at)}</span>
+    <li className="ui-evt" title={event.at === null ? undefined : new Date(event.at * 1000).toLocaleString()}>
+      <span className="ui-evt__tm">{event.at === null ? "" : hhmm(event.at)}</span>
       <span className="reports-evt">
         {word !== "working" && <span className={`reports-word ${wordTone(word)}`}>{word}</span>}
-        {event.text || <span className="mut">(no text)</span>}
+        {event.text || <span className="qd-muted">(no text)</span>}
       </span>
     </li>
   );

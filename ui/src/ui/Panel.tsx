@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 
-/** A floating A2 block: white (or dark panel), 16px radius, hairline border. */
+/** A floating panel (design system `qd-panel`): white or dark panel fill, 16px radius, hairline border. */
 export function Panel({ children, className, label, as = "section" }: { children: ReactNode; className?: string; label?: string; as?: "section" | "main" | "aside" }) {
   const Tag = as;
   return (
-    <Tag className={`panel${className ? ` ${className}` : ""}`} aria-label={label}>
+    <Tag className={`qd-panel ui-panel${className ? ` ${className}` : ""}`} aria-label={label}>
       {children}
     </Tag>
   );
@@ -25,11 +25,11 @@ export function PanelHead({ title, meta, children }: { title: ReactNode; meta?: 
 /** A labelled key and value list, as in the inspector's Task section. */
 export function Facts({ items }: { items: [string, ReactNode][] }) {
   return (
-    <dl className="kv">
+    <dl className="qd-kv">
       {items.map(([k, v]) => (
-        <div key={k} className="kvrow">
+        <div key={k} className="ui-kvrow">
           <dt>{k}</dt>
-          <dd className="trunc">{v}</dd>
+          <dd className="qd-trunc">{v}</dd>
         </div>
       ))}
     </dl>

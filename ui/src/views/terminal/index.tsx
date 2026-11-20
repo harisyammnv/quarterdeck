@@ -4,7 +4,7 @@ import {
   TerminalWindowIcon as TerminalWindow,
 } from "@phosphor-icons/react";
 import { inApp } from "../../bridge";
-import { Composer, Panel, ProjectTile, StatePill, Tabs, Zero, ago, useNow, type Segment } from "../../ui";
+import { Composer, Panel, ProjectTile, SegmentedTabs, StatePill, ZeroState, ago, useNow, type Segment } from "../../ui";
 import { useApp } from "../../state/app";
 import { ReportView } from "../reports";
 import { TerminalTailView } from "./Tail";
@@ -30,9 +30,9 @@ export default function TaskView() {
     return (
       <Panel as="main" className="fill task" label="Task">
         <div className="task-zero">
-          <Zero icon={CursorClick} title="No task in focus" dashed={false}>
+          <ZeroState icon={CursorClick} title="No task in focus">
             Pick a task in the fleet to read its terminal and report here.
-          </Zero>
+          </ZeroState>
         </div>
       </Panel>
     );
@@ -45,21 +45,21 @@ export default function TaskView() {
 
   return (
     <Panel as="main" className="fill task" label={`Task ${row.id}`}>
-      <div className="phead nob">
+      <div className="phead">
         <ProjectTile name={project} />
-        <span className="crumb trunc">{project}</span>
-        <span className="crumb" aria-hidden="true">
+        <span className="qd-muted qd-trunc">{project}</span>
+        <span className="qd-muted" aria-hidden="true">
           /
         </span>
-        <h1 className="ptitle trunc" title={row.name}>
+        <h1 className="ptitle qd-trunc" title={row.name}>
           {row.id}
         </h1>
         <StatePill state={row.state} />
         <span className="grow" />
-        {ev?.at && <span className="mut tn task-when">Last event {ago(ev.at * 1000, now)}</span>}
+        {ev?.at && <span className="qd-muted tn task-when">Last event {ago(ev.at * 1000, now)}</span>}
       </div>
       <div className="task-tabs">
-        <Tabs items={TABS} value={tab} onChange={setTaskTab} label="Task panes" />
+        <SegmentedTabs items={TABS} value={tab} onChange={setTaskTab} label="Task panes" />
       </div>
       <div className="task-body">
         {tab === "terminal" ? (

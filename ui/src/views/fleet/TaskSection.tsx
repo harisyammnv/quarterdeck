@@ -1,5 +1,5 @@
 import { CursorClickIcon as CursorClick } from "@phosphor-icons/react";
-import { Zero, Facts, StatePill, ago, useNow } from "../../ui";
+import { Facts, InspectorSection, StatePill, ZeroState, ago, useNow } from "../../ui";
 import { useApp } from "../../state/app";
 
 /**
@@ -12,43 +12,37 @@ export default function TaskSection() {
   const row = live.view?.rows.find((r) => r.id === selectedTask) ?? null;
   if (!row) {
     return (
-      <section>
-        <h2 className="h2">Task</h2>
-        <Zero icon={CursorClick} title="No task in focus" dashed={false}>
+      <InspectorSection title="Task">
+        <ZeroState icon={CursorClick} title="No task in focus">
           Pick a task to see its facts here.
-        </Zero>
-      </section>
+        </ZeroState>
+      </InspectorSection>
     );
   }
   const ev = row.latest_event;
   return (
     <>
-      <section>
-        <div className="row">
-          <h2 className="h2 grow trunc">Task</h2>
-          <StatePill state={row.state} />
-        </div>
+      <InspectorSection title="Task" aside={<StatePill state={row.state} />}>
         <Facts
           items={[
             ["Name", row.name],
-            ["Id", <span className="mono">{row.id}</span>],
+            ["Id", <span className="qd-mono">{row.id}</span>],
             ["Project", row.project ?? "unknown"],
             ["Kind", row.kind ?? "task"],
           ]}
         />
-      </section>
-      <section>
-        <h2 className="h2">Latest event</h2>
+      </InspectorSection>
+      <InspectorSection title="Latest event">
         {ev ? (
-          <div className="evt">
-            <span className="tm">{ev.at ? ago(ev.at * 1000, now) : ""}</span>
-            <span className="grow">{ev.text || ev.word}</span>
+          <div className="ui-evt">
+            <span className="ui-evt__tm">{ev.at ? ago(ev.at * 1000, now) : ""}</span>
+            <span className="qd-row">{ev.text || ev.word}</span>
           </div>
         ) : (
-          <span className="mut">No status events yet.</span>
+          <span className="qd-muted">No status events yet.</span>
         )}
-        <span className="mut t12">An event is a moment, not the current state.</span>
-      </section>
+        <span className="qd-muted ui-t12">An event is a moment, not the current state.</span>
+      </InspectorSection>
     </>
   );
 }

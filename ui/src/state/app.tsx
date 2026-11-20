@@ -14,11 +14,21 @@ import { previewParam } from "../preview";
 
 export type ThemePref = "system" | "light" | "dark";
 const THEME_KEY = "quarterdeck.theme";
-const INSPECTOR_KEY = "quarterdeck.inspector";
+const PROJECTS_KEY = "quarterdeck.projects";
 
 function readThemePref(): ThemePref {
   const v = localStorage.getItem(THEME_KEY);
   return v === "light" || v === "dark" ? v : "system";
+}
+
+function readProjects(): Record<string, boolean> {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(PROJECTS_KEY) ?? "{}");
+    if (typeof v !== "object" || v === null) return {};
+    return Object.fromEntries(Object.entries(v).filter((e): e is [string, boolean] => typeof e[1] === "boolean"));
+  } catch {
+    return {};
+  }
 }
 
 function readArea(): string {
@@ -52,8 +62,10 @@ export interface AppState {
   setTheme: (t: ThemePref) => void;
   area: string;
   setArea: (a: string) => void;
-  inspectorOpen: boolean;
-  toggleInspector: () => void;
+  /** Whether the project list shows on `view`, given its default from the registry. */
+  projectsShown: (view: string, byDefault: boolean) => boolean;
+  /** Shows or hides the project list on `view` (⌘\\). */
+  toggleProjects: (view: string, byDefault: boolean) => void;
   /** The task in focus across areas (project list, fleet, board, inspector), by id. */
   selectedTask: string | null;
   setSelectedTask: (id: string | null) => void;
@@ -82,7 +94,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [ipcError, setIpcError] = useState<string | null>(null);
   const [theme, setThemeState] = useState<ThemePref>(readThemePref);
   const [area, setArea] = useState<string>(readArea);
-  const [inspectorOpen, setInspectorOpen] = useState(() => localStorage.getItem(INSPECTOR_KEY) !== "closed");
+  const [projects, setProjects] = useState<Record<string, boolean>>(() => readProjects());
   const [selectedTask, setSelectedTask] = useState<string | null>(null);
   const [homeBusy, setHomeBusy] = useState(false);
   const [homeError, setHomeError] = useState<string | null>(null);
@@ -119,11 +131,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [accept, adoptInfo]);
 
-  // Theme: pinned light or dark sets data-theme; system leaves it to prefers-color-scheme.
+  // Theme: <html> always carries data-theme, as the design system requires; "match the
+  // system" resolves to light or dark and follows the system setting while it changes.
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "system") root.removeAttribute("data-theme");
-    else root.setAttribute("data-theme", theme);
+    if (theme !== "system") {
+      root.setAttribute("data-theme", theme);
+      return;
+    }
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      root.setAttribute("data-theme", mq.matches ? "dark" : "light");
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => {
+      mq.removeEventListener("change", apply);
+    };
   }, [theme]);
 
   // A view caused by a status change reports when it reached the screen (latency probe).
@@ -145,10 +169,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     else localStorage.setItem(THEME_KEY, t);
   }, []);
 
-  const toggleInspector = useCallback(() => {
-    setInspectorOpen((o) => {
-      localStorage.setItem(INSPECTOR_KEY, o ? "closed" : "open");
-      return !o;
+  const projectsShown = useCallback((view: string, byDefault: boolean) => projects[view] ?? byDefault, [projects]);
+  const toggleProjects = useCallback((view: string, byDefault: boolean) => {
+    setProjects((cur) => {
+      const next = { ...cur, [view]: !(cur[view] ?? byDefault) };
+      localStorage.setItem(PROJECTS_KEY, JSON.stringify(next));
+      return next;
     });
   }, []);
 
@@ -175,15 +201,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setTheme,
       area,
       setArea,
-      inspectorOpen,
-      toggleInspector,
+      projectsShown,
+      toggleProjects,
       selectedTask,
       setSelectedTask,
       chooseHome,
       homeBusy,
       homeError,
     }),
-    [info, live, ipcError, theme, setTheme, area, inspectorOpen, toggleInspector, selectedTask, chooseHome, homeBusy, homeError],
+    [info, live, ipcError, theme, setTheme, area, projectsShown, toggleProjects, selectedTask, chooseHome, homeBusy, homeError],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
