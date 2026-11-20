@@ -3,6 +3,7 @@ import {
   ArrowLeftIcon as ArrowLeft,
   ArrowsClockwiseIcon as ArrowsClockwise,
   BookOpenIcon as BookOpen,
+  FileTextIcon as FileText,
   CircleDashedIcon as CircleDashed,
   FolderSimpleIcon as FolderSimple,
   LockSimpleIcon as LockSimple,
@@ -20,7 +21,9 @@ import { SkillsPanel } from "../skills/SkillsPanel";
 import { skillsList } from "../skills/bridge";
 import "../skills/skills.css";
 import { memoryList, memoryRead, memorySearch, type MemoryDoc, type MemoryHit, type MemoryItem, type MemoryKind, type MemorySearch } from "./bridge";
+import { reportsList, type ReportItem } from "../reports/bridge";
 import { DocBody } from "./DocBody";
+import { ReportPane, ReportsPane, reportTitle } from "./Reports";
 import { FindField } from "./FindField";
 import { plural, shortAge } from "./format";
 import { useHomeKey } from "./useHomeKey";
@@ -28,7 +31,7 @@ import { useRefreshing } from "./useRefreshing";
 import "./memory.css";
 
 type GroupKind = "brief" | "project-guide";
-type Sel = { t: "doc"; id: string } | { t: "group"; kind: GroupKind } | { t: "skill"; id: string };
+type Sel = { t: "doc"; id: string } | { t: "group"; kind: GroupKind } | { t: "skill"; id: string } | { t: "reports" } | { t: "report"; id: string };
 
 const KIND_ICON: Record<MemoryKind, Icon> = {
   preferences: User,
@@ -53,6 +56,7 @@ export default function MemoryView() {
   const homeKey = useHomeKey();
   const [list, reloadList] = useRefreshing(memoryList, homeKey);
   const [skills, reloadSkills] = useRefreshing(skillsList, homeKey);
+  const [reports, reloadReports] = useRefreshing(reportsList, homeKey);
   const [sel, setSel] = useState<Sel | null>(null);
   const [query, setQuery] = useState("");
   const [showHits, setShowHits] = useState(false);
@@ -125,6 +129,24 @@ export default function MemoryView() {
     );
   } else if (current.t === "group") {
     main = <GroupPane kind={current.kind} items={groups[current.kind]} capped={current.kind === "brief" && (list.data?.capped ?? false)} now={now} onOpen={openDoc} />;
+  } else if (current.t === "reports") {
+    main = reports.data ? (
+      <ReportsPane list={reports.data} now={now} onOpen={(id) => { setSel({ t: "report", id }); }} />
+    ) : (
+      <ZeroState icon={reports.error ? WarningCircle : CircleDashed} title={reports.error ? "Reports could not be listed" : "Listing reports"}>
+        {reports.error ?? undefined}
+      </ZeroState>
+    );
+  } else if (current.t === "report") {
+    const item = reports.data?.items.find((r) => r.task_id === current.id);
+    main = (
+      <ReportPane
+        taskId={current.id}
+        title={item ? reportTitle(item) : current.id}
+        find={query}
+        back={<IconButton icon={ArrowLeft} label="Back to Reports" onClick={() => { setSel({ t: "reports" }); }} />}
+      />
+    );
   } else if (current.t === "skill") {
     main = <SkillDocPane id={current.id} find={query} />;
   } else {
@@ -144,10 +166,20 @@ export default function MemoryView() {
           setShowHits(false);
         }}
         onFind={() => find.current?.focus()}
-        refreshing={list.loading || skills.loading}
+        refreshing={list.loading || skills.loading || reports.loading}
+        reports={reports.data?.items ?? []}
+        onReports={() => {
+          setSel({ t: "reports" });
+          setShowHits(false);
+        }}
+        onReport={(id) => {
+          setSel({ t: "report", id });
+          setShowHits(false);
+        }}
         onRefresh={() => {
           reloadList();
           reloadSkills();
+          reloadReports();
         }}
       />
       <section className="qd-panel ui-panel memory-main" aria-label="Document">
@@ -191,6 +223,9 @@ const MemoryNav = memo(function MemoryNav({
   onFind,
   refreshing,
   onRefresh,
+  reports,
+  onReports,
+  onReport,
 }: {
   groups: Groups;
   sel: Sel | null;
@@ -201,10 +236,17 @@ const MemoryNav = memo(function MemoryNav({
   onFind: () => void;
   refreshing: boolean;
   onRefresh: () => void;
+  reports: ReportItem[];
+  onReports: () => void;
+  onReport: (taskId: string) => void;
 }) {
   const docId = sel?.t === "doc" ? sel.id : null;
+  const reportId = sel?.t === "report" ? sel.id : null;
   const briefs = groups.brief;
-  const recent = new Set(briefs.slice(0, RECENT).map((b) => b.id));
+  // The mock's "Recent reports"; recent instructions stand in when there are no reports.
+  const recentReports = reports.slice(0, RECENT);
+  const recent = new Set(recentReports.length ? [] : briefs.slice(0, RECENT).map((b) => b.id));
+  const reportsOn = sel?.t === "reports" || (reportId !== null && !recentReports.some((r) => r.task_id === reportId));
   // A group row stays marked while one of its documents is open, unless that document has
   // its own row under "Recent instructions".
   const groupOn = (k: GroupKind) =>
@@ -231,13 +273,28 @@ const MemoryNav = memo(function MemoryNav({
             onGroup("brief");
           }} />
         )}
+        <NavRow icon={FileText} title="Reports" hint={reports.length ? plural(reports.length, "investigation report", "investigation reports") : "None written yet"} age={shortAge(reports[0]?.modified ?? null, now)} on={reportsOn} onClick={onReports} />
         {guides.length > 0 && (
           <NavRow icon={FolderSimple} title="Project guides" hint={`Agent guides for ${plural(guides.length, "project", "projects")}`} age={shortAge(Math.max(...guides.map((g) => g.modified ?? 0)) || null, now)} on={groupOn("project-guide")} onClick={() => {
             onGroup("project-guide");
           }} />
         )}
       </div>
-      {briefs.length > 0 && (
+      {recentReports.length > 0 && (
+        <>
+          <div className="memory-sh memory-sect">
+            <h3 className="sect">Recent reports</h3>
+          </div>
+          <div className="memory-list" role="list">
+            {recentReports.map((r) => (
+              <NavRow key={r.task_id} tile={r.task_id} title={reportTitle(r)} hint={r.title ? r.task_id : (r.kind ?? "Report")} age={shortAge(r.modified, now, true)} on={reportId === r.task_id} recent onClick={() => {
+                onReport(r.task_id);
+              }} />
+            ))}
+          </div>
+        </>
+      )}
+      {recentReports.length === 0 && briefs.length > 0 && (
         <>
           <div className="memory-sh memory-sect">
             <h3 className="sect">Recent instructions</h3>

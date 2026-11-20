@@ -127,7 +127,7 @@ Icons are Phosphor (regular, with duotone for the selected rail item).
 
 ## Memory and skills
 
-The Memory view lists the home's preferences, shared preferences, learnings, task briefs and the agent guide of each project in the latest snapshot, and finds text across all of them.
+The Memory view lists the home's preferences, shared preferences, learnings, task briefs, the reports the snapshot lists (through the reports area's `reports_list` and `report_read`) and the agent guide of each project in the latest snapshot, and finds text across the memory documents.
 The Skills view lists every `SKILL.md` folder in Firstmate's `.agents/skills`, the user's `~/.agents/skills` and `~/.claude/skills`, and each project's `.agents/skills` and `.claude/skills`, with its trigger, source and every other place the same name is installed.
 Both are read-only: the window sends ids, the core maps them to the paths its last scan found and reads at most 1 MiB through `safe_read`, and Markdown is shown through the shared sanitizing renderer.
 They rescan when the view opens and when the window regains focus.
