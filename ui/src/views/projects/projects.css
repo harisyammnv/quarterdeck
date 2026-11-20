@@ -44,8 +44,9 @@
   background: var(--hover);
 }
 
+/* Design system TreeRow: the selected fill is darker than hover. */
 .projects-wt.sel {
-  background: var(--sunken);
+  background: var(--selected, var(--sunken));
   font-weight: 500;
 }
 

@@ -1,6 +1,6 @@
 //! Projects commands: the sidebar view, project icons and "Open in Orca".
 
-use quarterdeck_core::external::{self, External};
+use quarterdeck_core::external::{self, External, ExternalError};
 use quarterdeck_core::projects::{self, IconCache, ProjectsView};
 use serde::Serialize;
 use specta::Type;
@@ -51,7 +51,16 @@ pub async fn projects_focus_orca(
 ) -> Result<(), String> {
     let home = state.with_engine(|e| e.state())?;
     let target = projects::orca::resolve(&home, &task_id).map_err(|e| e.to_string())?;
+    // Orca's own error text can name paths, which never reach the window: say what happened
+    // in a fixed sentence instead.
     external::run(&External::OrcaFocus(target))
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| match e {
+            ExternalError::Spawn(..) => "Orca is not installed or could not be started.".into(),
+            ExternalError::Timeout(_) => "Orca did not answer in time.".into(),
+            ExternalError::Failed(..) => {
+                "Orca could not bring this worktree forward. Is Orca open?".into()
+            }
+            other => other.to_string(),
+        })
 }

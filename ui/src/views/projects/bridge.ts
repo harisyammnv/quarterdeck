@@ -39,10 +39,17 @@ function start() {
     set({ view: e.payload, error: null });
   });
   // A new home starts a new engine: forget the old projects until its first view arrives.
+  // A new home starts a new engine: drop the old projects and ask the new engine directly,
+  // in case its first update arrived before this notice.
   void events.homeChanged.listen(() => {
     set({ view: null, error: null });
     icons.clear();
+    fetchView();
   });
+  fetchView();
+}
+
+function fetchView() {
   commands
     .projectsView()
     .then((v) => {
