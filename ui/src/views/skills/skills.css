@@ -1,0 +1,155 @@
+/* Skills list and skill pane (A2 memory mock, right column). Every class starts with skills-. */
+
+.skills-panel {
+  width: 412px;
+  flex: none;
+}
+
+.skills-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 8px;
+  flex: none;
+}
+
+.skills-h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.skills-find {
+  width: auto;
+  margin: 0 16px 8px;
+}
+
+.skills-list {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+.skills-panel:not(.compact) .skills-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.skills-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  padding: 9px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  min-width: 0;
+}
+
+.skills-panel.compact .skills-list > [role="listitem"]:last-of-type .skills-row {
+  border-bottom: 0;
+}
+
+.skills-row:hover {
+  background: var(--hover);
+  --muted: var(--muted2);
+}
+
+.skills-row.sel {
+  background: var(--sunken);
+  --muted: var(--muted2);
+}
+
+.skills-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.skills-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.skills-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.skills-desc {
+  font-size: 12px;
+}
+
+.skills-src {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.skills-src > svg {
+  flex: none;
+}
+
+.skills-more {
+  font: inherit;
+  text-align: left;
+  background: none;
+  width: calc(100% - 32px);
+}
+
+.skills-more:not(:disabled):hover {
+  background: var(--hover);
+}
+
+.skills-more:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.skills-more .t12 {
+  display: block;
+  font-size: 12px;
+}
+
+.skills-title {
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.skills-facts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 4px 22px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  flex: none;
+}
+
+.skills-facts > div {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 8px;
+}
+
+.skills-facts dt {
+  color: var(--muted);
+}
+
+.skills-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

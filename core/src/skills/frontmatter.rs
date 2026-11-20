@@ -180,7 +180,9 @@ mod tests {
         let mut yaml = String::from("---\nname: bomb\nl0: &l0 [x, x, x, x, x, x, x, x, x]\n");
         for i in 1..10 {
             let p = i - 1;
-            yaml.push_str(&format!("l{i}: &l{i} [*l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}]\n"));
+            yaml.push_str(&format!(
+                "l{i}: &l{i} [*l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}, *l{p}]\n"
+            ));
         }
         yaml.push_str("---\n");
         let start = std::time::Instant::now();

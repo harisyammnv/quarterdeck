@@ -1,0 +1,420 @@
+/* Memory and skills screen (A2 memory mock). Every class here starts with memory-. */
+
+.memory-cols {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  gap: 8px;
+}
+
+.memory-cols > .panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.memory-nav {
+  width: 284px;
+  flex: none;
+}
+
+.memory-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.memory-sh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 8px;
+  flex: none;
+}
+
+.memory-sect {
+  padding-top: 14px;
+}
+
+.memory-sect .sect {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.memory-h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.memory-list {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+.memory-li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  min-width: 0;
+}
+
+.memory-li.recent {
+  padding: 8px 14px;
+}
+
+.memory-list > [role="listitem"]:last-child > .memory-li {
+  border-bottom: 0;
+}
+
+.memory-li:hover {
+  background: var(--hover);
+  --muted: var(--muted2);
+}
+
+.memory-li:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+  z-index: 1;
+}
+
+.memory-li.sel {
+  background: var(--sunken);
+  --muted: var(--muted2);
+}
+
+.memory-li.sel::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.memory-li > svg {
+  flex: none;
+}
+
+.memory-li-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.memory-li .t13 {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.memory-tile {
+  width: 18px;
+  height: 18px;
+  font-size: 8.5px;
+}
+
+.memory-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+  flex: none;
+}
+
+.memory-phead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 16px;
+  flex: none;
+}
+
+.memory-phead > .ptitle {
+  margin: 0;
+  flex: 0 1 auto;
+}
+
+.memory-phead > svg {
+  flex: none;
+}
+
+.memory-find {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 190px;
+  height: 28px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--panel);
+  color: var(--muted2);
+  font-size: 12.5px;
+  flex: none;
+}
+
+.memory-find:focus-within {
+  border-color: var(--ink);
+  box-shadow: var(--focus);
+}
+
+.memory-find input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.memory-find input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.memory-find input::placeholder {
+  color: var(--muted2);
+}
+
+.memory-find-clear {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sunken);
+  color: var(--ink);
+  flex: none;
+}
+
+.memory-find-clear:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.memory-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px 22px;
+}
+
+.memory-trunc {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Rendered Markdown, following the mock's .doc measurements. */
+.memory-doc {
+  max-width: 66ch;
+  font-size: 13.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.memory-doc > :first-child {
+  margin-top: 0;
+}
+
+.memory-doc h1,
+.memory-doc h2,
+.memory-doc h3,
+.memory-doc h4,
+.memory-doc h5,
+.memory-doc h6 {
+  margin: 14px 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.memory-doc h1 {
+  font-size: 16px;
+  letter-spacing: -0.015em;
+}
+
+.memory-doc h2 {
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.memory-doc p {
+  margin: 4px 0 8px;
+}
+
+.memory-doc ul,
+.memory-doc ol {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.memory-doc li {
+  margin: 2px 0;
+}
+
+.memory-doc code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0 4px;
+}
+
+.memory-doc pre {
+  margin: 8px 0;
+  padding: 10px 12px;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-inner);
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.memory-doc pre code {
+  border: 0;
+  padding: 0;
+  background: none;
+  overflow-wrap: normal;
+}
+
+.memory-doc blockquote {
+  margin: 8px 0;
+  padding: 0 0 0 12px;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+
+.memory-doc hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 14px 0;
+}
+
+.memory-doc table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12.5px;
+}
+
+.memory-doc th,
+.memory-doc td {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.memory-doc th {
+  background: var(--sunken);
+  font-weight: 700;
+}
+
+.memory-doc a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+::highlight(memory-find) {
+  background-color: var(--warning-soft);
+  color: var(--ink);
+}
+
+.memory-windowed {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.memory-group .memory-li {
+  height: 56px;
+}
+
+.memory-hits {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 0 16px;
+}
+
+.memory-hits[aria-busy="true"] {
+  opacity: 0.6;
+}
+
+.memory-hitgroup + .memory-hitgroup {
+  margin-top: 8px;
+}
+
+.memory-hit-doc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 4px;
+}
+
+.memory-hit-doc .b7 {
+  font-weight: 700;
+}
+
+.memory-hit {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 16px 5px 40px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  min-width: 0;
+}
+
+.memory-hit:hover {
+  background: var(--hover);
+}
+
+.memory-hit:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.memory-hit-line {
+  width: 32px;
+  flex: none;
+  text-align: right;
+}
+
+.memory-hit mark {
+  background: var(--warning-soft);
+  color: var(--ink);
+  border-radius: 3px;
+}

@@ -52,7 +52,7 @@ pub struct SkillItem {
     pub source: Option<String>,
     /// Short labels of the folders it was found in, such as `~/.agents/skills`.
     pub locations: Vec<String>,
-    /// How many other installed skills have the same name.
+    /// How many separate copies with the same name exist elsewhere (links excluded).
     #[cfg_attr(feature = "specta", specta(type = f64))]
     pub also_in: u32,
     /// Marked internal in its metadata (not meant to be invoked by hand).
@@ -231,12 +231,10 @@ impl SkillIndex {
             *counts.entry(item.name.to_lowercase()).or_default() += 1;
         }
         for item in &mut index.view.items {
+            // Only separate copies count; a folder linked into a second root is the same
+            // install, shown in `locations`.
             let n = counts.get(&item.name.to_lowercase()).copied().unwrap_or(1);
-            // A folder linked into a second root also counts as another place.
-            let extra = u32::try_from(item.locations.len())
-                .unwrap_or(1)
-                .saturating_sub(1);
-            item.also_in = n.saturating_sub(1) + extra;
+            item.also_in = n.saturating_sub(1);
         }
         index.view.items.sort_by(|a, b| {
             a.scope
@@ -490,8 +488,8 @@ mod tests {
             .find(|i| i.id == "user:agents:tdd")
             .unwrap();
         assert_eq!(tdd.locations, ["~/.agents/skills", "~/.claude/skills"]);
-        // Linked from a second root, and the project has its own copy.
-        assert_eq!(tdd.also_in, 2);
+        // The link is the same install; the project's own copy is another place.
+        assert_eq!(tdd.also_in, 1);
         let review = idx
             .view()
             .items
