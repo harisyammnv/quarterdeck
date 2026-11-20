@@ -55,7 +55,9 @@ impl AppConfig {
     pub fn save(&self, dir: &Path) -> Result<(), ConfigError> {
         std::fs::create_dir_all(dir).map_err(ConfigError::Write)?;
         let json = serde_json::to_string_pretty(self).map_err(|e| ConfigError::Write(e.into()))?;
-        let tmp = dir.join(format!(".{CONFIG_FILE}.{}.tmp", std::process::id()));
+        static WRITES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let n = WRITES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let tmp = dir.join(format!(".{CONFIG_FILE}.{}.{n}.tmp", std::process::id()));
         match std::fs::remove_file(&tmp) {
             Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
                 return Err(ConfigError::Write(e))

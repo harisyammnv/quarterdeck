@@ -34,7 +34,9 @@ mod timefmt;
 
 pub use config::{AppConfig, HomeSource};
 pub use engine::{Engine, EngineHandle, HomeState};
-pub use fleet::{FleetRow, FleetView, SnapshotInfo, StateSource, UpdateCause};
+pub use fleet::{
+    merged_state, FleetRow, FleetView, MergedState, SnapshotInfo, StateSource, UpdateCause,
+};
 pub use home::{FmHome, HomeError};
 pub use inbox::{NoteError, NoteOutcome, NoteReceipt};
 pub use status::{StatusEvent, TaskState};

@@ -21,7 +21,6 @@ export { NoteField } from "./NoteField";
 export { Composer } from "./Composer";
 export { VirtualList } from "./VirtualList";
 export { Markdown } from "./Markdown";
-export { ConfirmLink } from "./ConfirmLink";
 export { useHotkey, type Combo } from "./hotkeys";
 export { useNow } from "./time";
 export { STATE_LOOK, ago, monogram, tileFill } from "../states";
