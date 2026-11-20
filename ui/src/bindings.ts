@@ -23,6 +23,11 @@ export const commands = {
 	 *  untrusted; the UI renders it through its sanitizing Markdown component.
 	 */
 	reportRead: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<ReportDoc_Serialize | null>("report_read", { taskId }, options),
+	/**
+	 *  The reports the fleet snapshot lists, newest first and bounded: task ids, titles, kinds and
+	 *  times only, never paths. Open one with `report_read`.
+	 */
+	reportsList: (options?: InvokeOptions) => __TAURI_INVOKE<ReportsList_Serialize>("reports_list", undefined, options),
 	appInfo: (options?: InvokeOptions) => __TAURI_INVOKE<AppInfo_Serialize>("app_info", undefined, options),
 	/**
 	 *  Opens the system folder picker, and when a valid Firstmate home is picked, remembers it
@@ -242,6 +247,48 @@ export type ReportHistory_Serialize = {
 	task_id: string,
 	/**  Newest first, at most [`HISTORY_MAX_EVENTS`]. */
 	events: StatusEvent_Serialize[],
+};
+
+/**  One report in the cross-task list. Ids and labels only; no path reaches the UI. */
+export type ReportItem = ReportItem_Serialize | ReportItem_Deserialize;
+
+/**  One report in the cross-task list. Ids and labels only; no path reaches the UI. */
+export type ReportItem_Deserialize = {
+	task_id: string,
+	/**  The task's title from the backlog or the task row, when the snapshot has one. */
+	title?: string | null,
+	/**  The report's kind from the snapshot, such as `scout`. */
+	kind?: string | null,
+	/**  Last modified, in Unix seconds, when the file system says. */
+	modified?: number | null,
+};
+
+/**  One report in the cross-task list. Ids and labels only; no path reaches the UI. */
+export type ReportItem_Serialize = {
+	task_id: string,
+	/**  The task's title from the backlog or the task row, when the snapshot has one. */
+	title: string | null,
+	/**  The report's kind from the snapshot, such as `scout`. */
+	kind: string | null,
+	/**  Last modified, in Unix seconds, when the file system says. */
+	modified: number | null,
+};
+
+/**  The reports the snapshot lists, newest first, at most [`MAX_LISTED`]. */
+export type ReportsList = ReportsList_Serialize | ReportsList_Deserialize;
+
+/**  The reports the snapshot lists, newest first, at most [`MAX_LISTED`]. */
+export type ReportsList_Deserialize = {
+	items: ReportItem_Deserialize[],
+	/**  True when more reports exist than are listed. */
+	truncated: boolean,
+};
+
+/**  The reports the snapshot lists, newest first, at most [`MAX_LISTED`]. */
+export type ReportsList_Serialize = {
+	items: ReportItem_Serialize[],
+	/**  True when more reports exist than are listed. */
+	truncated: boolean,
 };
 
 export type SnapshotInfo = SnapshotInfo_Serialize | SnapshotInfo_Deserialize;

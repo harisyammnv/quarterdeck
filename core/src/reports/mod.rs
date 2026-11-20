@@ -13,6 +13,7 @@ use crate::engine::HomeState;
 use crate::gateway::{TaskId, TaskIdError};
 use crate::home::FmHome;
 use crate::safe_read::{self, ReadError};
+use crate::snapshot::Snapshot;
 use crate::status::{self, StatusEvent, HISTORY_MAX_EVENTS};
 
 /// The most bytes of a report shown; a longer one is cut at a line and marked.
@@ -132,6 +133,84 @@ pub async fn read_report(data: &Path, id: &TaskId) -> Result<Option<ReportDoc>, 
     }))
 }
 
+/// The most reports [`list`] returns, newest first.
+pub const MAX_LISTED: usize = 200;
+
+/// One report in the cross-task list. Ids and labels only; no path reaches the UI.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct ReportItem {
+    pub task_id: String,
+    /// The task's title from the backlog or the task row, when the snapshot has one.
+    pub title: Option<String>,
+    /// The report's kind from the snapshot, such as `scout`.
+    pub kind: Option<String>,
+    /// Last modified, in Unix seconds, when the file system says.
+    #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
+    pub modified: Option<i64>,
+}
+
+/// The reports the snapshot lists, newest first, at most [`MAX_LISTED`].
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+pub struct ReportsList {
+    pub items: Vec<ReportItem>,
+    /// True when more reports exist than are listed.
+    pub truncated: bool,
+}
+
+/// The snapshot's `scout_reports`, as items without times: safe ids only, each id once,
+/// titled from the backlog record or the task row. Pure, so it is tested without a home.
+pub fn candidates(snapshot: &Snapshot) -> Vec<ReportItem> {
+    let mut seen = std::collections::HashSet::new();
+    snapshot
+        .scout_reports
+        .iter()
+        .filter(|r| TaskId::parse(&r.id).is_ok() && seen.insert(r.id.clone()))
+        .map(|r| ReportItem {
+            task_id: r.id.clone(),
+            title: snapshot
+                .record(&r.id)
+                .and_then(|b| b.title.clone())
+                .or_else(|| snapshot.task(&r.id).and_then(|t| t.title.clone())),
+            kind: r.kind.clone(),
+            modified: None,
+        })
+        .collect()
+}
+
+/// Lists the reports the current snapshot names. Each must exist as a regular file at
+/// `data/<id>/report.md` inside the home's `data` directory; one that does not, or that
+/// leaves the directory, is left out. Nothing is read but the file's metadata.
+pub async fn list(home: &FmHome, state: &HomeState) -> ReportsList {
+    let Some(snapshot) = state.snapshot.as_deref() else {
+        return ReportsList::default();
+    };
+    let data = home.root().join("data");
+    let mut items = Vec::new();
+    for mut item in candidates(snapshot) {
+        let rel = Path::new(&item.task_id).join("report.md");
+        let Ok(real) = safe_read::resolve_under(&data, &rel).await else {
+            continue;
+        };
+        item.modified = tokio::fs::metadata(&real)
+            .await
+            .ok()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .and_then(|d| i64::try_from(d.as_secs()).ok());
+        items.push(item);
+    }
+    items.sort_by(|a, b| {
+        b.modified
+            .cmp(&a.modified)
+            .then_with(|| a.task_id.cmp(&b.task_id))
+    });
+    let truncated = items.len() > MAX_LISTED;
+    items.truncate(MAX_LISTED);
+    ReportsList { items, truncated }
+}
+
 /// The status history of task `id`, newest first.
 pub async fn history(
     home: &FmHome,
@@ -234,6 +313,30 @@ mod tests {
             read_report(d.path(), &id()).await,
             Err(ReportError::NotFile)
         ));
+    }
+
+    #[test]
+    fn candidates_keep_safe_unique_ids_with_titles() {
+        let json = serde_json::json!({
+            "schema": "fm-fleet-snapshot.v1",
+            "tasks": [{ "id": "task-b", "backlog": { "title": "From the task" } }],
+            "backlog": { "records": [{ "id": "task-a", "title": "From the backlog" }] },
+            "scout_reports": [
+                { "id": "task-a", "kind": "scout", "path": "/p/home/data/task-a/report.md" },
+                { "id": "task-b", "kind": "ship" },
+                { "id": "task-a", "kind": "scout" },
+                { "id": "../state", "kind": "scout" },
+                { "id": "-x", "kind": "scout" },
+            ],
+        });
+        let s = Snapshot::parse(&json.to_string()).unwrap();
+        let c = candidates(&s);
+        let ids: Vec<_> = c.iter().map(|i| i.task_id.as_str()).collect();
+        assert_eq!(ids, ["task-a", "task-b"]);
+        assert_eq!(c[0].title.as_deref(), Some("From the backlog"));
+        assert_eq!(c[1].title.as_deref(), Some("From the task"));
+        assert_eq!(c[1].kind.as_deref(), Some("ship"));
+        assert_eq!(c[0].modified, None);
     }
 
     #[tokio::test]

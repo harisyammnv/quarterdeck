@@ -2,7 +2,7 @@
  * Invented reports and status history for working on the views in a plain browser. Nothing
  * here is read from a Firstmate home.
  */
-import type { ReportDoc, ReportHistory, StatusEvent } from "./bridge";
+import type { ReportDoc, ReportHistory, ReportsList, StatusEvent } from "./bridge";
 
 const now = Math.floor(Date.now() / 1000);
 
@@ -67,6 +67,17 @@ export function previewHistory(taskId: string): Promise<ReportHistory> {
       ev("working", 1140, "Reproduced the flake, 3 of 40 runs failed"),
       ev("working", 1560, "Started from dev"),
       ev("working", 1600, "setup done"),
+    ],
+  });
+}
+
+export function previewList(): Promise<ReportsList> {
+  return delay({
+    truncated: false,
+    items: [
+      { task_id: "login-flake", title: "Fix the login test flake", kind: "ship", modified: now - 300 },
+      { task_id: "cache-scout", title: "Find the slow dashboard query", kind: "scout", modified: now - 7200 },
+      { task_id: "pin-update", title: "Platform pin to 4.14.4", kind: "ship", modified: now - 86_400 },
     ],
   });
 }

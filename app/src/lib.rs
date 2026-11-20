@@ -24,6 +24,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             fleet::view_rendered,
             reports::report_history,
             reports::report_read,
+            reports::reports_list,
             shell::app_info,
             shell::home_pick,
             shell::task_pr_open,

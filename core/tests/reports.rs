@@ -74,3 +74,59 @@ async fn history_is_newest_first() {
         Err(ReportError::UnknownTask(_))
     ));
 }
+
+#[tokio::test]
+async fn list_names_only_reports_that_exist_newest_first() {
+    let dir = common::fake_home();
+    let home = FmHome::at(dir.path()).unwrap();
+    // The fixture's scout_reports name perf-scout and auth-audit; only perf-scout has a file.
+    std::fs::create_dir_all(dir.path().join("data/perf-scout")).unwrap();
+    std::fs::write(
+        dir.path().join("data/perf-scout/report.md"),
+        "# Slow query\n",
+    )
+    .unwrap();
+    let l = reports::list(&home, &state()).await;
+    assert!(!l.truncated);
+    assert_eq!(l.items.len(), 1);
+    assert_eq!(l.items[0].task_id, "perf-scout");
+    assert_eq!(l.items[0].kind.as_deref(), Some("scout"));
+    assert!(l.items[0].modified.is_some());
+    // No snapshot yet: nothing is listed.
+    assert!(reports::list(&home, &HomeState::default())
+        .await
+        .items
+        .is_empty());
+}
+
+#[tokio::test]
+async fn list_leaves_out_reports_that_leave_the_data_directory() {
+    let dir = common::fake_home();
+    let home = FmHome::at(dir.path()).unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    std::fs::write(outside.path().join("report.md"), "secret").unwrap();
+    std::os::unix::fs::symlink(outside.path(), dir.path().join("data/perf-scout")).unwrap();
+    assert!(reports::list(&home, &state()).await.items.is_empty());
+}
+
+#[tokio::test]
+async fn list_is_bounded() {
+    let dir = common::fake_home();
+    let home = FmHome::at(dir.path()).unwrap();
+    let n = reports::MAX_LISTED + 5;
+    let mut scouts = Vec::new();
+    for i in 0..n {
+        let id = format!("scout-{i:03}");
+        std::fs::create_dir_all(dir.path().join("data").join(&id)).unwrap();
+        std::fs::write(dir.path().join("data").join(&id).join("report.md"), "x").unwrap();
+        scouts.push(serde_json::json!({ "id": id, "kind": "scout" }));
+    }
+    let json = serde_json::json!({ "schema": "fm-fleet-snapshot.v1", "scout_reports": scouts });
+    let st = HomeState {
+        snapshot: Some(Arc::new(Snapshot::parse(&json.to_string()).unwrap())),
+        ..HomeState::default()
+    };
+    let l = reports::list(&home, &st).await;
+    assert_eq!(l.items.len(), reports::MAX_LISTED);
+    assert!(l.truncated);
+}

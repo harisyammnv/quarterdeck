@@ -11,6 +11,7 @@ fn main() {
             "refresh_fleet",
             "report_history",
             "report_read",
+            "reports_list",
             "send_note",
             "task_pr_open",
             "terminal_tail",
