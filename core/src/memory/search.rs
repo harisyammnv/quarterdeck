@@ -9,6 +9,8 @@ pub const MIN_QUERY_CHARS: usize = 2;
 const MAX_QUERY_CHARS: usize = 200;
 const SNIPPET_CHARS: usize = 160;
 const MAX_HITS_PER_DOC: usize = 20;
+/** Bytes read by one search across all documents; past it the result is marked truncated. */
+pub const SEARCH_BUDGET_BYTES: u64 = 32 * 1024 * 1024;
 
 /// One matching line.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -53,14 +55,35 @@ pub async fn search(index: &MemoryIndex, query: &str, limit: usize) -> MemorySea
     if needle.len() < MIN_QUERY_CHARS {
         return out;
     }
+    search_within(index, &needle, limit, SEARCH_BUDGET_BYTES, &mut out).await;
+    out
+}
+
+async fn search_within(
+    index: &MemoryIndex,
+    needle: &[char],
+    limit: usize,
+    budget: u64,
+    out: &mut MemorySearch,
+) {
+    let mut left = budget;
     for entry in &index.view().items {
-        let Ok((text, _)) = index.read_text(&entry.id, MAX_DOC_BYTES).await else {
+        // Once the hits are full, more reading would only grow the counts.
+        if left == 0 || out.hits.len() >= limit {
+            out.truncated = true;
+            break;
+        }
+        let Ok((text, cut)) = index.read_text(&entry.id, MAX_DOC_BYTES.min(left)).await else {
             continue;
         };
+        left = left.saturating_sub(u64::try_from(text.len()).unwrap_or(u64::MAX));
+        if cut && left == 0 {
+            out.truncated = true;
+        }
         let mut in_doc = 0usize;
         for (n, line) in text.lines().enumerate() {
             let chars: Vec<char> = line.chars().collect();
-            let starts = find_all(&chars, &needle);
+            let starts = find_all(&chars, needle);
             if starts.is_empty() {
                 continue;
             }
@@ -83,7 +106,6 @@ pub async fn search(index: &MemoryIndex, query: &str, limit: usize) -> MemorySea
             });
         }
     }
-    out
 }
 
 fn find_all(hay: &[char], needle: &[char]) -> Vec<usize> {
@@ -185,6 +207,18 @@ mod tests {
         let r = search(&idx, "the", 1).await;
         assert_eq!(r.hits.len(), 1);
         assert!(r.truncated);
+    }
+
+    #[tokio::test]
+    async fn the_byte_budget_stops_the_search() {
+        let f = fixture();
+        let idx = f.index();
+        let mut out = MemorySearch::default();
+        let needle: Vec<char> = "the".chars().collect();
+        search_within(&idx, &needle, 100, 40, &mut out).await;
+        assert!(out.truncated);
+        // Only the start of the first document was read.
+        assert!(out.hits.iter().all(|h| h.id == "preferences"));
     }
 
     #[test]

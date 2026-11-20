@@ -28,6 +28,18 @@ pub fn file_meta(path: &Path) -> Option<Meta> {
     })
 }
 
+/// Directory entries looked at by one listing.
+const MAX_ENTRIES: usize = 50_000;
+
+/// A name usable inside an opaque id: visible, no control characters, and no `:`, which
+/// separates the parts of an id (so two different folders can never share one).
+pub fn id_safe(name: &str) -> bool {
+    !name.is_empty()
+        && !name.starts_with('.')
+        && !name.contains(':')
+        && !name.chars().any(char::is_control)
+}
+
 /// Names of the visible subdirectories of `dir`, sorted, at most `cap`. Hidden entries and
 /// names that are not valid UTF-8 are skipped. A missing or unreadable directory has none.
 pub fn child_dirs(dir: &Path, cap: usize) -> Vec<String> {
@@ -35,10 +47,12 @@ pub fn child_dirs(dir: &Path, cap: usize) -> Vec<String> {
         return Vec::new();
     };
     let mut names: Vec<String> = rd
+        // A directory with an absurd number of entries is read only so far.
+        .take(MAX_ENTRIES)
         .filter_map(Result::ok)
         .filter_map(|e| {
             let name = e.file_name().into_string().ok()?;
-            if name.starts_with('.') || name.chars().any(char::is_control) {
+            if !id_safe(&name) {
                 return None;
             }
             // Follows symlinks: a linked skill folder counts.
@@ -84,7 +98,7 @@ mod tests {
     #[test]
     fn directories_and_missing_files() {
         let dir = tempfile::tempdir().unwrap();
-        for d in ["b", "a", ".hidden"] {
+        for d in ["b", "a", ".hidden", "x:y"] {
             std::fs::create_dir(dir.path().join(d)).unwrap();
         }
         std::fs::write(dir.path().join("file"), "").unwrap();

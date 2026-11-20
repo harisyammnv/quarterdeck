@@ -5,6 +5,9 @@ use yaml_rust2::{Yaml, YamlLoader};
 
 /// Front matter larger than this is not parsed.
 const MAX_FRONT_MATTER: usize = 16 * 1024;
+/// Front matter nested deeper than this is refused: skill headers are flat, and a deeply
+/// nested value would make loading and dropping it recurse.
+const MAX_DEPTH: u32 = 16;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FrontMatter {
@@ -85,26 +88,35 @@ fn parse(yaml: &str) -> FrontMatter {
     }
 }
 
-/// True when the YAML uses an alias in any document, holds more than one document, or cannot
-/// be parsed at all. Every document is scanned, because the loader loads them all.
+/// True when the YAML uses an alias in any document, holds more than one document, nests
+/// deeper than [MAX_DEPTH], or cannot be parsed at all. Every document is scanned, because the loader loads them all.
 fn has_alias(yaml: &str) -> bool {
     #[derive(Default)]
     struct Scan {
         alias: bool,
         documents: u32,
+        depth: u32,
+        deepest: u32,
     }
     impl EventReceiver for Scan {
         fn on_event(&mut self, ev: Event) {
             match ev {
                 Event::Alias(_) => self.alias = true,
                 Event::DocumentStart => self.documents += 1,
+                Event::SequenceStart(..) | Event::MappingStart(..) => {
+                    self.depth += 1;
+                    self.deepest = self.deepest.max(self.depth);
+                }
+                Event::SequenceEnd | Event::MappingEnd => {
+                    self.depth = self.depth.saturating_sub(1);
+                }
                 _ => {}
             }
         }
     }
     let mut seen = Scan::default();
     let parsed = Parser::new_from_str(yaml).load(&mut seen, true);
-    parsed.is_err() || seen.alias || seen.documents > 1
+    parsed.is_err() || seen.alias || seen.documents > 1 || seen.deepest > MAX_DEPTH
 }
 
 /// A string, or a number or boolean written where a string was meant.
@@ -162,6 +174,20 @@ mod tests {
         assert_eq!(body, "---\nname: x\nno end\n");
         let huge = format!("---\nname: x\n{}---\n", "a: b\n".repeat(10_000));
         assert!(split(&huge).0.malformed);
+    }
+
+    #[test]
+    fn deep_nesting_is_refused() {
+        // Balanced brackets 7000 deep fit under the size cap.
+        let deep = format!(
+            "---\nname: x\nv: {}{}\n---\n",
+            "[".repeat(7000),
+            "]".repeat(7000)
+        );
+        let (fm, _) = split(&deep);
+        assert!(fm.malformed);
+        let ok = "---\nname: x\nmetadata:\n  internal: true\n  tags: [a, b]\n---\n";
+        assert!(!split(ok).0.malformed);
     }
 
     #[test]

@@ -105,7 +105,10 @@ pub fn project_roots(state: &HomeState) -> Vec<ProjectRoot> {
         let (Some(path), Some(name)) = (&task.project, task.project_name()) else {
             continue;
         };
-        if !path.is_absolute() || out.iter().any(|p| p.path == *path || p.name == name) {
+        if !path.is_absolute()
+            || !fsread::id_safe(&name)
+            || out.iter().any(|p| p.path == *path || p.name == name)
+        {
             continue;
         }
         out.push(ProjectRoot {
