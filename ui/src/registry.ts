@@ -8,6 +8,7 @@ import {
   ScalesIcon as Scales,
   ShieldCheckIcon as ShieldCheck,
   SparkleIcon as Sparkle,
+  TerminalWindowIcon as TerminalWindow,
   type Icon,
 } from "@phosphor-icons/react";
 import type { FleetView } from "./bridge";
@@ -72,6 +73,7 @@ export const views: ViewDef[] = [
   { id: "containers", label: "Containers", description: "Docker containers by worktree", crumb: "Containers", icon: Cube, rail: true, component: lazy(() => import("./views/containers")), layout: { projects: false, inspector: false }, statusItem: ContainersStatus },
   { id: "memory", label: "Memory", description: "Preferences, learnings and reports", crumb: "Memory and skills", icon: Brain, rail: true, component: placeholder("Memory", Brain, "Preferences, learnings, briefs and reports, readable and searchable. Firstmate keeps owning every edit."), layout: { projects: false, inspector: false } },
   { id: "skills", label: "Skills", description: "Every installed skill and where it comes from", crumb: "Skills", icon: Sparkle, rail: true, component: placeholder("Skills", Sparkle, "Every skill in the known skill folders, with where it comes from and where the same name appears twice."), layout: { projects: false, inspector: false } },
+  { id: "terminal", label: "Terminal and report", description: "A task's terminal tail and report", crumb: "Task", icon: TerminalWindow, rail: false, component: lazy(() => import("./views/terminal")), layout: { projects: true, inspector: true } },
 ];
 
 /** Settings, at the foot of the rail, bound to ⌘,. */
@@ -81,6 +83,8 @@ export const settingsView: ViewDef = { id: "settings", label: "Settings", descri
 export const inspectorSections: SectionDef[] = [
   { id: "containers", order: 40, component: lazy(() => import("./views/containers/Section")) },
   { id: "task", order: 10, component: lazy(() => import("./views/fleet/TaskSection")) },
+  { id: "terminal", order: 20, component: lazy(() => import("./views/terminal/OpenSection")) },
+  { id: "reports", order: 30, component: lazy(() => import("./views/reports/HistorySection")) },
 ];
 
 /** Above the Fleet panel: the "Needs your call" room (the one teal room, Fleet only). */

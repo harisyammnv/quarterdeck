@@ -5,6 +5,7 @@
 //! Nothing here can spawn, steer, merge or clean up work; those scripts are not on the list.
 
 use std::ffi::OsString;
+use std::fmt;
 use std::process::Stdio;
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -20,6 +21,9 @@ pub enum Entry {
     FleetSnapshot,
     /// `bin/fm-inbox.sh note --request-id <id> --json -- <text>`: the one write path.
     InboxNote { request_id: String, text: String },
+    /// `bin/fm-peek.sh <task-id> <lines>`: the bounded tail of a worker's terminal.
+    /// The id is a validated, known task id, never an explicit backend target.
+    Peek { task_id: TaskId, lines: u16 },
 }
 
 impl Entry {
@@ -27,6 +31,7 @@ impl Entry {
         match self {
             Self::FleetSnapshot => "fm-fleet-snapshot.sh",
             Self::InboxNote { .. } => "fm-inbox.sh",
+            Self::Peek { .. } => "fm-peek.sh",
         }
     }
 
@@ -42,6 +47,13 @@ impl Entry {
                 "--".into(),
                 text.into(),
             ],
+            Self::Peek { task_id, lines } => {
+                // Clamped here too, so the allow-list holds for any caller.
+                vec![
+                    task_id.as_str().into(),
+                    (*lines).clamp(1, 200).to_string().into(),
+                ]
+            }
         }
     }
 
@@ -50,6 +62,7 @@ impl Entry {
         match self {
             Self::FleetSnapshot => Duration::from_secs(90),
             Self::InboxNote { .. } => Duration::from_secs(30),
+            Self::Peek { .. } => Duration::from_secs(20),
         }
     }
 }
@@ -61,6 +74,53 @@ pub fn valid_task_id(id: &str) -> bool {
     chars.next().is_some_and(|c| c.is_ascii_alphanumeric())
         && id.len() <= 128
         && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+}
+
+/// A validated task id: a safe name that the current fleet knows.
+///
+/// The name matches `^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$` with no `..`, so it can never be a
+/// path, an option or an explicit backend target.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct TaskId(String);
+
+impl TaskId {
+    /// Checks the shape of `raw` only. Use [`TaskId::known`] before reading anything.
+    pub fn parse(raw: &str) -> Result<Self, TaskIdError> {
+        if valid_task_id(raw) && !raw.contains("..") {
+            Ok(Self(raw.to_string()))
+        } else {
+            Err(TaskIdError::BadId)
+        }
+    }
+
+    /// Checks the shape of `raw` and that `is_known` (the current snapshot) has the task.
+    pub fn known(raw: &str, is_known: impl FnOnce(&str) -> bool) -> Result<Self, TaskIdError> {
+        let id = Self::parse(raw)?;
+        if is_known(&id.0) {
+            Ok(id)
+        } else {
+            Err(TaskIdError::Unknown(id.0))
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for TaskId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// Why a raw id is not a [`TaskId`].
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum TaskIdError {
+    #[error("not a task id")]
+    BadId,
+    #[error("no task {0} in the current fleet")]
+    Unknown(String),
 }
 
 /// "exit 3", or "killed by a signal" when there is no exit code.

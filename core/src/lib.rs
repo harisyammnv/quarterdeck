@@ -27,9 +27,11 @@ pub mod gateway;
 pub mod home;
 pub mod inbox;
 pub mod meta;
+pub mod reports;
 pub mod safe_read;
 pub mod snapshot;
 pub mod status;
+pub mod terminal;
 mod timefmt;
 
 pub use config::{AppConfig, HomeSource};

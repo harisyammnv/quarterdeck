@@ -111,6 +111,13 @@ It is read-only: nothing is started, stopped, removed or exec'd, and container e
 When the engine is Kiri, Open Kiri runs `/usr/bin/open -b dev.kiri.app`.
 `pnpm dev` previews the engine states with `?area=containers&containers=down|tcp|empty|many`.
 
+## Terminal and reports
+
+A task's view (from the inspector's Worker section) shows the tail of its terminal and its report.
+The tail comes from Firstmate's `bin/fm-peek.sh <task-id> <lines>`, the gateway's one read-only terminal entry: at most 200 lines and 64 KiB, read on open, when the task reports a status event and on Refresh, never on a timer.
+The core keeps only colour from the captured escape sequences and sends plain text spans, so nothing in agent output can drive the webview; remote tasks are not read.
+Reports are `data/<task>/report.md`, read through `safe_read` with links refused and rendered through the shared sanitizing Markdown; the inspector also lists the task's status history.
+
 ## Design
 
 The look is direction A, version 2 of the design mocks: a fog grey frame, floating white blocks, a black labelled icon rail, pill buttons and DM Sans.

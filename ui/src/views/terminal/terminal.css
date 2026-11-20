@@ -1,0 +1,94 @@
+/* The task view: header, pane tabs, then the pane. Measurements follow the A2 main mock. */
+
+.task {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.task-zero {
+  padding: var(--space-8);
+}
+
+.task-when {
+  font-size: 12px;
+}
+
+.task-tabs {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-16);
+  height: var(--size-tabrow);
+  flex: none;
+}
+
+.task-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-12) var(--space-16) var(--space-14);
+}
+
+/*
+ * Terminal tail: the design system's Terminal (qd-term) draws the block and its d, g, y and
+ * b colours; this file only sizes it inside the pane.
+ */
+
+.terminal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  min-height: 0;
+  flex: 1;
+}
+
+.terminal .qd-zero,
+.terminal .banner {
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.terminal-pre {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  tab-size: 8;
+  overscroll-behavior: contain;
+}
+
+.terminal-pre:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.terminal-line {
+  display: block;
+  min-height: 1.62em;
+}
+
+/* The design system has no terminal red; this is its dark danger value, which reads on the
+   always-black terminal. Requested as a --term-red token in the PR. */
+.terminal-red {
+  color: var(--term-red, #ff8591);
+}
+
+.terminal-bold {
+  font-weight: 700;
+}
+
+.terminal-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  font-size: 12px;
+}
+
+.terminal-caption {
+  gap: var(--space-6);
+}
+
+.terminal-open {
+  gap: var(--space-6);
+}
