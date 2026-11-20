@@ -1,0 +1,11 @@
+window=fm-app-login-fix
+endpoint_task_id=app-login-fix
+worktree=/work/example-app/fm-app-login-fix
+project=/home/firstmate/projects/example-app
+harness=claude
+kind=ship
+mode=direct-PR
+yolo=off
+branch=fm/app-login-fix
+base_branch=dev
+backend=orca
