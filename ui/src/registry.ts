@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import type { FleetView } from "./bridge";
 import { placeholder } from "./shell/Placeholder";
+import ContainersStatus from "./views/containers/StatusItem";
 
 type Lazy = ComponentType | LazyExoticComponent<ComponentType>;
 
@@ -71,7 +72,7 @@ export const views: ViewDef[] = [
   { id: "decisions", label: "Needs your call", description: "Every open decision, with its reason", crumb: "Needs your call", icon: HandPalm, rail: false, component: lazy(() => import("./views/decisions")), layout: { projects: true, inspector: false } },
   { id: "security", label: "Security", description: "Findings and dependency rollups", crumb: "Security", icon: ShieldCheck, rail: true, component: placeholder("Security", ShieldCheck, "Findings, dependency rollups and scanner jobs for every project, gathered in one place.", "Phase 2"), layout: { projects: false, inspector: false } },
   { id: "council", label: "Council", description: "Independent reviews of a pull request", crumb: "Council", icon: Scales, rail: true, component: placeholder("Council", Scales, "Independent reviewers read a pull request through separate lenses and agree on a verdict.", "Phase 3"), layout: { projects: false, inspector: false } },
-  { id: "containers", label: "Containers", description: "Docker containers by worktree", crumb: "Containers", icon: Cube, rail: true, component: placeholder("Containers", Cube, "Containers, images, volumes and networks from the local Docker engine, grouped by worktree. Read-only."), layout: { projects: false, inspector: false } },
+  { id: "containers", label: "Containers", description: "Docker containers by worktree", crumb: "Containers", icon: Cube, rail: true, component: lazy(() => import("./views/containers")), layout: { projects: false, inspector: false }, statusItem: ContainersStatus },
   { id: "memory", label: "Memory", description: "Preferences, learnings, briefs, reports and project guides", crumb: "Memory and skills", icon: Brain, rail: true, component: lazy(() => import("./views/memory")), layout: { projects: false, inspector: false } },
   { id: "skills", label: "Skills", description: "Every installed skill and where it comes from", crumb: "Skills", icon: Sparkle, rail: true, component: lazy(() => import("./views/skills")), layout: { projects: false, inspector: false } },
   { id: "terminal", label: "Terminal and report", description: "A task's terminal tail and report", crumb: "Task", icon: TerminalWindow, rail: false, component: lazy(() => import("./views/terminal")), layout: { projects: true, inspector: true } },
@@ -82,10 +83,10 @@ export const settingsView: ViewDef = { id: "settings", label: "Settings", descri
 
 /** Inspector sections, one line per area, in `order`. */
 export const inspectorSections: SectionDef[] = [
+  { id: "containers", order: 40, component: lazy(() => import("./views/containers/Section")) },
   { id: "task", order: 10, component: lazy(() => import("./views/fleet/TaskSection")) },
   { id: "projects-worktree", order: 15, component: lazy(() => import("./views/projects/WorktreeSection")) },
   { id: "projects-security", order: 30, component: lazy(() => import("./views/projects/SecuritySection")) },
-  { id: "projects-containers", order: 40, component: lazy(() => import("./views/projects/ContainersSection")) },
   { id: "projects-council", order: 50, component: lazy(() => import("./views/projects/CouncilSection")) },
   { id: "terminal", order: 20, component: lazy(() => import("./views/terminal/OpenSection")) },
   { id: "reports", order: 30, component: lazy(() => import("./views/reports/HistorySection")) },

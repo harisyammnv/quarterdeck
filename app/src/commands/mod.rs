@@ -7,6 +7,7 @@
 //! lists in step.
 
 pub mod board;
+pub mod containers;
 pub mod fleet;
 pub mod memory;
 pub mod projects;

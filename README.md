@@ -110,6 +110,14 @@ The teal "Needs your call" strip and the decisions view list only the holds Firs
 Nothing is classified from prose: the core sorts on `state` and `hold_bucket` alone, and a record it cannot place is shown as such rather than dropped.
 A reply is an inbox note about the task; pull requests open by task id, and other links only after the full address is confirmed.
 
+## Containers
+
+The Containers view reads the local Docker engine over the Unix socket of the active Docker context (`DOCKER_HOST` when it is `unix://`, else `currentContext` in `~/.docker/config.json`); a TCP or SSH context is reported as not supported and never dialled.
+It lists containers, images, volumes and networks, groups containers under the task worktree that holds their compose folder or a bind-mounted path, and reads a bounded log tail and CPU and memory for the selected container only.
+It is read-only: nothing is started, stopped, removed or exec'd, and container environment variables never reach the window.
+When the engine is Kiri, Open Kiri runs `/usr/bin/open -b dev.kiri.app`.
+`pnpm dev` previews the engine states with `?area=containers&containers=down|tcp|empty|many`.
+
 ## Terminal and reports
 
 A task's view (from the inspector's Worker section) shows the tail of its terminal and its report.

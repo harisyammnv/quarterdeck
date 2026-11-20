@@ -20,6 +20,7 @@
 
 pub mod board;
 pub mod config;
+pub mod containers;
 pub mod engine;
 pub mod external;
 pub mod fleet;

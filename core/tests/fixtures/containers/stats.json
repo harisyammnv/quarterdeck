@@ -1,0 +1,47 @@
+{
+  "read": "2026-11-20T10:20:00Z",
+  "preread": "2026-11-20T10:19:59Z",
+  "id": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+  "name": "/login-api-1",
+  "cpu_stats": {
+    "cpu_usage": {
+      "total_usage": 2500000000,
+      "usage_in_kernelmode": 0,
+      "usage_in_usermode": 0
+    },
+    "system_cpu_usage": 120000000000,
+    "online_cpus": 4,
+    "throttling_data": {
+      "periods": 0,
+      "throttled_periods": 0,
+      "throttled_time": 0
+    }
+  },
+  "precpu_stats": {
+    "cpu_usage": {
+      "total_usage": 2400000000,
+      "usage_in_kernelmode": 0,
+      "usage_in_usermode": 0
+    },
+    "system_cpu_usage": 116000000000,
+    "online_cpus": 4,
+    "throttling_data": {
+      "periods": 0,
+      "throttled_periods": 0,
+      "throttled_time": 0
+    }
+  },
+  "memory_stats": {
+    "usage": 250000000,
+    "limit": 8000000000,
+    "stats": {
+      "inactive_file": 27700000,
+      "active_file": 1000
+    }
+  },
+  "pids_stats": {
+    "current": 12
+  },
+  "blkio_stats": {},
+  "networks": {}
+}

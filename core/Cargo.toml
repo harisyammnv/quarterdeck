@@ -20,6 +20,8 @@ notify.workspace = true
 time.workspace = true
 libc.workspace = true
 specta = { workspace = true, optional = true }
+bollard.workspace = true
+futures-util.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

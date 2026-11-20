@@ -1,0 +1,399 @@
+/* Containers view (design 5.8). Built from the design system's tokens and the shared
+   primitives; classes here are prefixed and only lay out what the primitives do not cover. */
+
+.containers-root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.containers-head {
+  flex: none;
+}
+
+.containers-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.containers-tabs {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  flex: none;
+}
+
+/* ---------- columns ---------- */
+
+.containers-cols {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.containers-list {
+  flex: 1;
+}
+
+.containers-insp {
+  width: 380px;
+  flex: none;
+}
+
+/* ---------- grid rows ---------- */
+
+.containers-grid {
+  display: grid;
+  grid-template-columns: 200px 190px 100px 76px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+}
+
+.containers-grid > * {
+  min-width: 0;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.containers-grid > .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.containers-grid > .containers-first {
+  padding-left: 40px;
+}
+
+.containers-th {
+  height: 30px;
+  flex: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.containers-row {
+  --muted: var(--muted-panel);
+  position: relative;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+button.containers-row:hover,
+.containers-row.sel {
+  --muted: var(--muted-strong);
+  background: var(--hover);
+}
+
+.containers-row.sel::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--ink);
+}
+
+.containers-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  outline: none;
+}
+
+.containers-scroll.virtual {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.containers-scroll:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--edge);
+}
+
+/* ---------- groups ---------- */
+
+.containers-grp {
+  --muted: var(--muted-strong);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 34px;
+  padding: 0 16px;
+  background: var(--sunken);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+}
+
+.containers-vlist .containers-grp,
+.containers-vlist .containers-zrow {
+  height: 36px;
+}
+
+button.containers-grp:hover {
+  background: var(--hover);
+}
+
+.containers-grp.empty {
+  --muted: var(--muted-panel);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.containers-caret {
+  display: grid;
+  place-items: center;
+  width: 12px;
+  color: var(--muted);
+  transition: transform var(--t-fast) var(--ease-out);
+}
+
+.containers-caret.shut {
+  transform: rotate(-90deg);
+}
+
+.containers-othertile {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--tile-line);
+  flex: none;
+}
+
+.containers-gname {
+  flex: 0 1 auto;
+}
+
+.containers-slash {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.containers-gcount {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.containers-zrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px 0 40px;
+  color: var(--muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.containers-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+  flex: none;
+}
+
+.containers-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---------- inspector ---------- */
+
+.containers-iname {
+  font-weight: 700;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.containers-ibody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.containers-stats {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.containers-stat {
+  --muted: var(--muted-strong);
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-inner);
+  background: var(--sunken);
+}
+
+.containers-statrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.containers-statv {
+  font-weight: 700;
+}
+
+.containers-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 32px;
+  margin-top: 6px;
+}
+
+.containers-spark i {
+  flex: 1;
+  min-height: 0;
+  border-radius: 1px;
+  background: var(--ink);
+  opacity: 0.85;
+}
+
+/* A slot with no sample yet: a faint stub so the tile never looks empty. */
+.containers-spark i.none {
+  height: 6%;
+  background: var(--edge-soft);
+  opacity: 1;
+}
+
+.containers-ibody .kv {
+  flex: none;
+}
+
+.containers-loghead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.containers-h2 {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.containers-search {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.containers-search:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.containers-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+/* The field draws the focus ring; the input inside it must not draw a second one. */
+.containers-search input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.containers-search input::placeholder {
+  color: var(--muted);
+}
+
+/* The log tail is the design system's Terminal (qd-term); this only fits it to the column. */
+.containers-logs {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  font-size: 11px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.containers-logs:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.containers-err {
+  font-weight: 700;
+}
+
+.containers-caption,
+.containers-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  flex: none;
+}
+
+/* ---------- inspector section (Fleet) ---------- */
+
+.containers-isect {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.containers-isect li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  border-bottom: 1px solid var(--line);
+}
+
+.containers-isect li:last-child {
+  border-bottom: 0;
+}

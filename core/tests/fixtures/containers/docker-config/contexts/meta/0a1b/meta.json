@@ -1,0 +1,12 @@
+{
+  "Name": "kiri",
+  "Metadata": {
+    "Description": "Kiri"
+  },
+  "Endpoints": {
+    "docker": {
+      "Host": "unix:///p/home/.kiri/run/docker.sock",
+      "SkipTLSVerify": false
+    }
+  }
+}

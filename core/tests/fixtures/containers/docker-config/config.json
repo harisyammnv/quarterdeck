@@ -1,0 +1,7 @@
+{
+  "auths": {
+    "registry.example.invalid": {}
+  },
+  "credsStore": "example",
+  "currentContext": "kiri"
+}

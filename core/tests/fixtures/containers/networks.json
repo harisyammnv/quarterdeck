@@ -1,0 +1,23 @@
+[
+  {
+    "Name": "bridge",
+    "Id": "3333333333333333333333333333333333333333333333333333333333333333",
+    "Created": "2026-11-01T00:00:00Z",
+    "Scope": "local",
+    "Driver": "bridge",
+    "EnableIPv6": false,
+    "Internal": false,
+    "Attachable": false,
+    "Ingress": false,
+    "Containers": {},
+    "Options": {},
+    "Labels": {}
+  },
+  {
+    "Name": "login_default",
+    "Id": "4444444444444444444444444444444444444444444444444444444444444444",
+    "Scope": "local",
+    "Driver": "bridge",
+    "Internal": true
+  }
+]
