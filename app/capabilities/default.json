@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The main window: the app's own commands, event listening and window dragging. No shell, file system or network permission.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging",
+    "core:window:allow-theme",
+    "allow-app-info",
+    "allow-fleet-view",
+    "allow-refresh-fleet",
+    "allow-send-note",
+    "allow-view-rendered"
+  ]
+}
