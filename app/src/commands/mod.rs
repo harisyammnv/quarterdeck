@@ -9,6 +9,7 @@
 pub mod board;
 pub mod fleet;
 pub mod memory;
+pub mod projects;
 pub mod reports;
 pub mod shell;
 pub mod skills;

@@ -27,6 +27,18 @@ export const commands = {
 	memoryRead: (id: string, options?: InvokeOptions) => __TAURI_INVOKE<MemoryDoc_Serialize>("memory_read", { id }, options),
 	/**  Finds lines containing `query` across every memory document, case-insensitively. */
 	memorySearch: (query: string, options?: InvokeOptions) => __TAURI_INVOKE<MemorySearch>("memory_search", { query }, options),
+	/**
+	 *  Brings a task's terminal forward in Orca (`orca terminal switch`). The window sends the
+	 *  task id; the handle comes from the snapshot. qd-terminal's "open the real terminal" reuses it.
+	 */
+	orcaFocus: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<null>("orca_focus", { taskId }, options),
+	/**
+	 *  A project's icon as a size-capped `data:` URL, or `None` for a monogram. The window sends
+	 *  the project's name; the core finds its clone or worktrees in the snapshot.
+	 */
+	projectIcon: (name: string, options?: InvokeOptions) => __TAURI_INVOKE<string | null>("project_icon", { name }, options),
+	/**  The current projects view, or `None` when no home is configured. */
+	projectsView: (options?: InvokeOptions) => __TAURI_INVOKE<ProjectsView_Serialize | null>("projects_view", undefined, options),
 	/**  Task `task_id`'s recent status events, newest first. */
 	reportHistory: (taskId: string, options?: InvokeOptions) => __TAURI_INVOKE<ReportHistory_Serialize>("report_history", { taskId }, options),
 	/**
@@ -80,6 +92,7 @@ export const events = {
 	boardUpdated: makeEvent<BoardUpdated_Serialize, BoardUpdated_Deserialize>("board-updated"),
 	fleetUpdated: makeEvent<FleetUpdated_Serialize, FleetUpdated_Deserialize>("fleet-updated"),
 	homeChanged: makeEvent<HomeChanged_Serialize, HomeChanged_Deserialize>("home-changed"),
+	projectsUpdated: makeEvent<ProjectsUpdated_Serialize, ProjectsUpdated_Deserialize>("projects-updated"),
 };
 
 /* Types */
@@ -576,6 +589,97 @@ export type NoteReceipt = {
 	announced: boolean,
 	/**  Firstmate has already acknowledged (handled) the note. */
 	acknowledged: boolean,
+};
+
+export type ProjectGroup = ProjectGroup_Serialize | ProjectGroup_Deserialize;
+
+export type ProjectGroup_Deserialize = {
+	/**  The project's directory name, never its path. `None` groups tasks without a project. */
+	name?: string | null,
+	/**  The project's worktrees (tasks), by id. */
+	tasks: ProjectRow_Deserialize[],
+};
+
+export type ProjectGroup_Serialize = {
+	/**  The project's directory name, never its path. `None` groups tasks without a project. */
+	name: string | null,
+	/**  The project's worktrees (tasks), by id. */
+	tasks: ProjectRow_Serialize[],
+};
+
+/**  One worktree row, and the facts the inspector shows when it is selected. */
+export type ProjectRow = ProjectRow_Serialize | ProjectRow_Deserialize;
+
+/**  One worktree row, and the facts the inspector shows when it is selected. */
+export type ProjectRow_Deserialize = {
+	id: string,
+	title?: string | null,
+	/**  `ship`, `scout` or `secondmate` as written. */
+	kind?: string | null,
+	state: TaskState,
+	/**  The state word as written, so unknown words are still shown honestly. */
+	state_word: string,
+	source: StateSource,
+	/**  The agent harness, such as `claude` or `codex`. */
+	harness?: string | null,
+	branch?: string | null,
+	/**  The delivery mode as written, such as `direct-PR`. */
+	mode?: string | null,
+	/**  When the worker was started, Unix seconds, from the spawn stamp. */
+	started_at?: number | null,
+	latest_event?: StatusEvent_Deserialize | null,
+	/**  "Open in Orca" can bring this task forward. */
+	in_orca: boolean,
+};
+
+/**  One worktree row, and the facts the inspector shows when it is selected. */
+export type ProjectRow_Serialize = {
+	id: string,
+	title: string | null,
+	/**  `ship`, `scout` or `secondmate` as written. */
+	kind: string | null,
+	state: TaskState,
+	/**  The state word as written, so unknown words are still shown honestly. */
+	state_word: string,
+	source: StateSource,
+	/**  The agent harness, such as `claude` or `codex`. */
+	harness: string | null,
+	branch: string | null,
+	/**  The delivery mode as written, such as `direct-PR`. */
+	mode: string | null,
+	/**  When the worker was started, Unix seconds, from the spawn stamp. */
+	started_at: number | null,
+	latest_event: StatusEvent_Serialize | null,
+	/**  "Open in Orca" can bring this task forward. */
+	in_orca: boolean,
+};
+
+/**  A new projects view, pushed only when it differs from the last one. */
+export type ProjectsUpdated = ProjectsUpdated_Serialize | ProjectsUpdated_Deserialize;
+
+/**  A new projects view, pushed only when it differs from the last one. */
+export type ProjectsUpdated_Deserialize = ProjectsView_Deserialize;
+
+/**  A new projects view, pushed only when it differs from the last one. */
+export type ProjectsUpdated_Serialize = ProjectsView_Serialize;
+
+/**  Everything the sidebar and the inspector's task facts need. */
+export type ProjectsView = ProjectsView_Serialize | ProjectsView_Deserialize;
+
+/**  Everything the sidebar and the inspector's task facts need. */
+export type ProjectsView_Deserialize = {
+	/**  A snapshot has been read; until then the list is empty because it is not known yet. */
+	ready: boolean,
+	/**  Projects by name, then the tasks with no project as a last group with no name. */
+	projects: ProjectGroup_Deserialize[],
+};
+
+/**  Everything the sidebar and the inspector's task facts need. */
+export type ProjectsView_Serialize = {
+	/**  A snapshot has been read; until then the list is empty because it is not known yet. */
+	ready: boolean,
+	/**  Projects by name, then the tasks with no project as a last group with no name. */
+	projects: ProjectGroup_Serialize[],
 };
 
 /**  A report as read from disk. */

@@ -28,6 +28,7 @@ pub mod home;
 pub mod inbox;
 pub mod memory;
 pub mod meta;
+pub mod projects;
 pub mod reports;
 pub mod safe_read;
 pub mod skills;

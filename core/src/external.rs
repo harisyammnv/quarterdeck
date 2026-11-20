@@ -19,6 +19,9 @@ pub const MAX_URL_LEN: usize = 2048;
 pub enum External {
     /// `/usr/bin/open <url>`: opens an `https` link in the default browser.
     OpenUrl(String),
+    /// `orca terminal switch --terminal <handle>`: brings a task's terminal forward in Orca
+    /// (see [`crate::projects::orca`]). The handle type can only hold a well-formed value.
+    OrcaFocus(crate::projects::orca::TerminalHandle),
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -81,6 +84,7 @@ impl External {
     fn program(&self) -> &'static str {
         match self {
             Self::OpenUrl(_) => "/usr/bin/open",
+            Self::OrcaFocus(_) => crate::projects::orca::ORCA_BIN,
         }
     }
 
@@ -91,6 +95,7 @@ impl External {
                 validate_url(url)?;
                 Ok(vec![url.clone()])
             }
+            Self::OrcaFocus(handle) => Ok(handle.args()),
         }
     }
 
