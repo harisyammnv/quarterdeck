@@ -27,6 +27,7 @@ pub mod gateway;
 pub mod home;
 pub mod inbox;
 pub mod meta;
+pub mod projects;
 pub mod reports;
 pub mod safe_read;
 pub mod snapshot;
