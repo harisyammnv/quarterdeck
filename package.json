@@ -11,8 +11,8 @@
     "typecheck": "tsc -p ui/tsconfig.json --noEmit",
     "lint": "eslint ui",
     "tauri": "tauri",
-    "app:dev": "tauri dev --config app/tauri.conf.json",
-    "app:build": "tauri build --debug --config app/tauri.conf.json",
+    "app:dev": "tauri dev",
+    "app:build": "tauri build --debug",
     "check": "pnpm typecheck && pnpm lint && cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace"
   },
   "dependencies": {
