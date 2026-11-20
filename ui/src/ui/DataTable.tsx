@@ -20,6 +20,7 @@ export function DataTable<R>({
   selected,
   onSelect,
   rowClass,
+  rowVersion,
   label,
 }: {
   columns: Column<R>[];
@@ -28,10 +29,12 @@ export function DataTable<R>({
   selected?: Key | null;
   onSelect?: (row: R) => void;
   rowClass?: (row: R) => string | undefined;
+  /** Changing a row's version remounts it, which restarts its change pulse. */
+  rowVersion?: (row: R) => number;
   label: string;
 }) {
   return (
-    <table className="dtable" aria-label={label}>
+    <table className="qd-table ui-table" aria-label={label}>
       <colgroup>
         {columns.map((c) => (
           <col key={c.key} style={c.width ? { width: c.width } : undefined} />
@@ -49,10 +52,10 @@ export function DataTable<R>({
       <tbody>
         {rows.map((r) => {
           const k = rowKey(r);
-          const cls = [k === selected ? "sel" : "", onSelect ? "clickable" : "", rowClass?.(r) ?? ""].filter(Boolean).join(" ");
+          const cls = [onSelect ? "ui-clickable" : "", rowClass?.(r) ?? ""].filter(Boolean).join(" ");
           return (
             <tr
-              key={k}
+              key={rowVersion ? `${String(k)}:${String(rowVersion(r))}` : k}
               className={cls || undefined}
               aria-selected={onSelect ? k === selected : undefined}
               tabIndex={onSelect ? 0 : undefined}

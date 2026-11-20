@@ -1,5 +1,5 @@
 import { BinocularsIcon as Binoculars, CircleDashedIcon as CircleDashed, SailboatIcon as Sailboat, UsersThreeIcon as UsersThree } from "@phosphor-icons/react";
-import { Tag } from "./Pill";
+import { Tag } from "./StatusChip";
 
 /** The task kind as a quiet tag with its glyph: ship, scout or second mate. */
 export function KindPill({ kind }: { kind: string | null | undefined }) {

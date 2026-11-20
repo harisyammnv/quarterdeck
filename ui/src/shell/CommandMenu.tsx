@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { MagnifyingGlassIcon as MagnifyingGlass, type Icon } from "@phosphor-icons/react";
-import { useHotkey } from "../ui";
+import { Keycap, useHotkey } from "../ui";
 import { inApp, refreshFleet } from "../bridge";
 import { useApp } from "../state/app";
 import { railViews, settingsView, views } from "../registry";
@@ -81,7 +81,7 @@ export function CommandMenu() {
 
   return (
     <div className="cmdwrap">
-      <label className="cmd">
+      <label className="qd-cmd">
         <MagnifyingGlass size={15} />
         <span className="sr-only">Search or run a command</span>
         <input
@@ -117,9 +117,7 @@ export function CommandMenu() {
             }
           }}
         />
-        <span className="kbd" aria-hidden="true">
-          ⌘K
-        </span>
+        <Keycap>⌘K</Keycap>
       </label>
       {open && (
         <ul className="cmdlist" id="cmd-list" role="listbox" aria-label="Commands">

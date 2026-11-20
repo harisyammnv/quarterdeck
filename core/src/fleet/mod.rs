@@ -87,6 +87,9 @@ pub struct FleetView {
     /// Short label of the home, such as `orca/firstmate`.
     pub home: String,
     pub rows: Vec<FleetRow>,
+    /// Decisions waiting on a person now: backlog records the snapshot marks
+    /// `captain_actionable`. Uncapped; 0 until the first snapshot lands.
+    pub decisions: u32,
     pub snapshot: SnapshotInfo,
     pub cause: Option<UpdateCause>,
 }
@@ -262,6 +265,9 @@ impl FleetModel {
             seq: self.seq,
             home: self.home.clone(),
             rows: self.rows(),
+            decisions: self.snapshot.as_ref().map_or(0, |s| {
+                u32::try_from(s.actionable_count()).unwrap_or(u32::MAX)
+            }),
             snapshot: self.info(),
             cause,
         }
@@ -422,6 +428,18 @@ mod tests {
         assert_eq!(row.project.as_deref(), Some("example-ops"));
         assert_eq!(row.state, TaskState::NeedsDecision);
         assert_eq!(row.doing.as_deref(), Some("report ready, awaiting a pick"));
+    }
+
+    #[test]
+    fn decisions_count_actionable_records_not_rows() {
+        let mut m = FleetModel::new("home");
+        assert_eq!(m.view(None).decisions, 0);
+        let v = model_with_snapshot().view(None);
+        // One actionable record (deps-rollup-merge); the needs-decision task row is not counted.
+        assert_eq!(v.decisions, 1);
+        assert!(v.rows.iter().any(|r| r.state == TaskState::NeedsDecision));
+        m.apply_snapshot(Arc::new(Snapshot::default()));
+        assert_eq!(m.view(None).decisions, 0);
     }
 
     #[test]
