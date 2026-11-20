@@ -1,7 +1,7 @@
 /*
- * Terminal tail. Measurements follow .term in fm-ui-a-polish/a2.css.
- * The --term-* tokens are the A2 terminal palette; until tokens.css carries them, the
- * fallbacks below are the A2 values (the same in light and dark except the edge).
+ * Terminal tail: the design system's Terminal component (qd-term). The --term-* tokens are
+ * the design system's terminal palette; until the repo's tokens.css carries them, the
+ * fallbacks below are its values (the same in light and dark except the edge).
  */
 
 /* The task view: header, pane tabs, then the pane. Measurements follow the A2 main mock. */
@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   padding: 0 16px;
-  height: 40px;
+  height: var(--size-tabrow, 40px);
   flex: none;
 }
 
@@ -54,7 +54,7 @@
   border: 1px solid var(--term-line, #000000);
   border-radius: var(--r-inner);
   padding: 14px 16px;
-  font-family: var(--mono);
+  font-family: var(--font-mono, var(--mono));
   font-size: 12px;
   line-height: 1.62;
   letter-spacing: 0;

@@ -152,7 +152,7 @@ function TailPre({ tail, taskId }: { tail: TerminalTail; taskId: string }) {
   return (
     <pre
       ref={ref}
-      className="terminal-pre"
+      className="qd-term terminal-pre"
       tabIndex={0}
       role="log"
       aria-label={`Recent terminal output of ${taskId}`}
