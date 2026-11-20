@@ -108,10 +108,13 @@ fn live_calls_are_captain_actionable_holds_oldest_first() {
 #[test]
 fn deferred_holds_keep_their_reason_and_sit_in_queued() {
     let v = view(&fixture());
+    // Oldest first: cache-plan was filed 2026-10-30 (no hold stamp), python-bump held
+    // 2026-11-10, browser-pin 2026-11-19.
     assert_eq!(
         decision_ids(&v.decisions.deferred),
-        ["python-bump", "cache-plan", "browser-pin"]
+        ["cache-plan", "python-bump", "browser-pin"]
     );
+    assert_eq!(v.decisions.deferred_total, 3);
     let by = |id: &str| v.decisions.deferred.iter().find(|d| d.id == id).unwrap();
     assert_eq!(by("python-bump").bucket, HoldBucket::Dated);
     assert_eq!(by("python-bump").until.as_deref(), Some("2026-12-02"));

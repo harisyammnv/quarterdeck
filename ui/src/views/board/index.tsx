@@ -51,10 +51,11 @@ export default function BoardArea() {
 function Board({ v, now }: { v: BoardView; now: number }) {
   const live = v.decisions.live;
   const doneMore = v.done_total - v.done.length;
+  const queuedMore = v.queued_total - v.queued.length;
   return (
     <>
       <Panel as="main" className="fill board" label="Board">
-        <PanelHead title="Board" meta={v.ready ? `${String(v.queued.length)} queued, ${String(v.in_flight.length)} in flight, ${String(live.length)} waiting on you` : undefined}>
+        <PanelHead title="Board" meta={v.ready ? `${String(v.queued_total)} queued, ${String(v.in_flight.length)} in flight, ${String(live.length)} waiting on you` : undefined}>
           {v.generated_at !== null && <span className="meta tn">Snapshot {ago(v.generated_at * 1000, now)}</span>}
         </PanelHead>
         {v.other.length > 0 && (
@@ -70,7 +71,7 @@ function Board({ v, now }: { v: BoardView; now: number }) {
           </div>
         ) : (
           <div className="board-cols">
-            <Lane title="Queued" dot="idle" count={v.queued.length} empty="Nothing queued.">
+            <Lane title="Queued" dot="idle" count={v.queued_total} empty="Nothing queued." foot={queuedMore > 0 ? `${String(queuedMore)} further down the backlog not shown` : undefined}>
               <Cards label="Queued" items={v.queued} now={now} />
             </Lane>
             <Lane title="In flight" dot="working" count={v.in_flight.length} empty="No task is running.">

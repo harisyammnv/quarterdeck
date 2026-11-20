@@ -164,10 +164,11 @@ export function previewBoard(): BoardView {
     ready: true,
     generated_at: now - 14,
     queued,
+    queued_total: queued.length,
     in_flight,
     done,
     done_total: 27,
-    decisions: { live, deferred },
+    decisions: { live, deferred, deferred_total: deferred.length },
     other: [],
   };
 }

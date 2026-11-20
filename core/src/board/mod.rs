@@ -427,6 +427,9 @@ pub fn view(state: &HomeState) -> BoardView {
     v.decisions
         .live
         .sort_by(|a, b| oldest_first(a.raised_at, b.raised_at));
+    v.decisions
+        .deferred
+        .sort_by(|a, b| oldest_first(a.raised_at, b.raised_at));
     v.decisions.deferred_total = u32::try_from(v.decisions.deferred.len()).unwrap_or(u32::MAX);
     v.decisions.deferred.truncate(MAX_DEFERRED);
     // Newest finished first; stable, so equal dates keep backlog order.

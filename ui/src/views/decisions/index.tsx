@@ -100,7 +100,7 @@ export default function DecisionsArea() {
             }}
             items={[
               { id: "live", label: "Live", count: live.length },
-              { id: "deferred", label: "Deferred", count: deferred.length },
+              { id: "deferred", label: "Deferred", count: load.view.decisions.deferred_total },
             ]}
           />
         </div>
@@ -125,10 +125,15 @@ export default function DecisionsArea() {
               }}
             >
               <Clock size={14} aria-hidden="true" />
-              <span>{deferred.length} not waiting on you right now</span>
+              <span>{load.view.decisions.deferred_total} not waiting on you right now</span>
               <span className="decisions-grp-sub trunc">Firstmate brings these back on their date or when the blocker clears</span>
               <CaretRight size={14} aria-hidden="true" />
             </button>
+          )}
+          {effectiveTab === "deferred" && load.view.decisions.deferred_total > deferred.length && (
+            <Zero icon={Clock} title={`${String(load.view.decisions.deferred_total - deferred.length)} newer holds not shown`}>
+              The oldest {deferred.length} are listed; Firstmate keeps the rest in the backlog.
+            </Zero>
           )}
           {items.length === 0 ? (
             <Zero icon={CheckCircle} title={effectiveTab === "live" ? "Nothing needs your call" : "Nothing is set aside"}>
