@@ -1,0 +1,437 @@
+/* The window frame (ui/src/shell): title bar, rail, project list, inspector, status bar. */
+
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- title bar ---------- */
+
+.titlebar {
+  height: var(--titlebar-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Room for the macOS traffic lights drawn over the overlay title bar. */
+  padding: 0 14px 0 84px;
+  position: relative;
+  z-index: 10;
+}
+
+.titlebar .wtitle {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  flex: none;
+}
+
+.titlebar .crumb {
+  color: var(--muted2);
+  max-width: 280px;
+}
+
+.tb-mid {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.tb-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.cmdwrap {
+  position: relative;
+  width: 420px;
+  max-width: 100%;
+}
+
+.cmd {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--r-pill);
+  color: var(--muted2);
+  font-size: 12.5px;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+
+.cmd:hover {
+  border-color: var(--edge-soft);
+}
+
+.cmd:focus-within {
+  border-color: var(--ink);
+  box-shadow: var(--focus);
+}
+
+.cmd input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  color: var(--ink);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.cmd input:focus-visible {
+  box-shadow: none;
+}
+
+.cmd input::placeholder {
+  color: var(--muted2);
+}
+
+.cmdlist {
+  position: absolute;
+  top: 34px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-inner);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  z-index: 30;
+}
+
+.cmdlist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--r-row);
+  font-size: 13px;
+  --muted: var(--muted-p);
+}
+
+.cmdlist li.on {
+  background: var(--hover);
+  --muted: var(--muted2);
+}
+
+.cmdlist .cmd-ic {
+  width: 16px;
+  color: var(--muted2);
+  flex: none;
+}
+
+.cmdlist .cmd-hint {
+  font-size: 12px;
+  max-width: 45%;
+  flex: none;
+}
+
+.cmdlist .cmd-empty {
+  color: var(--muted);
+}
+
+/* ---------- body ---------- */
+
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---------- rail ---------- */
+
+.rail {
+  width: var(--rail-w);
+  flex: none;
+  background: var(--rail);
+  border-radius: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 0;
+  position: relative;
+  z-index: 5;
+}
+
+.rail .brand {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  flex: none;
+}
+
+.rail .sp {
+  flex: 1;
+}
+
+.rail .ri {
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 0 5px;
+  color: var(--on-rail-muted);
+  background: none;
+  border: 0;
+  border-radius: 12px;
+  position: relative;
+  flex: none;
+}
+
+.rail .ri .ic {
+  width: 44px;
+  height: 30px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  transition: background-color var(--t-fast) var(--ease-out);
+}
+
+.rail .ri .lb {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+
+.rail .ri:hover,
+.rail .ri[aria-current="page"] {
+  color: var(--on-rail);
+}
+
+.rail .ri:hover .ic {
+  background: var(--rail-hover);
+}
+
+.rail .ri[aria-current="page"] .ic {
+  background: var(--rail-active);
+}
+
+.rail .ri:focus-visible {
+  box-shadow: none;
+}
+
+.rail .ri:focus-visible .ic {
+  box-shadow: 0 0 0 2px var(--on-rail);
+}
+
+.rail .badge {
+  position: absolute;
+  top: -3px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 2px;
+  border-radius: 99px;
+  background: var(--on-rail);
+  color: var(--rail);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--rail);
+  box-sizing: content-box;
+}
+
+/* Tooltip with the shortcut, after a short hover. */
+.rail .tip {
+  position: absolute;
+  left: 72px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  padding: 7px 10px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 12px;
+  white-space: nowrap;
+  font-size: 12px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+:root[data-theme="dark"] .rail .tip {
+  border-color: #3a3a3a;
+}
+
+.rail .tip b {
+  font-weight: 700;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rail .tip .tk {
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #5c5c5c;
+  border-bottom-width: 1.5px;
+  border-radius: 5px;
+  padding: 0 4px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  color: #d0d0d0;
+}
+
+.rail .tip::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  background: #000000;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.rail .ri:hover .tip {
+  display: flex;
+  animation: tip-in var(--t-fast) var(--ease-out) 450ms both;
+}
+
+/* ---------- project list and inspector frames ---------- */
+
+.side {
+  width: 232px;
+  flex: none;
+}
+
+.side-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 12px 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  flex: none;
+}
+
+.side .tree {
+  padding: 0 8px;
+}
+
+.side-empty {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.side-foot {
+  flex: none;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  color: var(--muted);
+}
+
+.legend .row {
+  gap: 6px;
+}
+
+.insp {
+  width: 292px;
+  flex: none;
+  overflow: auto;
+}
+
+.insp section {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.insp section:last-child {
+  border-bottom: 0;
+}
+
+.evt {
+  display: flex;
+  gap: 8px;
+  font-size: 12.5px;
+  align-items: baseline;
+}
+
+.evt .tm {
+  width: 52px;
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+/* ---------- status bar ---------- */
+
+.statusbar {
+  height: var(--statusbar-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px;
+  font-size: 12px;
+  color: var(--muted2);
+  white-space: nowrap;
+}
+
+.statusbar .row {
+  gap: 6px;
+}

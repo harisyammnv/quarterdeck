@@ -5,7 +5,18 @@
 //! Firstmate documents a status line as a wake event, not as current truth, so the UI labels
 //! anything taken from here as the "latest event".
 
+use std::path::Path;
+
 use serde::Serialize;
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
+
+use crate::gateway::valid_task_id;
+use crate::home::FmHome;
+
+/// [`history`] reads at most this many bytes from the end of a record.
+pub const HISTORY_MAX_BYTES: u64 = 256 * 1024;
+/// [`history`] returns at most this many events.
+pub const HISTORY_MAX_EVENTS: usize = 500;
 
 /// The live state of a task, as a closed set the UI can style.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
@@ -126,9 +137,134 @@ pub fn latest_event(content: &str) -> Option<StatusEvent> {
     None
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum HistoryError {
+    #[error("invalid task id")]
+    BadId,
+    #[error("the status record is not a regular file")]
+    NotAFile,
+    #[error("could not read the status record: {0}")]
+    Io(#[from] std::io::Error),
+}
+
+/// A task's recent status events, oldest first: at most `max` (capped at
+/// [`HISTORY_MAX_EVENTS`]) from the last [`HISTORY_MAX_BYTES`] of `state/<task>.status`.
+///
+/// Only a regular file is read; a symlink or anything else is refused, so the record cannot
+/// point the app at another file. A task without a record has an empty history.
+pub async fn history(
+    home: &FmHome,
+    task_id: &str,
+    max: usize,
+) -> Result<Vec<StatusEvent>, HistoryError> {
+    if !valid_task_id(task_id) {
+        return Err(HistoryError::BadId);
+    }
+    let path = home.state_dir().join(format!("{task_id}.status"));
+    let text = match read_record_tail(&path, HISTORY_MAX_BYTES).await? {
+        Some(t) => t,
+        None => return Ok(Vec::new()),
+    };
+    Ok(parse_history(&text, max.min(HISTORY_MAX_EVENTS)))
+}
+
+/// Parses every event line, then keeps the newest `max`, oldest first.
+pub fn parse_history(text: &str, max: usize) -> Vec<StatusEvent> {
+    let mut events: Vec<StatusEvent> = text.lines().filter_map(parse_line).collect();
+    let excess = events.len().saturating_sub(max);
+    events.drain(..excess);
+    events
+}
+
+async fn read_record_tail(path: &Path, max: u64) -> Result<Option<String>, HistoryError> {
+    let meta = match tokio::fs::symlink_metadata(path).await {
+        Ok(m) => m,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e.into()),
+    };
+    if !meta.file_type().is_file() {
+        return Err(HistoryError::NotAFile);
+    }
+    let mut file = tokio::fs::File::open(path).await?;
+    let len = file.metadata().await?.len();
+    let skip = len.saturating_sub(max);
+    if skip > 0 {
+        file.seek(std::io::SeekFrom::Start(skip)).await?;
+    }
+    let mut bytes = Vec::new();
+    file.take(max).read_to_end(&mut bytes).await?;
+    let text = String::from_utf8_lossy(&bytes).into_owned();
+    // Seeking into the middle leaves a partial first line; drop it.
+    Ok(Some(if skip > 0 {
+        text.split_once('\n')
+            .map(|(_, rest)| rest.to_string())
+            .unwrap_or_default()
+    } else {
+        text
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn home_with(record: Option<&str>) -> (tempfile::TempDir, FmHome) {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("state")).unwrap();
+        if let Some(r) = record {
+            std::fs::write(dir.path().join("state/t1.status"), r).unwrap();
+        }
+        let home = FmHome::at_unchecked(dir.path().to_path_buf());
+        (dir, home)
+    }
+
+    #[tokio::test]
+    async fn history_is_oldest_first_and_bounded() {
+        let lines: String = (0..800)
+            .map(|i| format!("working [at={i}]: step {i}\n"))
+            .collect();
+        let (_d, home) = home_with(Some(&lines));
+        let all = history(&home, "t1", 10_000).await.unwrap();
+        assert_eq!(all.len(), HISTORY_MAX_EVENTS);
+        assert_eq!(all.last().unwrap().text, "step 799");
+        assert_eq!(all.first().unwrap().text, "step 300");
+        let few = history(&home, "t1", 3).await.unwrap();
+        assert_eq!(
+            few.iter().map(|e| e.at.unwrap()).collect::<Vec<_>>(),
+            vec![797, 798, 799]
+        );
+    }
+
+    #[tokio::test]
+    async fn history_reads_only_the_tail_of_a_large_record() {
+        let filler = format!("working [at=1]: {}\n", "x".repeat(200)).repeat(2000);
+        let (_d, home) = home_with(Some(&format!("{filler}done [at=9]: last\n")));
+        let ev = history(&home, "t1", 500).await.unwrap();
+        assert_eq!(ev.last().unwrap().word, "done");
+        assert!(ev.len() < 2000, "only the last 256 KiB is read");
+        assert!(ev.iter().all(|e| e.word == "working" || e.word == "done"));
+    }
+
+    #[tokio::test]
+    async fn history_refuses_bad_ids_links_and_absent_records() {
+        let (dir, home) = home_with(None);
+        assert!(history(&home, "t1", 5).await.unwrap().is_empty());
+        assert!(matches!(
+            history(&home, "../x", 5).await,
+            Err(HistoryError::BadId)
+        ));
+        assert!(matches!(
+            history(&home, "", 5).await,
+            Err(HistoryError::BadId)
+        ));
+        let outside = dir.path().join("secret");
+        std::fs::write(&outside, "working [at=1]: leaked\n").unwrap();
+        std::os::unix::fs::symlink(&outside, dir.path().join("state/t1.status")).unwrap();
+        assert!(matches!(
+            history(&home, "t1", 5).await,
+            Err(HistoryError::NotAFile)
+        ));
+    }
 
     #[test]
     fn parses_plain_line() {

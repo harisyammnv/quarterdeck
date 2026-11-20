@@ -4,11 +4,18 @@
 //! - fast: the home's `state/` directory is watched without recursion; a change to
 //!   `<task>.status` or `<task>.meta` re-reads that one small record and publishes a new view
 //!   at once, with no debounce, which is what keeps a status change under a second;
-//! - true: `fm-bearings-snapshot.sh` runs once at start, then once after changes settle and at
-//!   most once per `max_interval` while they continue. Only one run is ever in flight.
+//! - true: `fm-fleet-snapshot.sh --json` runs once at start, then once after changes settle
+//!   and at most once per `max_interval` while they continue. Only one run is ever in flight,
+//!   and only the engine starts one.
 //!
-//! Nothing here writes into the home.
+//! Every change publishes two things: the [`FleetView`] the fleet list renders, and a
+//! [`HomeState`] that each area projects into its own compact view.
+//!
+//! With a cache directory configured, the last good snapshot is kept on disk (mode 0600, in
+//! the app's own data directory) so the window opens with content and reconciles in the
+//! background. Nothing here writes into the home.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -18,12 +25,31 @@ use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use tokio::sync::{mpsc, watch};
 use tokio::time::Instant;
 
-use crate::fleet::{FleetModel, FleetView, UpdateCause};
+use crate::fleet::{FleetModel, FleetView, SnapshotInfo, UpdateCause};
 use crate::gateway::{self, Entry};
 use crate::home::FmHome;
 use crate::inbox::{self, NoteError, NoteReceipt};
-use crate::snapshot::Bearings;
+use crate::snapshot::Snapshot;
+use crate::status::StatusEvent;
 use crate::{meta, now_ms, status};
+
+/// Largest cached snapshot read back at start, in bytes.
+const MAX_CACHE_BYTES: u64 = 32 * 1024 * 1024;
+
+/// Everything a projection may read. Published by the engine on every change.
+///
+/// Areas build their views from this with a pure `view(&HomeState)` function; it never
+/// crosses IPC itself.
+#[derive(Clone, Debug, Default)]
+pub struct HomeState {
+    /// The number of the fleet view published with this state.
+    pub seq: u32,
+    /// `None` until the first run (or the disk cache) lands.
+    pub snapshot: Option<Arc<Snapshot>>,
+    /// The latest status event per task id, from the fast path.
+    pub events: BTreeMap<String, StatusEvent>,
+    pub info: SnapshotInfo,
+}
 
 /// Status records are read from the end, at most this many bytes.
 const MAX_RECORD_BYTES: u64 = 64 * 1024;
@@ -38,6 +64,8 @@ pub struct EngineConfig {
     pub max_interval: Duration,
     /// Time budget for one snapshot run.
     pub snapshot_timeout: Duration,
+    /// Where the last good snapshot is cached, when set. Must be the app's own directory.
+    pub cache_dir: Option<PathBuf>,
 }
 
 impl Default for EngineConfig {
@@ -45,7 +73,8 @@ impl Default for EngineConfig {
         Self {
             settle: Duration::from_millis(1500),
             max_interval: Duration::from_secs(10),
-            snapshot_timeout: Entry::BearingsSnapshot.default_timeout(),
+            snapshot_timeout: Entry::FleetSnapshot.default_timeout(),
+            cache_dir: None,
         }
     }
 }
@@ -83,10 +112,12 @@ impl LatencySample {
     }
 }
 
-/// A running engine. Dropping the handle stops the watcher and the loop.
+/// A running engine. Dropping the handle stops the watcher and the loop, which closes the
+/// view stream for every subscriber.
 pub struct EngineHandle {
     home: FmHome,
     views: watch::Receiver<FleetView>,
+    states: watch::Receiver<Arc<HomeState>>,
     commands: mpsc::UnboundedSender<Command>,
     probes: Arc<Mutex<Vec<(u32, UpdateCause)>>>,
     _watcher: notify::RecommendedWatcher,
@@ -105,6 +136,16 @@ impl EngineHandle {
     /// A receiver that wakes on every published view.
     pub fn subscribe(&self) -> watch::Receiver<FleetView> {
         self.views.clone()
+    }
+
+    /// The latest home state, for area projections and on-demand readers.
+    pub fn state(&self) -> Arc<HomeState> {
+        self.states.borrow().clone()
+    }
+
+    /// A receiver that wakes on every published home state.
+    pub fn subscribe_state(&self) -> watch::Receiver<Arc<HomeState>> {
+        self.states.clone()
     }
 
     /// Asks for a snapshot run soon.
@@ -169,6 +210,7 @@ impl Engine {
 
         let mut model = FleetModel::new(home.label());
         let (view_tx, view_rx) = watch::channel(model.view(None));
+        let (state_tx, state_rx) = watch::channel(Arc::new(home_state(&model)));
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let probes = Arc::new(Mutex::new(Vec::new()));
         let task = Loop {
@@ -176,12 +218,14 @@ impl Engine {
             config,
             model,
             views: view_tx,
+            states: state_tx,
             probes: probes.clone(),
         };
         tokio::spawn(task.run(fs_rx, cmd_rx));
         Ok(EngineHandle {
             home,
             views: view_rx,
+            states: state_rx,
             commands: cmd_tx,
             probes,
             _watcher: watcher,
@@ -243,11 +287,61 @@ async fn read_tail(path: &Path) -> std::io::Result<Option<(String, i64)>> {
     Ok(Some((text, mtime_ms)))
 }
 
+fn home_state(model: &FleetModel) -> HomeState {
+    HomeState {
+        seq: model.seq(),
+        snapshot: model.snapshot(),
+        events: model.events().clone(),
+        info: model.info(),
+    }
+}
+
+/// The cache file for one home: one file per home, so switching homes never shows another
+/// home's fleet.
+fn cache_file(dir: &Path, home: &FmHome) -> PathBuf {
+    // FNV-1a: stable across runs and platforms, unlike the std hasher.
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for b in home.root().as_os_str().as_encoded_bytes() {
+        h ^= u64::from(*b);
+        h = h.wrapping_mul(0x0100_0000_01b3);
+    }
+    dir.join(format!("snapshot-{h:016x}.json"))
+}
+
+fn read_cache(path: &Path) -> Option<Snapshot> {
+    let meta = std::fs::symlink_metadata(path).ok()?;
+    if !meta.is_file() || meta.len() > MAX_CACHE_BYTES {
+        return None;
+    }
+    Snapshot::parse(&std::fs::read_to_string(path).ok()?).ok()
+}
+
+/// Writes the cache atomically with mode 0600: it holds the fleet's records.
+fn write_cache(path: &Path, json: &str) -> std::io::Result<()> {
+    use std::io::Write as _;
+    use std::os::unix::fs::OpenOptionsExt as _;
+    let dir = path.parent().unwrap_or(Path::new("."));
+    std::fs::create_dir_all(dir)?;
+    let tmp = dir.join(format!(".snapshot.{}.tmp", std::process::id()));
+    let mut f = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .open(&tmp)?;
+    f.write_all(json.as_bytes())?;
+    f.sync_all()?;
+    std::fs::rename(&tmp, path).inspect_err(|_| {
+        let _ = std::fs::remove_file(&tmp);
+    })
+}
+
 struct Loop {
     home: FmHome,
     config: EngineConfig,
     model: FleetModel,
     views: watch::Sender<FleetView>,
+    states: watch::Sender<Arc<HomeState>>,
     probes: Arc<Mutex<Vec<(u32, UpdateCause)>>>,
 }
 
@@ -283,6 +377,7 @@ impl Loop {
             }
         }
         self.views.send_replace(view);
+        self.states.send_replace(Arc::new(home_state(&self.model)));
     }
 
     async fn bootstrap(&mut self) {
@@ -346,9 +441,19 @@ impl Loop {
         mut cmd_rx: mpsc::UnboundedReceiver<Command>,
     ) {
         self.bootstrap().await;
+        let cache = self
+            .config
+            .cache_dir
+            .as_deref()
+            .map(|d| cache_file(d, &self.home));
+        if let Some(path) = cache.clone() {
+            if let Ok(Some(snap)) = tokio::task::spawn_blocking(move || read_cache(&path)).await {
+                self.model.apply_cached(Arc::new(snap));
+            }
+        }
         self.publish(None);
 
-        let (snap_tx, mut snap_rx) = mpsc::channel::<Result<Bearings, String>>(1);
+        let (snap_tx, mut snap_rx) = mpsc::channel::<Result<(Snapshot, String), String>>(1);
         let mut schedule = Schedule {
             settle_at: None,
             latest_at: None,
@@ -377,14 +482,24 @@ impl Loop {
                         schedule.changed(Instant::now(), &self.config);
                     }
                 }
-                Some(Command::Refresh) = cmd_rx.recv() => {
-                    schedule.pending = true;
-                }
+                command = cmd_rx.recv() => match command {
+                    Some(Command::Refresh) => schedule.pending = true,
+                    // The handle was dropped (the home changed or the app is closing): stop,
+                    // which drops the view sender and ends every subscriber's stream.
+                    None => break,
+                },
                 Some(result) = snap_rx.recv() => {
                     schedule.running = false;
                     self.model.set_running(false);
                     match result {
-                        Ok(bearings) => self.model.apply_snapshot(&bearings),
+                        Ok((snapshot, json)) => {
+                            self.model.apply_snapshot(Arc::new(snapshot));
+                            if let Some(path) = cache.clone() {
+                                // Best effort: a cache that cannot be written only costs the
+                                // next start its instant first paint.
+                                tokio::task::spawn_blocking(move || write_cache(&path, &json));
+                            }
+                        }
                         Err(error) => self.model.snapshot_failed(error),
                     }
                     self.publish(None);
@@ -403,8 +518,8 @@ impl Loop {
     }
 }
 
-async fn run_snapshot(home: &FmHome, timeout: Duration) -> Result<Bearings, String> {
-    let out = gateway::run(home, &Entry::BearingsSnapshot, timeout)
+async fn run_snapshot(home: &FmHome, timeout: Duration) -> Result<(Snapshot, String), String> {
+    let out = gateway::run(home, &Entry::FleetSnapshot, timeout)
         .await
         .map_err(|e| e.to_string())?;
     if out.code != Some(0) {
@@ -416,11 +531,12 @@ async fn run_snapshot(home: &FmHome, timeout: Duration) -> Result<Bearings, Stri
             .trim()
             .to_string();
         return Err(format!(
-            "fm-bearings-snapshot.sh failed ({}): {detail}",
+            "fm-fleet-snapshot.sh failed ({}): {detail}",
             gateway::exit_label(out.code)
         ));
     }
-    Bearings::parse(&out.stdout).map_err(|e| e.to_string())
+    let snapshot = Snapshot::parse(&out.stdout).map_err(|e| e.to_string())?;
+    Ok((snapshot, out.stdout))
 }
 
 #[cfg(test)]
@@ -445,6 +561,24 @@ mod tests {
         assert!(classify(Path::new("/h/state/a.inbox/1.msg"), b).is_none());
         assert!(classify(Path::new("/h/state/sub/a.status"), b).is_none());
         assert!(classify(Path::new("/h/state/a.lock"), b).is_none());
+    }
+
+    #[test]
+    fn cache_round_trips_with_private_mode_and_one_file_per_home() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let dir = tempfile::tempdir().unwrap();
+        let a = FmHome::at_unchecked(PathBuf::from("/p/home-a"));
+        let b = FmHome::at_unchecked(PathBuf::from("/p/home-b"));
+        assert_ne!(cache_file(dir.path(), &a), cache_file(dir.path(), &b));
+        let path = cache_file(&dir.path().join("nested"), &a);
+        let json = include_str!("../tests/fixtures/fleet-snapshot.json");
+        write_cache(&path, json).unwrap();
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
+        assert_eq!(read_cache(&path).unwrap().tasks.len(), 6);
+        std::fs::write(&path, "{").unwrap();
+        assert!(read_cache(&path).is_none(), "a damaged cache is ignored");
+        assert!(read_cache(&dir.path().join("absent.json")).is_none());
     }
 
     #[tokio::test]

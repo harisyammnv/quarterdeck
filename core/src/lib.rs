@@ -1,9 +1,10 @@
 //! Quarterdeck core: a read-only view of one Firstmate home.
 //!
 //! This crate has no window code. It knows how to:
-//! - find and validate a Firstmate home ([`home`]),
+//! - find and validate a Firstmate home ([`home`]) and remember the one chosen in the
+//!   window ([`config`]),
 //! - run the few allow-listed Firstmate entry points ([`gateway`]),
-//! - parse the bearings snapshot ([`snapshot`]) and the per-task status and meta records
+//! - parse the fleet snapshot ([`snapshot`]) and the per-task status and meta records
 //!   ([`status`], [`meta`]),
 //! - merge both into one fleet list ([`fleet`]),
 //! - keep that list live with file events ([`engine`]),
@@ -11,19 +12,28 @@
 //!
 //! It never writes into the Firstmate home itself. The only write path is the inbox note,
 //! and that goes through Firstmate's own script.
+//! - read files under a fixed root, bounded ([`safe_read`]), and launch the few allow-listed
+//!   non-Firstmate programs ([`external`]).
+//!
+//! Each app area adds one directory module here (`core/src/<area>/`) with a pure
+//! `view(&HomeState)` projection or on-demand `list` and `read` readers.
 
+pub mod config;
 pub mod engine;
+pub mod external;
 pub mod fleet;
 pub mod gateway;
 pub mod home;
 pub mod inbox;
 pub mod meta;
+pub mod safe_read;
 pub mod snapshot;
 pub mod status;
 mod timefmt;
 
-pub use engine::{Engine, EngineHandle};
-pub use fleet::{FleetRow, FleetView, StateSource, UpdateCause};
+pub use config::{AppConfig, HomeSource};
+pub use engine::{Engine, EngineHandle, HomeState};
+pub use fleet::{FleetRow, FleetView, SnapshotInfo, StateSource, UpdateCause};
 pub use home::{FmHome, HomeError};
 pub use inbox::{NoteError, NoteOutcome, NoteReceipt};
 pub use status::{StatusEvent, TaskState};

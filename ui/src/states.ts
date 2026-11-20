@@ -1,20 +1,15 @@
 import type { TaskState } from "./bindings";
+import type { DotKind } from "./ui/StateDot";
 
-/** How each task state is drawn: one chip form (soft fill, dot, word) and a dot class. */
-export interface StateLook {
-  word: string;
-  chip: "success" | "warning" | "danger" | "info" | "neutral" | "accent";
-  dot: "working" | "waiting" | "blocked" | "idle" | "";
-}
-
-export const STATE_LOOK: Record<TaskState, StateLook> = {
-  working: { word: "Working", chip: "success", dot: "working" },
-  "needs-decision": { word: "Needs you", chip: "warning", dot: "waiting" },
-  blocked: { word: "Blocked", chip: "danger", dot: "blocked" },
-  failed: { word: "Failed", chip: "danger", dot: "blocked" },
-  paused: { word: "Paused", chip: "neutral", dot: "idle" },
-  done: { word: "Done", chip: "accent", dot: "" },
-  unknown: { word: "Unknown", chip: "neutral", dot: "idle" },
+/** How each Firstmate task state is drawn: the chip tone, its word and the state dot. */
+export const STATE_LOOK: Record<TaskState, { word: string; tone: "success" | "warning" | "danger" | "info" | "neutral" | "quiet"; dot: DotKind | null }> = {
+  working: { word: "Working", tone: "success", dot: "working" },
+  "needs-decision": { word: "Needs you", tone: "warning", dot: "waiting" },
+  blocked: { word: "Blocked", tone: "danger", dot: "blocked" },
+  failed: { word: "Failed", tone: "danger", dot: "blocked" },
+  paused: { word: "Paused", tone: "neutral", dot: "idle" },
+  done: { word: "Done", tone: "quiet", dot: null },
+  unknown: { word: "Unknown", tone: "neutral", dot: "idle" },
 };
 
 /** Monogram fills from the product palette. Teal is reserved for the brand disc. */
@@ -34,7 +29,7 @@ export function monogram(name: string): string {
   return (b ? a.charAt(0) + b.charAt(0) : a.slice(0, 2)).toUpperCase();
 }
 
-/** "now", "42 s", "5 min", "3 h", "2 d" since `thenMs`. */
+/** "now", "42 s ago", "5 min ago", "3 h ago", "2 d ago" since `thenMs`. */
 export function ago(thenMs: number, nowMs: number): string {
   const s = Math.max(0, Math.round((nowMs - thenMs) / 1000));
   if (s < 5) return "now";

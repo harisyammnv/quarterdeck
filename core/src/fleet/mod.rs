@@ -1,7 +1,7 @@
 //! The fleet model: snapshot rows with live status events laid over them.
 //!
 //! Two speeds feed it:
-//! - the bearings snapshot is the structured truth, but takes seconds to produce;
+//! - the fleet snapshot is the structured truth, but takes seconds to produce;
 //! - status events arrive within milliseconds of a worker writing them.
 //!
 //! An event replaces a row's snapshot state only when it is newer than the snapshot, and such
@@ -9,11 +9,12 @@
 //! not current truth. The next snapshot reconciles it.
 
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use serde::Serialize;
 
 use crate::meta::MetaInfo;
-use crate::snapshot::{Bearings, InFlight};
+use crate::snapshot::{Snapshot, Task};
 use crate::status::{StatusEvent, TaskState};
 
 /// Where a row's state came from.
@@ -21,7 +22,7 @@ use crate::status::{StatusEvent, TaskState};
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "kebab-case")]
 pub enum StateSource {
-    /// The bearings snapshot.
+    /// The fleet snapshot.
     Snapshot,
     /// A status event newer than the snapshot.
     Event,
@@ -41,7 +42,7 @@ pub struct FleetRow {
     /// The state word as written, so unknown words are still shown honestly.
     pub state_word: String,
     pub source: StateSource,
-    /// The snapshot's one-line "doing" summary.
+    /// The snapshot's one-line summary of what the task is doing.
     pub doing: Option<String>,
     /// The last status event for this task, when there is one.
     pub latest_event: Option<StatusEvent>,
@@ -73,8 +74,8 @@ pub struct SnapshotInfo {
     pub running: bool,
     /// The last run's error, cleared by the next good run.
     pub error: Option<String>,
-    /// Fleet surfaces the snapshot reported as omitted.
-    pub omitted: Vec<String>,
+    /// The snapshot shown came from the on-disk cache of an earlier run, not from this one.
+    pub cached: bool,
 }
 
 /// Everything the UI renders.
@@ -90,18 +91,12 @@ pub struct FleetView {
     pub cause: Option<UpdateCause>,
 }
 
-#[derive(Debug, Default)]
-struct SnapState {
-    generated: Option<i64>,
-    rows: Vec<InFlight>,
-    omitted: Vec<String>,
-}
-
 /// The mutable model behind [`FleetView`].
 #[derive(Debug, Default)]
 pub struct FleetModel {
     home: String,
-    snapshot: Option<SnapState>,
+    snapshot: Option<Arc<Snapshot>>,
+    cached: bool,
     events: BTreeMap<String, StatusEvent>,
     metas: BTreeMap<String, MetaInfo>,
     running: bool,
@@ -133,13 +128,43 @@ impl FleetModel {
         }
     }
 
-    pub fn apply_snapshot(&mut self, b: &Bearings) {
-        self.snapshot = Some(SnapState {
-            generated: b.generated_epoch(),
-            rows: b.in_flight.clone(),
-            omitted: b.fleet_omissions(),
-        });
+    /// Takes a freshly run snapshot as the truth and clears the last error.
+    pub fn apply_snapshot(&mut self, s: Arc<Snapshot>) {
+        self.snapshot = Some(s);
+        self.cached = false;
         self.error = None;
+    }
+
+    /// Shows a snapshot from the on-disk cache until the first run of this session lands.
+    pub fn apply_cached(&mut self, s: Arc<Snapshot>) {
+        if self.snapshot.is_none() {
+            self.snapshot = Some(s);
+            self.cached = true;
+        }
+    }
+
+    /// The current snapshot, when one has landed.
+    pub fn snapshot(&self) -> Option<Arc<Snapshot>> {
+        self.snapshot.clone()
+    }
+
+    /// The latest status event of every task, from the fast path.
+    pub fn events(&self) -> &BTreeMap<String, StatusEvent> {
+        &self.events
+    }
+
+    pub fn info(&self) -> SnapshotInfo {
+        SnapshotInfo {
+            generated_at: self.snapshot.as_ref().and_then(|s| s.generated),
+            running: self.running,
+            error: self.error.clone(),
+            cached: self.cached,
+        }
+    }
+
+    /// The number of the last published view.
+    pub fn seq(&self) -> u32 {
+        self.seq
     }
 
     pub fn snapshot_failed(&mut self, error: String) {
@@ -159,7 +184,7 @@ impl FleetModel {
         }
     }
 
-    fn row_from_snapshot(&self, r: &InFlight) -> FleetRow {
+    fn row_from_snapshot(&self, r: &Task) -> FleetRow {
         let event = self.events.get(&r.id);
         let word = r.state.clone().unwrap_or_else(|| "unknown".into());
         // An event wins when it is newer than the snapshot, or when the snapshot could not tell
@@ -174,17 +199,13 @@ impl FleetModel {
         };
         FleetRow {
             id: r.id.clone(),
-            name: r
-                .name
-                .clone()
-                .filter(|n| !n.is_empty())
-                .unwrap_or_else(|| r.id.clone()),
-            project: r.repo.clone(),
+            name: r.title.clone().unwrap_or_else(|| r.id.clone()),
+            project: r.project_name(),
             kind: r.kind.clone(),
             state: TaskState::from_word(&state_word),
             state_word,
             source,
-            doing: r.doing.clone(),
+            doing: r.state_detail.clone(),
             latest_event: event.cloned(),
         }
     }
@@ -210,13 +231,13 @@ impl FleetModel {
         let mut rows: Vec<FleetRow> = match &self.snapshot {
             Some(snap) => {
                 let mut rows: Vec<_> = snap
-                    .rows
+                    .tasks
                     .iter()
                     .map(|r| self.row_from_snapshot(r))
                     .collect();
                 // A task that started after the snapshot shows up from its own records.
                 for (id, event) in &self.events {
-                    let known = snap.rows.iter().any(|r| &r.id == id);
+                    let known = snap.tasks.iter().any(|r| &r.id == id);
                     if !known && self.metas.contains_key(id) && self.newer_than_snapshot(event) {
                         rows.push(self.row_from_records(id, StateSource::Event));
                     }
@@ -241,16 +262,7 @@ impl FleetModel {
             seq: self.seq,
             home: self.home.clone(),
             rows: self.rows(),
-            snapshot: SnapshotInfo {
-                generated_at: self.snapshot.as_ref().and_then(|s| s.generated),
-                running: self.running,
-                error: self.error.clone(),
-                omitted: self
-                    .snapshot
-                    .as_ref()
-                    .map(|s| s.omitted.clone())
-                    .unwrap_or_default(),
-            },
+            snapshot: self.info(),
             cause,
         }
     }
@@ -261,13 +273,13 @@ mod tests {
     use super::*;
     use crate::status::parse_line;
 
-    const FIXTURE: &str = include_str!("../tests/fixtures/bearings.json");
+    const FIXTURE: &str = include_str!("../../tests/fixtures/fleet-snapshot.json");
     // The fixture's `generated` time.
     const GEN: i64 = 1_795_168_775;
 
     fn model_with_snapshot() -> FleetModel {
         let mut m = FleetModel::new("home");
-        m.apply_snapshot(&Bearings::parse(FIXTURE).unwrap());
+        m.apply_snapshot(Arc::new(Snapshot::parse(FIXTURE).unwrap()));
         m
     }
 
@@ -403,12 +415,36 @@ mod tests {
     }
 
     #[test]
+    fn rows_take_title_project_basename_and_detail() {
+        let v = model_with_snapshot().view(None);
+        let row = v.rows.iter().find(|r| r.id == "perf-scout").unwrap();
+        assert_eq!(row.name, "Find the slow dashboard query");
+        assert_eq!(row.project.as_deref(), Some("example-ops"));
+        assert_eq!(row.state, TaskState::NeedsDecision);
+        assert_eq!(row.doing.as_deref(), Some("report ready, awaiting a pick"));
+    }
+
+    #[test]
+    fn cache_is_shown_until_the_first_run_then_replaced() {
+        let mut m = FleetModel::new("home");
+        let snap = Arc::new(Snapshot::parse(FIXTURE).unwrap());
+        m.apply_cached(snap.clone());
+        assert!(m.info().cached);
+        assert_eq!(m.view(None).rows.len(), 6);
+        m.apply_snapshot(snap.clone());
+        assert!(!m.info().cached);
+        // A late cache read never replaces a live snapshot.
+        m.apply_cached(Arc::new(Snapshot::default()));
+        assert_eq!(m.snapshot().unwrap().tasks.len(), 6);
+    }
+
+    #[test]
     fn seq_increases_and_errors_clear() {
         let mut m = FleetModel::new("home");
         m.snapshot_failed("timeout".into());
         let a = m.view(None);
         assert_eq!(a.snapshot.error.as_deref(), Some("timeout"));
-        m.apply_snapshot(&Bearings::parse(FIXTURE).unwrap());
+        m.apply_snapshot(Arc::new(Snapshot::parse(FIXTURE).unwrap()));
         let b = m.view(None);
         assert!(b.seq > a.seq);
         assert_eq!(b.snapshot.error, None);

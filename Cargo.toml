@@ -23,6 +23,8 @@ specta-typescript = "=0.0.15"
 tauri-specta = { version = "=2.0.0-rc.29", features = ["derive", "typescript"] }
 tauri = { version = "~2.12", features = ["specta"] }
 tauri-build = { version = "2.7", features = [] }
+# Native folder picker for choosing the Firstmate home, driven from Rust only (no webview permission).
+tauri-plugin-dialog = "2"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

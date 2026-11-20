@@ -1,0 +1,20 @@
+// Shared UI primitives. Areas compose these; they do not restyle or fork them.
+export { StatusPill, StatusPill as Pill, Tag, QuietPill, Count, type Tone } from "./Pill";
+export { StateDot, type DotKind } from "./StateDot";
+export { StatePill, stateDot } from "./StatePill";
+export { KindPill } from "./KindPill";
+export { Kbd } from "./Kbd";
+export { Button, IconButton } from "./Button";
+export { Tabs, type Segment } from "./Tabs";
+export { DataTable, type Column } from "./DataTable";
+export { Zero } from "./Zero";
+export { Banner } from "./Banner";
+export { Panel, PanelHead, Facts } from "./Panel";
+export { ProjectTile } from "./ProjectTile";
+export { VirtualList } from "./VirtualList";
+export { Markdown } from "./Markdown";
+export { ConfirmLink } from "./ConfirmLink";
+export { Composer } from "./Composer";
+export { useHotkey, type Combo } from "./hotkeys";
+export { useNow } from "./time";
+export { STATE_LOOK, ago, monogram, tileFill } from "../states";

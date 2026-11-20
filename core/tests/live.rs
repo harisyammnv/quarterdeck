@@ -3,88 +3,14 @@
 //! Set `QD_TEST_TMPDIR` to run the fake home on a specific volume, for example the one the
 //! real home lives on, since file-event latency depends on the file system.
 
-use std::io::Write;
-use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
+mod common;
+
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use common::{append, epoch, fake_home, script, wait_for};
 use quarterdeck_core::engine::{Engine, EngineConfig};
-use quarterdeck_core::{FleetView, FmHome, NoteOutcome, StateSource, TaskState};
-
-const FIXTURE: &str = include_str!("fixtures/bearings.json");
-
-fn script(path: &Path, body: &str) {
-    std::fs::write(path, format!("#!/bin/sh\n{body}\n")).unwrap();
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755)).unwrap();
-}
-
-fn fake_home() -> tempfile::TempDir {
-    let dir = match std::env::var_os("QD_TEST_TMPDIR") {
-        Some(base) => tempfile::tempdir_in(base).unwrap(),
-        None => tempfile::tempdir().unwrap(),
-    };
-    let root = dir.path();
-    for d in ["state", "bin", "data"] {
-        std::fs::create_dir_all(root.join(d)).unwrap();
-    }
-    std::fs::write(root.join("snapshot.json"), FIXTURE).unwrap();
-    script(
-        &root.join("bin/fm-bearings-snapshot.sh"),
-        r#"[ "$1" = "--json" ] || exit 9; cat "$FM_HOME/snapshot.json""#,
-    );
-    script(
-        &root.join("bin/fm-inbox.sh"),
-        r#"printf '%s\n' "$@" > "$FM_HOME/inbox-args"
-printf '%s' "${CARGO_MANIFEST_DIR:-absent}" > "$FM_HOME/inbox-env"
-printf '%s' "$PATH" > "$FM_HOME/inbox-path"
-printf '{"schema":"fm-inbox-note.v1","outcome":"created","id":"n-7","request_id":"%s","saved":true,"announced":true,"acknowledged":false,"path":"x"}\n' "$3""#,
-    );
-    std::fs::write(
-        root.join("state/app-login-fix.meta"),
-        "kind=ship\nproject=/p/example-app\n",
-    )
-    .unwrap();
-    std::fs::write(
-        root.join("state/app-login-fix.status"),
-        "working [at=1795163364]: started\n",
-    )
-    .unwrap();
-    dir
-}
-
-async fn wait_for(
-    rx: &mut tokio::sync::watch::Receiver<FleetView>,
-    limit: Duration,
-    pred: impl Fn(&FleetView) -> bool,
-) -> Option<FleetView> {
-    let deadline = tokio::time::Instant::now() + limit;
-    loop {
-        {
-            let v = rx.borrow_and_update();
-            if pred(&v) {
-                return Some(v.clone());
-            }
-        }
-        if tokio::time::timeout_at(deadline, rx.changed())
-            .await
-            .is_err()
-        {
-            return None;
-        }
-    }
-}
-
-fn append(path: &Path, line: &str) {
-    let mut f = std::fs::OpenOptions::new().append(true).open(path).unwrap();
-    writeln!(f, "{line}").unwrap();
-}
-
-fn epoch() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs() as i64
-}
+use quarterdeck_core::{FmHome, HomeState, NoteOutcome, StateSource, TaskState};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn bootstraps_then_reconciles_with_snapshot() {
@@ -158,7 +84,7 @@ async fn status_change_reaches_the_view_within_a_second() {
 async fn snapshot_failure_is_reported_not_fatal() {
     let dir = fake_home();
     script(
-        &dir.path().join("bin/fm-bearings-snapshot.sh"),
+        &dir.path().join("bin/fm-fleet-snapshot.sh"),
         "echo 'lock busy' >&2; exit 4",
     );
     let handle = Engine::start(FmHome::at(dir.path()).unwrap(), EngineConfig::default()).unwrap();
@@ -196,4 +122,87 @@ async fn note_goes_through_the_inbox_script_as_argv() {
         args,
         format!("note\n--request-id\nqd-test-1\n--json\n--\n{text}\n")
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn dropping_the_handle_stops_the_engine() {
+    let dir = fake_home();
+    let handle = Engine::start(FmHome::at(dir.path()).unwrap(), EngineConfig::default()).unwrap();
+    let mut rx = handle.subscribe();
+    wait_for(&mut rx, Duration::from_secs(10), |v| {
+        v.snapshot.generated_at.is_some()
+    })
+    .await
+    .expect("snapshot applied");
+    drop(handle);
+    // The loop exits and drops its sender, so the stream ends instead of idling forever.
+    let ended = tokio::time::timeout(Duration::from_secs(5), async {
+        while rx.changed().await.is_ok() {}
+    })
+    .await;
+    assert!(
+        ended.is_ok(),
+        "the engine kept running after its handle was dropped"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn home_state_carries_the_snapshot_and_events() {
+    let dir = fake_home();
+    let handle = Engine::start(FmHome::at(dir.path()).unwrap(), EngineConfig::default()).unwrap();
+    let mut rx = handle.subscribe_state();
+    let s: Arc<HomeState> = wait_for(&mut rx, Duration::from_secs(10), |s: &Arc<HomeState>| {
+        s.snapshot.is_some()
+    })
+    .await
+    .expect("snapshot published in the home state");
+    let snap = s.snapshot.as_ref().unwrap();
+    assert_eq!(snap.actionable_count(), 1);
+    assert!(s.events.contains_key("app-login-fix"));
+    assert_eq!(s.info.generated_at, snap.generated);
+    assert_eq!(handle.state().seq, handle.current().seq);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn second_start_paints_from_the_disk_cache() {
+    let dir = fake_home();
+    let cache = tempfile::tempdir().unwrap();
+    let config = EngineConfig {
+        cache_dir: Some(cache.path().to_path_buf()),
+        ..EngineConfig::default()
+    };
+    {
+        let handle = Engine::start(FmHome::at(dir.path()).unwrap(), config.clone()).unwrap();
+        let mut rx = handle.subscribe();
+        wait_for(&mut rx, Duration::from_secs(10), |v| {
+            v.snapshot.generated_at.is_some() && !v.snapshot.cached
+        })
+        .await
+        .expect("first run");
+        // The cache write runs in the background; wait for the file.
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let written = || {
+            std::fs::read_dir(cache.path())
+                .unwrap()
+                .filter_map(Result::ok)
+                .any(|e| e.file_name().to_string_lossy().ends_with(".json"))
+        };
+        while !written() {
+            assert!(Instant::now() < deadline, "cache was never written");
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    }
+    // Make the next run slow, so the first view can only come from the cache.
+    common::script(
+        &dir.path().join("bin/fm-fleet-snapshot.sh"),
+        r#"sleep 3; cat "$FM_HOME/snapshot.json""#,
+    );
+    let handle = Engine::start(FmHome::at(dir.path()).unwrap(), config).unwrap();
+    let mut rx = handle.subscribe();
+    let v = wait_for(&mut rx, Duration::from_secs(2), |v| {
+        v.snapshot.cached && v.rows.len() == 6
+    })
+    .await
+    .expect("cached snapshot shown before the run finishes");
+    assert!(v.snapshot.running);
 }

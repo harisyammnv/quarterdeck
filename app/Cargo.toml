@@ -27,6 +27,7 @@ specta-typescript.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
+tauri-plugin-dialog.workspace = true
 
 [lints]
 workspace = true
