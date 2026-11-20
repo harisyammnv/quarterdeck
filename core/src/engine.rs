@@ -416,8 +416,8 @@ async fn run_snapshot(home: &FmHome, timeout: Duration) -> Result<Bearings, Stri
             .trim()
             .to_string();
         return Err(format!(
-            "fm-bearings-snapshot.sh exited {:?}: {detail}",
-            out.code
+            "fm-bearings-snapshot.sh failed ({}): {detail}",
+            gateway::exit_label(out.code)
         ));
     }
     Bearings::parse(&out.stdout).map_err(|e| e.to_string())

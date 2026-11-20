@@ -45,7 +45,7 @@ pub enum NoteError {
     BadRequestId,
     #[error(transparent)]
     Gateway(#[from] GatewayError),
-    #[error("fm-inbox.sh failed (exit {code:?}): {stderr}")]
+    #[error("fm-inbox.sh failed ({}): {stderr}", crate::gateway::exit_label(*.code))]
     Failed { code: Option<i32>, stderr: String },
     #[error("fm-inbox.sh answered in an unexpected format: {0}")]
     Format(String),
