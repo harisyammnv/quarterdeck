@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { SparkleIcon as Sparkle } from "@phosphor-icons/react";
 import { Zero, useHotkey } from "../../ui";
 import { FindField } from "../memory/FindField";
+import { useHomeKey } from "../memory/useHomeKey";
 import { useRefreshing } from "../memory/useRefreshing";
 import { skillsList } from "./bridge";
 import { SkillDocPane } from "./SkillDocPane";
@@ -11,7 +12,7 @@ import "./skills.css";
 
 /** Every installed skill, searchable, with the selected one read on the right. */
 export default function SkillsView() {
-  const [skills] = useRefreshing(skillsList);
+  const [skills, reload] = useRefreshing(skillsList, useHomeKey());
   const [selected, setSelected] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const find = useRef<HTMLInputElement>(null);
@@ -25,6 +26,7 @@ export default function SkillsView() {
         selected={open}
         onOpen={setSelected}
         compact={false}
+        onRefresh={reload}
         query={query}
         search={<FindField ref={find} value={query} onChange={setQuery} placeholder="Find a skill" className="skills-find" />}
       />

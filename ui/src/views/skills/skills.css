@@ -62,7 +62,7 @@
 }
 
 .skills-row.sel {
-  background: var(--sunken);
+  background: var(--selected, var(--sunken));
   --muted: var(--muted2);
 }
 

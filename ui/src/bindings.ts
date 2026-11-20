@@ -277,6 +277,8 @@ export type MemoryView = MemoryView_Serialize | MemoryView_Deserialize;
  */
 export type MemoryView_Deserialize = {
 	items: MemoryItem_Deserialize[],
+	/**  More briefs exist than [MAX_BRIEFS]; the oldest are left out. */
+	capped: boolean,
 };
 
 /**
@@ -285,6 +287,8 @@ export type MemoryView_Deserialize = {
  */
 export type MemoryView_Serialize = {
 	items: MemoryItem_Serialize[],
+	/**  More briefs exist than [MAX_BRIEFS]; the oldest are left out. */
+	capped: boolean,
 };
 
 export type NoteOutcome = 

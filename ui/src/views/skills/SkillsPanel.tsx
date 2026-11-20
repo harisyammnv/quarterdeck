@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { InfoIcon as Info, MagnifyingGlassIcon as MagnifyingGlass, SparkleIcon as Sparkle, WarningCircleIcon as WarningCircle } from "@phosphor-icons/react";
-import { Banner, QuietPill, Tabs, VirtualList, Zero, type Segment } from "../../ui";
+import { ArrowsClockwiseIcon as ArrowsClockwise, InfoIcon as Info, MagnifyingGlassIcon as MagnifyingGlass, SparkleIcon as Sparkle, WarningCircleIcon as WarningCircle } from "@phosphor-icons/react";
+import { Banner, IconButton, QuietPill, Tabs, VirtualList, Zero, type Segment } from "../../ui";
 import type { Loaded } from "../memory/useRefreshing";
 import type { SkillsView } from "./bridge";
 import { SkillRow, matchesSkill, type ScopeFilter } from "./SkillRows";
@@ -35,6 +35,7 @@ export function SkillsPanel({
   query = "",
   onMore,
   search,
+  onRefresh,
 }: {
   skills: Loaded<SkillsView>;
   selected: string | null;
@@ -44,6 +45,8 @@ export function SkillsPanel({
   onMore?: () => void;
   /** A find field shown under the header (the full view). */
   search?: ReactNode;
+  /** Shows a refresh button in the header (the full view). */
+  onRefresh?: () => void;
 }) {
   const [scope, setScope] = useState<ScopeFilter>("all");
   const all = skills.data?.items;
@@ -58,6 +61,7 @@ export function SkillsPanel({
         {all && <QuietPill>{all.length} installed</QuietPill>}
         <span className="grow" />
         <Tabs items={compact ? FILTERS : FULL_FILTERS} value={scope} onChange={setScope} label="Show skills from" />
+        {onRefresh && <IconButton icon={ArrowsClockwise} label="Read the skill folders again" onClick={onRefresh} disabled={skills.loading} />}
       </div>
       {search}
       {skills.error && <Banner title={skills.error}>Skills could not be listed: {skills.error}</Banner>}

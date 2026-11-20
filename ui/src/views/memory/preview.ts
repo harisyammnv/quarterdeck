@@ -76,6 +76,7 @@ export function previewMemory(): MemoryView {
       item("project:route-planner", "project-guide", "route-planner", "CLAUDE.md", 12 * D, "route-planner"),
       ...BRIEF_IDS.map((id, i) => item(`brief:${id}`, "brief", id, `data/${id}/brief.md`, (i + 1) * 3 * H, id)),
     ],
+    capped: false,
   };
 }
 

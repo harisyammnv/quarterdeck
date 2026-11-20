@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeftIcon as ArrowLeft,
+  ArrowsClockwiseIcon as ArrowsClockwise,
   BookOpenIcon as BookOpen,
   CircleDashedIcon as CircleDashed,
   FolderSimpleIcon as FolderSimple,
@@ -22,6 +23,7 @@ import { memoryList, memoryRead, memorySearch, type MemoryDoc, type MemoryHit, t
 import { DocBody } from "./DocBody";
 import { FindField } from "./FindField";
 import { plural, shortAge } from "./format";
+import { useHomeKey } from "./useHomeKey";
 import { useRefreshing } from "./useRefreshing";
 import "./memory.css";
 
@@ -48,8 +50,9 @@ const SEARCH_LIMIT_NOTE = "Showing the first matches; refine the search to see t
 
 /** Memory and skills: the documents Firstmate keeps, one open, and the installed skills. */
 export default function MemoryView() {
-  const [list] = useRefreshing(memoryList);
-  const [skills] = useRefreshing(skillsList);
+  const homeKey = useHomeKey();
+  const [list, reloadList] = useRefreshing(memoryList, homeKey);
+  const [skills, reloadSkills] = useRefreshing(skillsList, homeKey);
   const [sel, setSel] = useState<Sel | null>(null);
   const [query, setQuery] = useState("");
   const [showHits, setShowHits] = useState(false);
@@ -121,7 +124,7 @@ export default function MemoryView() {
       </>
     );
   } else if (current.t === "group") {
-    main = <GroupPane kind={current.kind} items={groups[current.kind]} now={now} onOpen={openDoc} />;
+    main = <GroupPane kind={current.kind} items={groups[current.kind]} capped={current.kind === "brief" && (list.data?.capped ?? false)} now={now} onOpen={openDoc} />;
   } else if (current.t === "skill") {
     main = <SkillDocPane id={current.id} find={query} />;
   } else {
@@ -141,6 +144,11 @@ export default function MemoryView() {
           setShowHits(false);
         }}
         onFind={() => find.current?.focus()}
+        refreshing={list.loading || skills.loading}
+        onRefresh={() => {
+          reloadList();
+          reloadSkills();
+        }}
       />
       <section className="panel memory-main" aria-label="Document">
         {main}
@@ -181,6 +189,8 @@ const MemoryNav = memo(function MemoryNav({
   onDoc,
   onGroup,
   onFind,
+  refreshing,
+  onRefresh,
 }: {
   groups: Groups;
   sel: Sel | null;
@@ -189,6 +199,8 @@ const MemoryNav = memo(function MemoryNav({
   onDoc: (id: string) => void;
   onGroup: (kind: GroupKind) => void;
   onFind: () => void;
+  refreshing: boolean;
+  onRefresh: () => void;
 }) {
   const docId = sel?.t === "doc" ? sel.id : null;
   const briefs = groups.brief;
@@ -205,6 +217,7 @@ const MemoryNav = memo(function MemoryNav({
         <h2 className="memory-h2">Memory</h2>
         <span className="grow" />
         <IconButton icon={MagnifyingGlass} label="Find in memory (/)" onClick={onFind} />
+        <IconButton icon={ArrowsClockwise} label="Read memory and skills again" onClick={onRefresh} disabled={refreshing} />
       </div>
       {error && <Banner title={error}>Memory could not be refreshed: {error}</Banner>}
       <div className="memory-list" role="list">
@@ -334,12 +347,13 @@ function DocPane({ id, back, query }: { id: string; back: ReactNode; query: stri
   );
 }
 
-function GroupPane({ kind, items, now, onOpen }: { kind: GroupKind; items: MemoryItem[]; now: number; onOpen: (id: string) => void }) {
+function GroupPane({ kind, items, capped, now, onOpen }: { kind: GroupKind; items: MemoryItem[]; capped: boolean; now: number; onOpen: (id: string) => void }) {
   const I = KIND_ICON[kind];
   const meta = kind === "brief" ? plural(items.length, "set", "sets") : plural(items.length, "project", "projects");
   return (
     <>
       <MainHead icon={I} title={GROUP_TITLE[kind]} meta={meta} />
+      {capped && <Banner>Only the newest {items.length} sets are listed; older ones stay in the home.</Banner>}
       {items.length === 0 ? (
         <Zero icon={I} title={`No ${GROUP_TITLE[kind].toLowerCase()} yet`} dashed={false} />
       ) : (

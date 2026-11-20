@@ -106,7 +106,7 @@
 }
 
 .memory-li.sel {
-  background: var(--sunken);
+  background: var(--selected, var(--sunken));
   --muted: var(--muted2);
 }
 
@@ -183,7 +183,7 @@
 
 .memory-find:focus-within {
   border-color: var(--ink);
-  box-shadow: var(--focus);
+  box-shadow: var(--focus-soft, var(--focus));
 }
 
 .memory-find input {

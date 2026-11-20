@@ -21,8 +21,9 @@ pub use search::{MemoryHit, MemorySearch};
 
 /// Documents larger than this are read up to the limit and marked truncated.
 pub const MAX_DOC_BYTES: u64 = 1024 * 1024;
-/// At most this many task folders are listed for briefs.
-pub const MAX_BRIEFS: usize = 2000;
+/// At most this many briefs are listed, newest first, which keeps the list under the IPC
+/// payload budget.
+pub const MAX_BRIEFS: usize = 1000;
 
 /// What a memory document is.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
@@ -64,6 +65,8 @@ pub struct MemoryItem {
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct MemoryView {
     pub items: Vec<MemoryItem>,
+    /// More briefs exist than [MAX_BRIEFS]; the oldest are left out.
+    pub capped: bool,
 }
 
 /// A document ready to render.
@@ -94,27 +97,38 @@ pub struct ProjectRoot {
     pub path: PathBuf,
 }
 
-/// The projects the fleet works on, from the snapshot's task records: each distinct project
-/// checkout, named by its directory. Empty until the first snapshot.
+/// The projects the fleet works on, from the snapshot: each task's project checkout, plus
+/// the clone under the snapshot's `projects` root for every repository its backlog names.
+/// Named by directory. Empty until the first snapshot.
 pub fn project_roots(state: &HomeState) -> Vec<ProjectRoot> {
     let Some(snapshot) = &state.snapshot else {
         return Vec::new();
     };
     let mut out: Vec<ProjectRoot> = Vec::new();
-    for task in &snapshot.tasks {
-        let (Some(path), Some(name)) = (&task.project, task.project_name()) else {
-            continue;
-        };
-        if !path.is_absolute()
-            || !fsread::id_safe(&name)
-            || out.iter().any(|p| p.path == *path || p.name == name)
+    let mut add = |name: String, path: PathBuf| {
+        if path.is_absolute()
+            && fsread::id_safe(&name)
+            && !out.iter().any(|p| p.path == path || p.name == name)
         {
-            continue;
+            out.push(ProjectRoot { name, path });
         }
-        out.push(ProjectRoot {
-            name,
-            path: path.clone(),
-        });
+    };
+    for task in &snapshot.tasks {
+        if let (Some(path), Some(name)) = (&task.project, task.project_name()) {
+            add(name, path.clone());
+        }
+    }
+    if let Some(root) = &snapshot.roots.projects {
+        for repo in snapshot.backlog.iter().filter_map(|r| r.repo.as_deref()) {
+            // A repository name is one path component; anything else is not a clone here.
+            if repo.contains(['/', '\\']) || repo == ".." {
+                continue;
+            }
+            let path = root.join(repo);
+            if path.is_dir() {
+                add(repo.to_string(), path);
+            }
+        }
     }
     out.sort_by(|a, b| a.name.cmp(&b.name));
     out
@@ -206,7 +220,7 @@ impl MemoryIndex {
         }
 
         let mut briefs = Vec::new();
-        for task in fsread::child_dirs(data, MAX_BRIEFS) {
+        for task in fsread::child_dirs(data, usize::MAX) {
             let dir = data.join(&task);
             let path = dir.join("brief.md");
             let Some(meta) = fsread::file_meta(&path) else {
@@ -230,8 +244,13 @@ impl MemoryIndex {
                 .cmp(&a.2.modified)
                 .then_with(|| a.2.id.cmp(&b.2.id))
         });
-        for (dir, path, item) in briefs {
-            index.add(&dir, path, item);
+        if briefs.len() > MAX_BRIEFS {
+            briefs.truncate(MAX_BRIEFS);
+            index.view.capped = true;
+        }
+        for (_, path, item) in briefs {
+            // Contained to data/ itself, so a task folder linked elsewhere is refused.
+            index.add(data, path, item);
         }
         index
     }
@@ -461,6 +480,24 @@ pub(crate) mod tests {
         );
     }
 
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn a_task_folder_linking_out_of_data_is_refused() {
+        let f = fixture();
+        let outside = tempfile::tempdir().unwrap();
+        std::fs::write(outside.path().join("brief.md"), "elsewhere").unwrap();
+        std::os::unix::fs::symlink(outside.path(), f.data().join("task-z")).unwrap();
+        let idx = f.index();
+        let err = idx.read("brief:task-z").await.unwrap_err();
+        assert!(
+            matches!(
+                err,
+                MemoryError::Unreadable(_, crate::safe_read::ReadError::Escapes)
+            ),
+            "{err}"
+        );
+    }
+
     #[tokio::test]
     async fn large_documents_are_truncated() {
         let f = fixture();
@@ -474,23 +511,30 @@ pub(crate) mod tests {
     #[test]
     fn project_roots_come_from_snapshot_tasks() {
         use std::sync::Arc;
-        let snap = crate::snapshot::Snapshot::parse(
-            r#"{"schema":"fm-fleet-snapshot.v1","tasks":[
+        let clones = tempfile::tempdir().unwrap();
+        std::fs::create_dir(clones.path().join("portal-web")).unwrap();
+        let json = r#"{"schema":"fm-fleet-snapshot.v1",
+            "roots":{"projects":"CLONES"},
+            "backlog":{"records":[{"id":"r1","repo":"portal-web"},{"id":"r2","repo":"missing-repo"},{"id":"r3","repo":"../escape"},{"id":"r4","repo":"ledger-api"}]},
+            "tasks":[
                 {"id":"a","project":"/p/ledger-api"},
                 {"id":"b","project":"/p/ledger-api"},
                 {"id":"c","project":"relative/portal-web"},
                 {"id":"d"},
                 {"id":"e","project":"/p/route-planner"}
-            ]}"#,
-        )
-        .unwrap();
+            ]}"#
+        .replace("CLONES", &clones.path().to_string_lossy());
+        let snap = crate::snapshot::Snapshot::parse(&json).unwrap();
         let state = HomeState {
             snapshot: Some(Arc::new(snap)),
             ..HomeState::default()
         };
         let roots = project_roots(&state);
         let names: Vec<_> = roots.iter().map(|r| r.name.as_str()).collect();
-        assert_eq!(names, ["ledger-api", "route-planner"]);
+        // The backlog's portal-web clone exists; missing and path-like names are skipped, and
+        // ledger-api is already known from its task.
+        assert_eq!(names, ["ledger-api", "portal-web", "route-planner"]);
+        assert_eq!(roots[0].path, std::path::PathBuf::from("/p/ledger-api"));
         assert!(project_roots(&HomeState::default()).is_empty());
     }
 

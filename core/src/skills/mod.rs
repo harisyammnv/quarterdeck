@@ -21,8 +21,10 @@ pub const MAX_SKILL_BYTES: u64 = 1024 * 1024;
 /// Bytes read from each skill to find its front matter while listing.
 const PROBE_BYTES: u64 = 32 * 1024;
 /// Folders read per root, and skills listed in total.
-pub const MAX_PER_ROOT: usize = 500;
-pub const MAX_SKILLS: usize = 2000;
+pub const MAX_PER_ROOT: usize = 300;
+pub const MAX_SKILLS: usize = 500;
+/// Characters of a trigger description sent with the list; the full text is in the skill.
+pub const MAX_DESCRIPTION_CHARS: usize = 240;
 const LOCK_MAX_BYTES: u64 = 1024 * 1024;
 
 /// Where a skill is installed.
@@ -99,6 +101,10 @@ pub struct SkillSources {
 
 struct Root {
     scope: SkillScope,
+    /// The folder every skill file under this root must resolve inside. The user's own
+    /// folders allow links between them (one install shown in two places); Firstmate's and
+    /// a project's skills must stay inside the home or the project.
+    contain: Option<PathBuf>,
     /// Stable part of the id, such as `user:agents`.
     key: String,
     label: String,
@@ -113,6 +119,7 @@ impl SkillSources {
             roots.push(Root {
                 scope: SkillScope::Firstmate,
                 key: "firstmate".into(),
+                contain: Some(home.clone()),
                 label: "Firstmate .agents/skills".into(),
                 dir: home.join(".agents/skills"),
                 project: None,
@@ -123,6 +130,7 @@ impl SkillSources {
                 roots.push(Root {
                     scope: SkillScope::User,
                     key: format!("user:{key}"),
+                    contain: None,
                     label: format!("~/{rel}"),
                     dir: home.join(rel),
                     project: None,
@@ -137,6 +145,7 @@ impl SkillSources {
                 roots.push(Root {
                     scope: SkillScope::Project,
                     key: format!("project:{}:{key}", p.name),
+                    contain: Some(p.path.clone()),
                     label: format!("{}/{rel}", p.name),
                     dir: p.path.join(rel),
                     project: Some(p.name.clone()),
@@ -156,8 +165,10 @@ pub struct SkillIndex {
 
 #[derive(Clone, Debug)]
 struct Located {
-    /// The skill folder; `SKILL.md` is read inside it and must stay inside it.
+    /// The skill folder holding `SKILL.md`.
     dir: PathBuf,
+    /// The folder the file must resolve inside.
+    root: PathBuf,
 }
 
 impl SkillIndex {
@@ -194,7 +205,8 @@ impl SkillIndex {
                     index.view.capped = true;
                     break;
                 }
-                let head = fsread::read_doc(&dir, &file, PROBE_BYTES).await.ok();
+                let contain = root.contain.clone().unwrap_or_else(|| dir.clone());
+                let head = fsread::read_doc(&contain, &file, PROBE_BYTES).await.ok();
                 let fm = head
                     .as_ref()
                     .map(|(text, _)| frontmatter::split(text).0)
@@ -211,11 +223,13 @@ impl SkillIndex {
                 };
                 let id = format!("{}:{folder}", root.key);
                 by_real.insert(real, index.view.items.len());
-                index.paths.insert(id.clone(), Located { dir });
+                index
+                    .paths
+                    .insert(id.clone(), Located { dir, root: contain });
                 index.view.items.push(SkillItem {
                     id,
                     name,
-                    description: one_line(fm.description.as_deref().unwrap_or("")),
+                    description: clip(&one_line(fm.description.as_deref().unwrap_or(""))),
                     scope: root.scope,
                     source,
                     locations: vec![root.label.clone()],
@@ -261,7 +275,7 @@ impl SkillIndex {
             .cloned()
             .ok_or_else(unknown)?;
         let (text, truncated) =
-            fsread::read_doc(&loc.dir, &loc.dir.join("SKILL.md"), MAX_SKILL_BYTES)
+            fsread::read_doc(&loc.root, &loc.dir.join("SKILL.md"), MAX_SKILL_BYTES)
                 .await
                 .map_err(|e| SkillError::Unreadable(item.name.clone(), e))?;
         let body = frontmatter::split(&text).1.to_string();
@@ -281,6 +295,16 @@ impl SkillScope {
             Self::Project => 2,
         }
     }
+}
+
+/// Cuts a description to [MAX_DESCRIPTION_CHARS], ending with an ellipsis when cut.
+fn clip(s: &str) -> String {
+    if s.chars().count() <= MAX_DESCRIPTION_CHARS {
+        return s.to_string();
+    }
+    let mut out: String = s.chars().take(MAX_DESCRIPTION_CHARS - 1).collect();
+    out.push('…');
+    out
 }
 
 fn one_line(s: &str) -> String {
@@ -575,6 +599,48 @@ mod tests {
         assert!(many.view().capped);
         // A loose bound that catches quadratic work without flaking in debug builds.
         assert!(start.elapsed() < std::time::Duration::from_secs(5));
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn a_project_skill_folder_linking_out_of_the_project_is_refused() {
+        let f = fixture();
+        let outside = tempfile::tempdir().unwrap();
+        std::fs::create_dir(outside.path().join("evil")).unwrap();
+        std::fs::write(
+            outside.path().join("evil/SKILL.md"),
+            "---\nname: evil\n---\nsecret",
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(
+            outside.path().join("evil"),
+            f.dir.path().join("p/ledger-api/.claude/skills/evil"),
+        )
+        .unwrap();
+        let idx = SkillIndex::scan(&f.sources()).await;
+        let item = idx
+            .view()
+            .items
+            .iter()
+            .find(|i| i.id == "project:ledger-api:claude:evil")
+            .unwrap();
+        assert!(item.malformed);
+        assert!(matches!(
+            idx.read(&item.id).await,
+            Err(SkillError::Unreadable(
+                _,
+                crate::safe_read::ReadError::Escapes
+            ))
+        ));
+    }
+
+    #[test]
+    fn long_descriptions_are_clipped() {
+        let long = "word ".repeat(200);
+        let c = clip(long.trim());
+        assert_eq!(c.chars().count(), MAX_DESCRIPTION_CHARS);
+        assert!(c.ends_with('…'));
+        assert_eq!(clip("short"), "short");
     }
 
     #[test]

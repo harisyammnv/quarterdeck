@@ -3,11 +3,11 @@ import { useCallback, useEffect, useState } from "react";
 export type Loaded<T> = { data: T | null; error: string | null; loading: boolean };
 
 /**
- * Loads `fetch` on mount and again whenever the window regains focus or `reload` is
- * called. Memory and skills change rarely, so they refresh on focus instead of being
+ * Loads `fetch` on mount, again whenever the window regains focus, `reload` is called or
+ * `key` changes (the home was switched, or its first snapshot arrived). Memory and skills change rarely, so they refresh on focus instead of being
  * watched. A slower response never overwrites a newer one.
  */
-export function useRefreshing<T>(fetch: () => Promise<T>): [Loaded<T>, () => void] {
+export function useRefreshing<T>(fetch: () => Promise<T>, key = ""): [Loaded<T>, () => void] {
   const [state, setState] = useState<Loaded<T>>({ data: null, error: null, loading: true });
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => {
@@ -27,7 +27,7 @@ export function useRefreshing<T>(fetch: () => Promise<T>): [Loaded<T>, () => voi
     return () => {
       live = false;
     };
-  }, [fetch, tick]);
+  }, [fetch, tick, key]);
 
   useEffect(() => {
     window.addEventListener("focus", reload);
