@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-board-view"
+description = "Enables the board_view command without any pre-configured scope."
+commands.allow = ["board_view"]
+
+[[permission]]
+identifier = "deny-board-view"
+description = "Denies the board_view command without any pre-configured scope."
+commands.deny = ["board_view"]

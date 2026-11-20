@@ -18,6 +18,7 @@
 //! Each app area adds one directory module here (`core/src/<area>/`) with a pure
 //! `view(&HomeState)` projection or on-demand `list` and `read` readers.
 
+pub mod board;
 pub mod config;
 pub mod engine;
 pub mod external;
