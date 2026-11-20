@@ -1,13 +1,13 @@
 import { ArrowSquareOutIcon as ArrowSquareOut, GitBranchIcon as GitBranch } from "@phosphor-icons/react";
 import { useState } from "react";
-import { Button, Facts, KindPill, Zero, ago, useHotkey, useNow } from "../../ui";
+import { Button, Facts, InspectorSection, KindPill, ZeroState, ago, useHotkey, useNow } from "../../ui";
 import { useApp } from "../../state/app";
 import { findRow, focusInOrca, useProjects, type ProjectRow } from "./bridge";
 import { agentLabel, deliveryLabel, startedLabel } from "./look";
 
 /**
  * The inspector's worktree facts for the task in focus: agent, branch, delivery and start,
- * and "Open in Orca" (⌘O) when Orca runs it.
+ * and "Open in Orca" (⌘O) when Orca runs it with a terminal on record.
  */
 export default function WorktreeSection() {
   const { view } = useProjects();
@@ -15,12 +15,11 @@ export default function WorktreeSection() {
   const found = findRow(view, selectedTask);
   if (!found) {
     return (
-      <section>
-        <h2 className="h2">Worktree</h2>
-        <Zero icon={GitBranch} title="No worktree in focus" dashed={false}>
+      <InspectorSection title="Worktree">
+        <ZeroState icon={GitBranch} title="No worktree in focus">
           Pick one in the project list.
-        </Zero>
-      </section>
+        </ZeroState>
+      </InspectorSection>
     );
   }
   return <Facts_ row={found.row} />;
@@ -28,27 +27,23 @@ export default function WorktreeSection() {
 
 function Facts_({ row }: { row: ProjectRow }) {
   const now = useNow(30_000);
-  const missing = <span className="mut">Not recorded</span>;
+  const missing = <span className="qd-muted">Not recorded</span>;
   return (
-    <section>
-      <div className="row">
-        <h2 className="h2 grow">Worktree</h2>
-        <KindPill kind={row.kind} />
-      </div>
+    <InspectorSection title="Worktree" aside={<KindPill kind={row.kind} />}>
       <Facts
         items={[
           ["Agent", agentLabel(row.harness) ?? missing],
-          ["Branch", row.branch ? <span className="mono projects-branch" title={row.branch}>{row.branch}</span> : missing],
+          ["Branch", row.branch ? <span className="qd-mono projects-branch" title={row.branch}>{row.branch}</span> : missing],
           ["Delivery", deliveryLabel(row.mode) ?? missing],
-          ["Started", row.started_at ? <span className="tn">{startedLabel(row.started_at, now, ago)}</span> : missing],
+          ["Started", row.started_at ? <span className="projects-tn">{startedLabel(row.started_at, now, ago)}</span> : missing],
         ]}
       />
       {row.in_orca && <OpenInOrca id={row.id} />}
-    </section>
+    </InspectorSection>
   );
 }
 
-/** Brings the worktree's terminal forward in Orca. ⌘O does the same while it is shown. */
+/** Brings the task's terminal forward in Orca. ⌘O does the same while it is shown. */
 function OpenInOrca({ id }: { id: string }) {
   const [error, setError] = useState<{ id: string; text: string } | null>(null);
   const open = () => {

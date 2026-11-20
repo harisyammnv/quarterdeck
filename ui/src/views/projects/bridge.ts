@@ -35,29 +35,46 @@ function start() {
     set({ view: previewProjects(), error: null });
     return;
   }
-  void events.projectsUpdated.listen((e) => {
-    set({ view: e.payload, error: null });
-  });
-  // A new home starts a new engine: forget the old projects until its first view arrives.
-  // A new home starts a new engine: drop the old projects and ask the new engine directly,
-  // in case its first update arrived before this notice.
-  void events.homeChanged.listen(() => {
-    set({ view: null, error: null });
-    icons.clear();
+  void (async () => {
+    // Attach both listeners before the first fetch, so no update can fall between them.
+    await events.projectsUpdated.listen((e) => {
+      clearRetry();
+      set({ view: e.payload, error: null });
+    });
+    // A new home starts a new engine: drop the old projects and ask the new engine directly,
+    // in case its first update arrived before this notice.
+    await events.homeChanged.listen(() => {
+      set({ view: null, error: null });
+      icons.clear();
+      fetchView();
+    });
     fetchView();
-  });
-  fetchView();
+  })();
+}
+
+/** A failed read is retried a few times with a growing wait; any update ends the retries. */
+const RETRY_MS = [2_000, 5_000, 15_000, 30_000];
+let retry: { timer: ReturnType<typeof setTimeout>; n: number } | null = null;
+
+function clearRetry() {
+  if (retry) clearTimeout(retry.timer);
+  retry = null;
 }
 
 function fetchView() {
   commands
     .projectsView()
     .then((v) => {
+      clearRetry();
       // An update may have landed first; it is newer than this answer.
       if (!store.view) set({ view: v, error: null });
     })
     .catch((e: unknown) => {
       set({ view: store.view, error: e instanceof Error ? e.message : String(e) });
+      const n = retry ? retry.n + 1 : 0;
+      const wait = RETRY_MS[n];
+      if (wait === undefined) return;
+      retry = { n, timer: setTimeout(fetchView, wait) };
     });
 }
 
@@ -82,19 +99,28 @@ export function findRow(view: ProjectsView | null, id: string | null): { row: Pr
   return null;
 }
 
-/** A project's icon as a `data:` URL, or null for a monogram. Answers are kept per name. */
-const icons = new Map<string, Promise<string | null>>();
+/**
+ * A project's icon as a `data:` URL, or null for a monogram. A found icon is kept per name;
+ * a miss or a failure is asked again after a few minutes, as the core does, so an icon added
+ * to a repository appears without a restart.
+ */
+const MISS_MS = 5 * 60_000;
+const icons = new Map<string, { at: number; p: Promise<string | null> }>();
 export function projectIcon(name: string): Promise<string | null> {
-  let p = icons.get(name);
-  if (!p) {
-    p = inApp ? commands.projectIcon(name).catch(() => null) : Promise.resolve(previewIcon(name));
-    icons.set(name, p);
-  }
+  const hit = icons.get(name);
+  if (hit && Date.now() - hit.at < MISS_MS) return hit.p;
+  const at = Date.now();
+  const p = inApp ? commands.projectIcon(name).catch(() => null) : Promise.resolve(previewIcon(name));
+  icons.set(name, { at, p });
+  void p.then((src) => {
+    // Found icons are kept; the core re-checks the file itself when it changes.
+    if (src !== null && icons.get(name)?.p === p) icons.set(name, { at: Number.POSITIVE_INFINITY, p });
+  });
   return p;
 }
 
-/** Brings the task's terminal (or worktree) forward in Orca. */
+/** Brings the task's terminal forward in Orca. */
 export async function focusInOrca(taskId: string): Promise<void> {
   if (!inApp) throw new Error(`Preview mode: ${taskId} opens in Orca from the app window.`);
-  await commands.projectsFocusOrca(taskId);
+  await commands.orcaFocus(taskId);
 }

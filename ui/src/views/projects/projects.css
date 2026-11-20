@@ -1,69 +1,44 @@
-/* The projects tree and its inspector sections. Measurements follow fm-ui-a-polish/a2.css. */
+/*
+ * The projects tree and inspector sections are built from the design system's TreeRow
+ * (qd-proj, qd-wt), StateDot, Count, InspectorSection and ZeroState. Only what the system
+ * leaves to the area lives here.
+ */
 
+/* The shell's frame already pads the tree. */
 .projects-tree {
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 8px;
-}
-
-.projects-proj,
-.projects-wt {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: var(--r-row);
-  color: var(--ink);
-  transition: background-color var(--t-fast) var(--ease-out);
+  padding: 0 0 var(--space-8);
 }
 
 .projects-proj {
-  height: 30px;
-  margin-top: 2px;
-  padding: 0 8px 0 6px;
-  font-weight: 500;
+  margin-top: var(--space-2);
+  cursor: pointer;
 }
 
 .projects-tree > :first-child > .projects-proj {
   margin-top: 0;
 }
 
-.projects-proj > svg:first-child,
-.projects-wt > svg {
+/* The collapse caret is the one thing the TreeRow spec leaves to the area. */
+.projects-proj > svg:first-child {
   color: var(--muted);
 }
 
-.projects-wt {
-  position: relative;
-  height: 28px;
-  padding: 0 10px 0 30px;
-}
-
-.projects-proj:hover,
-.projects-wt:hover {
-  --muted: var(--muted2);
+.projects-proj:hover {
   background: var(--hover);
 }
 
-/* Design system TreeRow: the selected fill is darker than hover. */
-.projects-wt.sel {
-  background: var(--selected, var(--sunken));
-  font-weight: 500;
+.projects-proj:hover > svg:first-child,
+.qd-wt:hover .qd-wt__kind {
+  color: var(--muted-strong);
 }
 
-.projects-wt.sel > svg {
-  color: var(--ink);
+.projects-proj:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
-/* A2: the selected worktree carries a 3px ink bar left of its dot. */
-.projects-wt.sel::before {
-  content: "";
-  position: absolute;
-  left: 14px;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--ink);
+.projects-grow {
+  flex: 1;
 }
 
 /* Tasks without a project get an empty tile, so names still line up. */
@@ -71,23 +46,24 @@
   width: 20px;
   height: 20px;
   flex: none;
-  border-radius: 6px;
+  border-radius: var(--radius-tile);
   border: 1px dashed var(--edge-soft);
 }
 
-.projects-branch {
+.projects-branch,
+.projects-small {
   font-size: 12px;
 }
 
-.projects-small {
-  font-size: 12px;
+.projects-tn {
+  font-variant-numeric: tabular-nums;
 }
 
 .projects-orca {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--space-6);
 }
 
 .projects-err {

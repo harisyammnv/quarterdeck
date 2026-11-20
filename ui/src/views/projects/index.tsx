@@ -17,7 +17,7 @@ import {
   WarningCircleIcon as WarningCircle,
   type Icon,
 } from "@phosphor-icons/react";
-import { ProjectTile, StateDot } from "../../ui";
+import { Count, ProjectTile, StateDot } from "../../ui";
 import { useApp } from "../../state/app";
 import { projectIcon, useProjects, type ProjectRow } from "./bridge";
 import { dotKind, stateWord } from "./look";
@@ -157,7 +157,7 @@ export default function ProjectsTree() {
   if (view.projects.length === 0) return <Note icon={Sailboat} text="No worktrees yet. Projects appear when Firstmate starts work in them." />;
 
   return (
-    <div className="projects-tree" role="tree" aria-label="Projects and worktrees" ref={treeRef} onKeyDown={onKey}>
+    <div className="qd-tree projects-tree" role="tree" aria-label="Projects and worktrees" ref={treeRef} onKeyDown={onKey}>
       {view.projects.map((g) => {
         const group = g.name ?? "";
         const open = !collapsed.has(group);
@@ -171,7 +171,7 @@ export default function ProjectsTree() {
               aria-label={`${label}, ${String(g.tasks.length)} ${g.tasks.length === 1 ? "worktree" : "worktrees"}`}
               tabIndex={tabKey === `p:${group}` ? 0 : -1}
               data-key={`p:${group}`}
-              className="projects-proj"
+              className="qd-proj projects-proj"
               onClick={() => {
                 setFocusKey(`p:${group}`);
                 toggle(group);
@@ -179,10 +179,8 @@ export default function ProjectsTree() {
             >
               {open ? <CaretDown size={14} aria-hidden="true" /> : <CaretRight size={14} aria-hidden="true" />}
               {g.name ? <ProjectIcon name={g.name} /> : <span className="projects-none" aria-hidden="true" />}
-              <span className="trunc grow">{label}</span>
-              <span className="count tn" aria-hidden="true">
-                {g.tasks.length}
-              </span>
+              <span className="qd-trunc projects-grow">{label}</span>
+              <Count n={g.tasks.length} />
             </div>
             {open && (
               <div role="group">
@@ -207,15 +205,17 @@ const Worktree = memo(function Worktree({ row, selected, tabbable, onSelect }: {
       aria-label={`${row.id}, ${stateWord(row)}, ${row.kind ?? "task"}`}
       tabIndex={tabbable ? 0 : -1}
       data-key={`t:${row.id}`}
-      className={`projects-wt${selected ? " sel" : ""}`}
+      className="qd-wt"
       title={row.title ?? row.id}
       onClick={() => {
         onSelect(row.id);
       }}
     >
       <StateDot kind={dotKind(row)} />
-      <span className="trunc grow">{row.id}</span>
-      <KindGlyph kind={row.kind} />
+      <span className="qd-trunc">{row.id}</span>
+      <span className="qd-wt__kind">
+        <KindGlyph kind={row.kind} />
+      </span>
     </div>
   );
 });

@@ -1,26 +1,20 @@
 import type { TaskState } from "../../bindings";
-import type { DotKind } from "../../ui";
+import { stateDot, type DotKind } from "../../ui";
 import type { ProjectRow } from "./bridge";
 
-/** The sidebar dot for a row: the shared state dot, with "investigating" for a working scout. */
+/**
+ * The sidebar dot for a row: the shared mapping (`stateDot`), with "investigating" for a
+ * working scout, and the idle ring for settled states that have no dot of their own.
+ */
 export function dotKind(row: Pick<ProjectRow, "state" | "kind">): DotKind {
-  const byState: Record<TaskState, DotKind> = {
-    working: "working",
-    "needs-decision": "waiting",
-    blocked: "blocked",
-    failed: "blocked",
-    paused: "idle",
-    done: "idle",
-    unknown: "idle",
-  };
-  const kind = byState[row.state];
-  return kind === "working" && row.kind === "scout" ? "invest" : kind;
+  const kind = stateDot(row.state) ?? "idle";
+  return kind === "working" && row.kind === "scout" ? "investigating" : kind;
 }
 
 /** Words for screen readers, matching the legend. */
 export function stateWord(row: Pick<ProjectRow, "state" | "kind" | "state_word">): string {
   const k = dotKind(row);
-  if (k === "invest") return "Investigating";
+  if (k === "investigating") return "Investigating";
   const words: Record<TaskState, string> = {
     working: "Working",
     "needs-decision": "Needs you",
