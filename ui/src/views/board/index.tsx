@@ -8,7 +8,6 @@ import {
 } from "@phosphor-icons/react";
 import { Banner, Count, Panel, PanelHead, StateDot, Tag, VirtualList, Zero, ago, useNow, type DotKind } from "../../ui";
 import { useApp } from "../../state/app";
-import { DecisionsStrip } from "../decisions/Strip";
 import { openPullRequest } from "./bridge";
 import { age, firstLine, prNumber } from "./format";
 import { reportsArea, requestDecision } from "./nav";
@@ -54,7 +53,6 @@ function Board({ v, now }: { v: BoardView; now: number }) {
   const doneMore = v.done_total - v.done.length;
   return (
     <>
-      <DecisionsStrip />
       <Panel as="main" className="fill board" label="Board">
         <PanelHead title="Board" meta={v.ready ? `${String(v.queued.length)} queued, ${String(v.in_flight.length)} in flight, ${String(live.length)} waiting on you` : undefined}>
           {v.generated_at !== null && <span className="meta tn">Snapshot {ago(v.generated_at * 1000, now)}</span>}

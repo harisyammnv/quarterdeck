@@ -15,7 +15,8 @@ const STRIP_CARDS = 3;
 /**
  * The teal "Needs your call" room. It shows only live calls (`captain_actionable`), oldest
  * first, and renders nothing when there are none. J moves focus to the next call card.
- * Self-contained: mount it with `<DecisionsStrip />` at the top of a view.
+ * Self-contained. The design system allows one teal room per window, on Fleet only, so it is
+ * mounted once, at the top of the Fleet view: `<DecisionsStrip />`.
  */
 export function DecisionsStrip() {
   const load = useBoard();

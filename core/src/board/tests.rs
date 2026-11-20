@@ -61,6 +61,7 @@ fn places_every_record_exactly_once() {
     );
     assert_eq!(ids_of(&v.done), ["infra-sync", "pin-update"]);
     assert_eq!(v.done_total, 2);
+    assert_eq!(v.queued_total, 5);
     assert_eq!(
         v.other,
         [BoardUnplaced {
@@ -340,6 +341,51 @@ fn view_is_fast_on_a_large_home() {
     );
     let v = view(&state);
     assert_eq!(v.live_count(), 400);
+    assert_eq!(v.queued.len(), MAX_QUEUED);
+    assert_eq!(v.queued_total, 800);
+    assert_eq!(v.decisions.deferred.len(), MAX_DEFERRED);
+    assert_eq!(v.decisions.deferred_total, 400);
+}
+
+#[test]
+fn payload_stays_inside_the_ipc_budget() {
+    // Contract budget: one IPC payload under 256 KiB. Queued, deferred and done are capped;
+    // in-flight work and live calls never are, so this home is large but plausible:
+    // 60 tasks in flight, 80 live calls, 400 deferred holds, 1500 queued, 300 done.
+    let mut snap = Snapshot {
+        generated: Some(GEN),
+        ..Snapshot::default()
+    };
+    let reason = "Rollup is green, 13 of 13 checks. Options: (1) merge now; (2) hold until the actions update is fixed; (3) decide later.";
+    let mut push = |n: usize, state: &str, bucket: Option<&str>| {
+        for i in 0..n {
+            snap.backlog.push(BacklogRecord {
+                id: format!("{state}-{}-{i:04}", bucket.unwrap_or("none")),
+                title: Some("A task title of an ordinary length, about this long".into()),
+                repo: Some("route-planner".into()),
+                kind: Some("ship".into()),
+                state: Some(state.into()),
+                hold_bucket: bucket.map(Into::into),
+                captain_actionable: bucket == Some("live"),
+                hold_reason: bucket.map(|_| reason.into()),
+                pr_url: Some("https://forge.example.invalid/acme/route-planner/pull/1234".into()),
+                since: Some("2026-11-01".into()),
+                ..BacklogRecord::default()
+            });
+        }
+    };
+    push(60, "in_flight", None);
+    push(80, "queued", Some("live"));
+    push(400, "queued", Some("dated"));
+    push(1500, "queued", None);
+    push(300, "done", None);
+    let v = view(&HomeState {
+        snapshot: Some(Arc::new(snap)),
+        ..HomeState::default()
+    });
+    assert_eq!((v.live_count(), v.in_flight.len()), (80, 60));
+    let bytes = serde_json::to_vec(&v).unwrap().len();
+    assert!(bytes < 256 * 1024, "board payload is {bytes} bytes");
 }
 
 #[test]

@@ -35,6 +35,12 @@ const MAX_TITLE: usize = 300;
 const MAX_LINKS: usize = 8;
 /// Most done cards sent; the total is sent alongside.
 pub const MAX_DONE: usize = 40;
+/// Most queued cards sent, from the head of the backlog order; the total is sent alongside.
+/// Keeps one board payload inside the contract's 256 KiB on a very large backlog.
+pub const MAX_QUEUED: usize = 200;
+/// Most deferred decisions sent, oldest first; the total is sent alongside. Live calls are
+/// never capped.
+pub const MAX_DEFERRED: usize = 150;
 
 /// Which column a card sits in.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -146,8 +152,11 @@ pub struct Decision {
 pub struct Decisions {
     /// Waiting on you now (`captain_actionable`), oldest first. Never capped.
     pub live: Vec<Decision>,
-    /// Set aside: dated, blocked or aged holds, each with the reason Firstmate gives.
+    /// Set aside: dated, blocked or aged holds, each with the reason Firstmate gives, oldest
+    /// first, at most [`MAX_DEFERRED`].
     pub deferred: Vec<Decision>,
+    /// How many deferred holds there are in all.
+    pub deferred_total: u32,
 }
 
 /// A record the projection could not place, shown so nothing disappears silently.
@@ -167,8 +176,10 @@ pub struct BoardView {
     /// The snapshot's `generated` time, Unix seconds.
     #[cfg_attr(feature = "specta", specta(type = Option<f64>))]
     pub generated_at: Option<i64>,
-    /// Queued work in backlog order, deferred holds included.
+    /// Queued work in backlog order, deferred holds included, at most [`MAX_QUEUED`].
     pub queued: Vec<BoardCard>,
+    /// How many queued records there are in all.
+    pub queued_total: u32,
     /// In-flight work in backlog order.
     pub in_flight: Vec<BoardCard>,
     /// Finished work, newest first, at most [`MAX_DONE`].
@@ -416,8 +427,12 @@ pub fn view(state: &HomeState) -> BoardView {
     v.decisions
         .live
         .sort_by(|a, b| oldest_first(a.raised_at, b.raised_at));
+    v.decisions.deferred_total = u32::try_from(v.decisions.deferred.len()).unwrap_or(u32::MAX);
+    v.decisions.deferred.truncate(MAX_DEFERRED);
     // Newest finished first; stable, so equal dates keep backlog order.
     done.sort_by(|a, b| oldest_first(b.since, a.since));
+    v.queued_total = u32::try_from(v.queued.len()).unwrap_or(u32::MAX);
+    v.queued.truncate(MAX_QUEUED);
     v.done_total = u32::try_from(done.len()).unwrap_or(u32::MAX);
     done.truncate(MAX_DONE);
     v.done = done;
